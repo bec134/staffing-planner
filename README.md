@@ -15,4 +15,10 @@ npm run build
 
 ## Deployment
 
-Pushes to `main` build and deploy to GitHub Pages via `.github/workflows/ci-deploy.yml`. One-time setup: in the repository's **Settings → Pages**, set **Source** to **GitHub Actions**.
+Every pull request and push runs the tests and build via `.github/workflows/ci-deploy.yml`. Deploying to GitHub Pages is off by default, because Pages isn't available for private repositories on GitHub's free plan. To turn it on:
+
+1. Make the repository public or move it to a paid plan. The repo and site contain no real data, only code and fictional samples.
+2. In **Settings → Pages**, set **Source** to **GitHub Actions**.
+3. In **Settings → Secrets and variables → Actions → Variables**, add `PAGES_ENABLED` = `true`.
+
+Pushes to `main` then deploy automatically.

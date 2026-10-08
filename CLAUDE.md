@@ -29,7 +29,7 @@ React 19 + TypeScript + Vite, Dexie (IndexedDB), React Router (hash routing, for
 - `src/domain/`: record types and pure logic (day patterns, later the flags). Keep this free of React and Dexie.
 - `src/data/`: the repository interface, the Dexie implementation, the React provider and the sample data.
 - `src/components/`, `src/pages/`: the UI. Each module is a page in the side navigation (`MODULES` in `src/App.tsx`).
-- `.github/workflows/ci-deploy.yml`: runs tests and the build on every PR, and deploys to GitHub Pages on pushes to `main`.
+- `.github/workflows/ci-deploy.yml`: runs tests and the build on every PR. It deploys to GitHub Pages on pushes to `main` only when the repo variable `PAGES_ENABLED` is `true` (off while the repo is private).
 
 ## Commands
 
