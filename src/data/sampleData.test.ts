@@ -1,5 +1,6 @@
 import { fteOf, isValidPattern } from '../domain/dayPattern';
-import { DEFAULT_POSITION_TYPES, buildSampleData } from './sampleData';
+import { DEFAULT_POSITION_TYPES } from '../domain/positionTypes';
+import { buildSampleData } from './sampleData';
 
 describe('sample data', () => {
   const sample = buildSampleData();
@@ -13,9 +14,9 @@ describe('sample data', () => {
   it('has an entitlement breakdown that sums to the total and references real position types', () => {
     const [ent] = sample.entitlements;
     const ptIds = new Set(sample.positionTypes.map((p) => p.id));
-    expect(ent!.lines.reduce((s, l) => s + l.fortnightDays, 0)).toBe(ent!.totalFortnightDays);
+    expect(ent!.lines.reduce((s, l) => s + l.milliFte, 0)).toBe(ent!.totalMilliFte);
     expect(ent!.lines.every((l) => ptIds.has(l.positionTypeId))).toBe(true);
-    expect(ent!.lines.every((l) => Number.isInteger(l.fortnightDays))).toBe(true);
+    expect(ent!.lines.every((l) => Number.isInteger(l.milliFte))).toBe(true);
   });
 
   it('has valid, unique staff with work patterns', () => {

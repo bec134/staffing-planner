@@ -1,5 +1,6 @@
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { PlanningYearProvider } from './components/PlanningYearContext';
+import { EntitlementPage } from './pages/entitlement/EntitlementPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 
@@ -37,7 +38,8 @@ export function App() {
           <main className="content">
             <Routes>
               <Route path="/" element={<OverviewPage />} />
-              {MODULES.map((m) => (
+              <Route path="/entitlement" element={<EntitlementPage />} />
+              {MODULES.filter((m) => m.path !== '/entitlement').map((m) => (
                 <Route key={m.path} path={m.path} element={<PlaceholderPage title={m.label} phase={m.phase} />} />
               ))}
               <Route path="*" element={<PlaceholderPage title="Not found" />} />

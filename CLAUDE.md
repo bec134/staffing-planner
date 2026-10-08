@@ -11,7 +11,7 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 - **Never commit real staff data.** Only fictional sample data goes in the repo: no real names, exports, backups, CSVs or spreadsheets. `.gitignore` blocks common export formats; don't override it. Sample data lives in `src/data/sampleData.ts` and every name there is invented.
 - **All data stays in the browser.** No server calls, analytics or third-party data services.
 - **All reads and writes go through the `Repository` interface** (`src/data/repository.ts`). Only `src/data/dexieRepository.ts` may import Dexie.
-- **FTE comes from days and is never entered.** Patterns are stored as 10 fortnight days (Week A Mon–Fri, Week B Mon–Fri). Weekly is the default and repeats Week A, so 1 weekday = 0.2 FTE and 1 fortnight day = 0.1 FTE. Whole days only. Use the helpers in `src/domain/dayPattern.ts`.
+- **FTE comes from days and is never entered** (except entitlement, below). Patterns are stored as 10 fortnight days (Week A Mon–Fri, Week B Mon–Fri). Weekly is the default and repeats Week A, so 1 weekday = 0.2 FTE and 1 fortnight day = 0.1 FTE. Whole days only. Use the helpers in `src/domain/dayPattern.ts`.
 - **Ask Bec about open items before assuming them.** These are listed under "Open items for Bec" in PLAN.md. Use clearly marked placeholders (`TODO(open item)`) only when Bec agrees.
 - **One build phase per branch and pull request.** Each phase ends with unit tests for its logic and a short manual test checklist in the PR.
 
@@ -20,6 +20,7 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 - **Position types:** Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher.
   - The same list is used both for the entitlement breakdown and as the roles staff are allocated to.
 - **Position categories:** `class_teacher` (Classroom Teacher), `executive` (both AP roles and DP) and `other_teaching` (the rest).
+- **Entitlement is exact decimal FTE**, entered as the department supplies it (up to 3 decimals, e.g. 2.316) and stored as integer milli-FTE (`totalMilliFte`, `milliFte`; 1000 = 1.0 FTE). Use `parseFte`/`formatFte`/`milliFteOf` in `src/domain/fte.ts`; never do FTE arithmetic in floating point.
 - **IT/privacy confirmation** for storing real names is still pending, so development uses fictional data only.
 
 ## Stack and layout

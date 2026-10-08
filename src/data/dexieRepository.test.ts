@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import { createDexieRepository } from './dexieRepository';
 import { SAMPLE_PLANNING_YEAR_ID, buildSampleData } from './sampleData';
 
@@ -87,6 +88,30 @@ describe('Dexie repository', () => {
     await repo.clearAll();
     expect(await repo.planningYears.list()).toEqual([]);
     expect(await repo.staff.listByYear(SAMPLE_PLANNING_YEAR_ID)).toEqual([]);
+    repo.close();
+  });
+});
+
+describe('Dexie schema upgrades', () => {
+  it('converts Phase 1 fortnight-day entitlements to milli-FTE', async () => {
+    const name = `upgrade-db-${n++}`;
+    const v1 = new Dexie(name);
+    v1.version(1).stores({ planningYears: 'id, year', entitlements: 'id, planningYearId' });
+    await v1.table('entitlements').put({
+      id: 'e',
+      planningYearId: 'y',
+      totalFortnightDays: 30,
+      lines: [{ positionTypeId: 'pt', fortnightDays: 22 }],
+    });
+    v1.close();
+
+    const repo = createDexieRepository(name);
+    expect(await repo.entitlements.get('e')).toEqual({
+      id: 'e',
+      planningYearId: 'y',
+      totalMilliFte: 3000,
+      lines: [{ positionTypeId: 'pt', milliFte: 2200 }],
+    });
     repo.close();
   });
 });

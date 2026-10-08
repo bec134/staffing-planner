@@ -5,40 +5,14 @@
  * never commit real staff data to the repository (see CLAUDE.md).
  */
 import { FULL_TIME, fortnightlyPattern, weekdays } from '../domain/dayPattern';
-import type {
-  Entitlement,
-  PlanningYear,
-  PositionCategory,
-  PositionType,
-  Staff,
-} from '../domain/types';
+import { defaultPositionTypeId, defaultPositionTypes } from '../domain/positionTypes';
+import type { Entitlement, PlanningYear, Staff } from '../domain/types';
 import type { PlanningYearSnapshot } from './repository';
 
 export const SAMPLE_PLANNING_YEAR_ID = 'sample-2027';
 const Y = SAMPLE_PLANNING_YEAR_ID;
 
-/** Position types supplied by Bec; used for entitlement and as allocatable roles. */
-export const DEFAULT_POSITION_TYPES: readonly { name: string; category: PositionCategory }[] = [
-  { name: 'Classroom Teacher', category: 'class_teacher' },
-  { name: 'Assistant Principal', category: 'executive' },
-  { name: 'Assistant Principal - Curriculum & Instruction', category: 'executive' },
-  { name: 'Deputy Principal', category: 'executive' },
-  { name: 'Teacher Librarian', category: 'other_teaching' },
-  { name: 'RFF Teacher', category: 'other_teaching' },
-  { name: 'Executive Release Teacher', category: 'other_teaching' },
-  { name: 'QTSS Teacher', category: 'other_teaching' },
-  { name: 'Learning & Support Teacher', category: 'other_teaching' },
-  { name: 'EaLD Teacher', category: 'other_teaching' },
-];
-
-const slug = (name: string) =>
-  name
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-
-export const positionTypeId = (name: string) => `${Y}-pt-${slug(name)}`;
+export const positionTypeId = (name: string) => defaultPositionTypeId(Y, name);
 
 export function buildSampleData(now = new Date().toISOString()): PlanningYearSnapshot {
   const planningYear: PlanningYear = {
@@ -49,32 +23,27 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     updatedAt: now,
   };
 
-  const positionTypes: PositionType[] = DEFAULT_POSITION_TYPES.map((pt, i) => ({
-    id: positionTypeId(pt.name),
-    planningYearId: Y,
-    name: pt.name,
-    category: pt.category,
-    sortOrder: i,
-  }));
+  const positionTypes = defaultPositionTypes(Y);
 
-  // Fictional entitlement figures, in fortnight days (10 days = 1.0 FTE).
+  // Fictional entitlement figures in milli-FTE (1000 = 1.0 FTE), with some
+  // department-style decimals.
   const lines: [string, number][] = [
-    ['Classroom Teacher', 120],
-    ['Assistant Principal', 30],
-    ['Assistant Principal - Curriculum & Instruction', 10],
-    ['Deputy Principal', 10],
-    ['Teacher Librarian', 8],
-    ['RFF Teacher', 22],
-    ['Executive Release Teacher', 4],
-    ['QTSS Teacher', 6],
-    ['Learning & Support Teacher', 10],
-    ['EaLD Teacher', 4],
+    ['Classroom Teacher', 12000],
+    ['Assistant Principal', 3000],
+    ['Assistant Principal - Curriculum & Instruction', 1000],
+    ['Deputy Principal', 1000],
+    ['Teacher Librarian', 842],
+    ['RFF Teacher', 2316],
+    ['Executive Release Teacher', 400],
+    ['QTSS Teacher', 526],
+    ['Learning & Support Teacher', 1000],
+    ['EaLD Teacher', 400],
   ];
   const entitlement: Entitlement = {
     id: `${Y}-entitlement`,
     planningYearId: Y,
-    totalFortnightDays: lines.reduce((sum, [, days]) => sum + days, 0),
-    lines: lines.map(([name, fortnightDays]) => ({ positionTypeId: positionTypeId(name), fortnightDays })),
+    totalMilliFte: lines.reduce((sum, [, milliFte]) => sum + milliFte, 0),
+    lines: lines.map(([name, milliFte]) => ({ positionTypeId: positionTypeId(name), milliFte })),
   };
 
   const person = (

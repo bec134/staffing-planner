@@ -39,15 +39,18 @@ export interface PositionType extends Scoped {
   sortOrder: number;
 }
 
+/**
+ * Entitlement is entered as exact decimal FTE (as the department supplies it)
+ * and stored as whole thousandths of an FTE, so 2.316 FTE = 2316. See fte.ts.
+ */
 export interface EntitlementLine {
   positionTypeId: Id;
-  /** Whole fortnight days; FTE = days / 10. */
-  fortnightDays: number;
+  milliFte: number;
 }
 
 export interface Entitlement extends Scoped {
-  /** Total entitlement in fortnight days; the breakdown should sum to this. */
-  totalFortnightDays: number;
+  /** Total entitlement; the breakdown should sum to this. */
+  totalMilliFte: number;
   lines: EntitlementLine[];
 }
 
