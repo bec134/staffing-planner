@@ -2,7 +2,7 @@
  * Entitlement vs allocated vs remaining (PLAN.md module 1).
  */
 import { milliFteOf, type MilliFte } from './fte';
-import type { Allocation, Entitlement, Id, PositionCategory, PositionType } from './types';
+import type { Allocation, Entitlement, Id, PositionCategory, PositionType, Role } from './types';
 
 export interface FteFigures {
   entitled: MilliFte;
@@ -28,7 +28,7 @@ export interface EntitlementSummary {
   breakdownTotal: MilliFte;
   /** entered total − breakdown sum; 0 when the breakdown balances. */
   breakdownDifference: MilliFte;
-  /** Allocations whose position type no longer exists. */
+  /** Allocations whose role or position type no longer exists. */
   unknownPositionTypeAllocated: MilliFte;
 }
 
@@ -38,16 +38,22 @@ const figures = (entitled: MilliFte, allocated: MilliFte): FteFigures => ({
   remaining: entitled - allocated,
 });
 
+/** Smallest shortfall worth flagging: one fortnight day (0.1 FTE). Bec. */
+export const UNDER_ENTITLEMENT_TOLERANCE: MilliFte = 100;
+
 /**
+ * Allocated FTE counts against the position type of the role it fills.
+ *
  * Allocations that cover someone's leave are excluded: the person on leave
  * still holds that entitlement, so counting the cover as well would double
- * count it. (Revisit with Bec in Phase 4 if some leave cover should count.)
+ * count it (to confirm with Bec; see PLAN.md open items).
  *
- * TODO(Phase 3): allocated FTE is not yet pro-rated for part-year allocations.
+ * Every allocation counts as full-year for now (Bec, Phase 3).
  */
 export function summariseEntitlement(
   entitlement: Entitlement | undefined,
   positionTypes: PositionType[],
+  roles: Role[],
   allocations: Allocation[],
 ): EntitlementSummary {
   const entitledByType = new Map<Id, MilliFte>();
@@ -55,10 +61,12 @@ export function summariseEntitlement(
     entitledByType.set(line.positionTypeId, (entitledByType.get(line.positionTypeId) ?? 0) + line.milliFte);
   }
 
+  const roleType = new Map(roles.map((r) => [r.id, r.positionTypeId]));
   const allocatedByType = new Map<Id, MilliFte>();
   for (const a of allocations) {
     if (a.coveringLeaveId) continue;
-    allocatedByType.set(a.positionTypeId, (allocatedByType.get(a.positionTypeId) ?? 0) + milliFteOf(a.days));
+    const typeId = roleType.get(a.roleId) ?? `missing-role:${a.roleId}`;
+    allocatedByType.set(typeId, (allocatedByType.get(typeId) ?? 0) + milliFteOf(a.days));
   }
 
   const ordered = [...positionTypes].sort((a, b) => a.sortOrder - b.sortOrder);

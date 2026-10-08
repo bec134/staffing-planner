@@ -1,5 +1,7 @@
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { PlanningYearProvider } from './components/PlanningYearContext';
+import { WarningsPanel } from './components/WarningsPanel';
+import { AllocationPage } from './pages/allocation/AllocationPage';
 import { EntitlementPage } from './pages/entitlement/EntitlementPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
@@ -36,10 +38,12 @@ export function App() {
             <p className="nav-note">Data stays in this browser. Nothing is sent to a server.</p>
           </nav>
           <main className="content">
+            <WarningsPanel />
             <Routes>
               <Route path="/" element={<OverviewPage />} />
               <Route path="/entitlement" element={<EntitlementPage />} />
-              {MODULES.filter((m) => m.path !== '/entitlement').map((m) => (
+              <Route path="/allocation/*" element={<AllocationPage />} />
+              {MODULES.filter((m) => m.path !== '/entitlement' && m.path !== '/allocation').map((m) => (
                 <Route key={m.path} path={m.path} element={<PlaceholderPage title={m.label} phase={m.phase} />} />
               ))}
               <Route path="*" element={<PlaceholderPage title="Not found" />} />

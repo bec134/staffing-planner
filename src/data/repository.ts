@@ -15,6 +15,7 @@ import type {
   Leave,
   PlanningYear,
   PositionType,
+  Role,
   Staff,
 } from '../domain/types';
 
@@ -25,6 +26,7 @@ export interface ScopedCollection<T extends { id: Id; planningYearId: Id }> {
   put(record: T): Promise<void>;
   putMany(records: T[]): Promise<void>;
   delete(id: Id): Promise<void>;
+  deleteMany(ids: Id[]): Promise<void>;
 }
 
 export interface PlanningYearCollection {
@@ -39,6 +41,7 @@ export interface PlanningYearSnapshot {
   positionTypes: PositionType[];
   entitlements: Entitlement[];
   staff: Staff[];
+  roles: Role[];
   leave: Leave[];
   allocations: Allocation[];
   classStructures: ClassStructure[];
@@ -51,6 +54,7 @@ export interface Repository {
   positionTypes: ScopedCollection<PositionType>;
   entitlements: ScopedCollection<Entitlement>;
   staff: ScopedCollection<Staff>;
+  roles: ScopedCollection<Role>;
   leave: ScopedCollection<Leave>;
   allocations: ScopedCollection<Allocation>;
   classStructures: ScopedCollection<ClassStructure>;

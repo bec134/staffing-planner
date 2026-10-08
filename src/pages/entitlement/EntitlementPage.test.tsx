@@ -36,13 +36,13 @@ describe('Entitlement page', () => {
 
     type('Total entitlement', '3.316');
     type('Classroom Teacher', '2');
-    expect(screen.getByRole('status')).toHaveTextContent('1.316 FTE of the total is not yet broken down');
+    expect(screen.getByRole('status', { name: 'Breakdown check' })).toHaveTextContent('1.316 FTE of the total is not yet broken down');
 
     type('RFF Teacher', '1.5');
-    expect(screen.getByRole('status')).toHaveTextContent('The breakdown is 0.184 FTE more than the total');
+    expect(screen.getByRole('status', { name: 'Breakdown check' })).toHaveTextContent('The breakdown is 0.184 FTE more than the total');
 
     type('RFF Teacher', '1.316');
-    expect(screen.getByRole('status')).toHaveTextContent('This matches the total');
+    expect(screen.getByRole('status', { name: 'Breakdown check' })).toHaveTextContent('This matches the total');
 
     fireEvent.click(screen.getByRole('button', { name: 'Save entitlement' }));
     await waitFor(() => expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument());

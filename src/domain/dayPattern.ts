@@ -94,3 +94,66 @@ export function describePattern(p: DayPattern): string {
   if (p.mode === 'weekly') return names(weekA);
   return `A: ${names(weekA)} · B: ${names(p.days.slice(WEEKDAYS.length))}`;
 }
+
+export function emptyPattern(mode: PatternMode = 'weekly'): DayPattern {
+  return { mode, days: Array<boolean>(FORTNIGHT_DAYS).fill(false) };
+}
+
+/** Days in both patterns. Fortnightly if either input is. */
+export function intersect(a: DayPattern, b: DayPattern): DayPattern {
+  return {
+    mode: a.mode === 'fortnightly' || b.mode === 'fortnightly' ? 'fortnightly' : 'weekly',
+    days: a.days.map((d, i) => d && b.days[i] === true),
+  };
+}
+
+/** Days in `a` that are not in `b`. */
+export function subtract(a: DayPattern, b: DayPattern): DayPattern {
+  return {
+    mode: a.mode === 'fortnightly' || b.mode === 'fortnightly' ? 'fortnightly' : 'weekly',
+    days: a.days.map((d, i) => d && b.days[i] !== true),
+  };
+}
+
+export function union(patterns: DayPattern[]): DayPattern {
+  const days = Array<boolean>(FORTNIGHT_DAYS).fill(false);
+  let fortnightly = false;
+  for (const p of patterns) {
+    if (p.mode === 'fortnightly') fortnightly = true;
+    p.days.forEach((d, i) => {
+      if (d) days[i] = true;
+    });
+  }
+  return { mode: fortnightly ? 'fortnightly' : 'weekly', days };
+}
+
+/**
+ * True when Week A and Week B hold the same days, so the pattern can be
+ * shown weekly regardless of its stored mode.
+ */
+export function repeatsWeekly(p: DayPattern): boolean {
+  return WEEKDAYS.every((_, i) => p.days[i] === p.days[i + WEEKDAYS.length]);
+}
+
+/** Label for a fortnight-day index, e.g. 0 → "Mon (A)", 6 → "Tue (B)". */
+export function fortnightDayLabel(index: number): string {
+  const week = index < WEEKDAYS.length ? 'A' : 'B';
+  return `${WEEKDAYS[index % WEEKDAYS.length]} (${week})`;
+}
+
+/**
+ * Describe a set of fortnight-day indices compactly: a weekday held in both
+ * weeks is shown once ("Mon"); otherwise the week is named ("Tue (A)").
+ */
+export function describeDayIndices(indices: number[]): string {
+  const set = new Set(indices);
+  const parts: string[] = [];
+  WEEKDAYS.forEach((name, i) => {
+    const a = set.has(i);
+    const b = set.has(i + WEEKDAYS.length);
+    if (a && b) parts.push(name);
+    else if (a) parts.push(`${name} (A)`);
+    else if (b) parts.push(`${name} (B)`);
+  });
+  return parts.join(', ');
+}

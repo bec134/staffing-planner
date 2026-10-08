@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom';
 import { summariseEntitlement } from '../../domain/entitlement';
 import type { Entitlement } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
+import { usePlanData } from '../../data/usePlanData';
 import { usePlanningYear } from '../../components/PlanningYearContext';
 import { EntitlementDashboard } from './EntitlementDashboard';
 import { EntitlementForm } from './EntitlementForm';
 import { PositionTypesEditor } from './PositionTypesEditor';
-import { useEntitlementData } from './useEntitlementData';
 
 export function EntitlementPage() {
   const repo = useRepository();
   const { current, loading } = usePlanningYear();
-  const { data, reload } = useEntitlementData(current?.id);
+  const data = usePlanData(current?.id);
 
   if (loading) return <p>Loading…</p>;
   if (!current) {
@@ -26,11 +26,10 @@ export function EntitlementPage() {
   }
   if (!data) return <p>Loading…</p>;
 
-  const summary = summariseEntitlement(data.entitlement, data.positionTypes, data.allocations);
-  const save = async (entitlement: Entitlement) => {
-    await repo.entitlements.put(entitlement);
-    await reload();
-  };
+  const positionTypes = [...data.positionTypes].sort((a, b) => a.sortOrder - b.sortOrder);
+  const entitlement = data.entitlements[0];
+  const summary = summariseEntitlement(entitlement, positionTypes, data.roles, data.allocations);
+  const save = (e: Entitlement) => repo.entitlements.put(e);
 
   return (
     <section>
@@ -41,16 +40,15 @@ export function EntitlementPage() {
       <EntitlementDashboard summary={summary} />
       <EntitlementForm
         planningYearId={current.id}
-        positionTypes={data.positionTypes}
-        entitlement={data.entitlement}
+        positionTypes={positionTypes}
+        entitlement={entitlement}
         onSave={save}
       />
       <PositionTypesEditor
         planningYearId={current.id}
-        positionTypes={data.positionTypes}
-        entitlement={data.entitlement}
-        allocations={data.allocations}
-        onChange={reload}
+        positionTypes={positionTypes}
+        entitlement={entitlement}
+        roles={data.roles}
       />
     </section>
   );

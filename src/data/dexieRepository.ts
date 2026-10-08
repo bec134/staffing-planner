@@ -12,6 +12,7 @@ const SCOPED_TABLES = [
   'positionTypes',
   'entitlements',
   'staff',
+  'roles',
   'leave',
   'allocations',
   'classStructures',
@@ -27,6 +28,7 @@ class StaffingDb extends Dexie {
   positionTypes!: Table<RecordOf<'positionTypes'>, Id>;
   entitlements!: Table<RecordOf<'entitlements'>, Id>;
   staff!: Table<RecordOf<'staff'>, Id>;
+  roles!: Table<RecordOf<'roles'>, Id>;
   leave!: Table<RecordOf<'leave'>, Id>;
   allocations!: Table<RecordOf<'allocations'>, Id>;
   classStructures!: Table<RecordOf<'classStructures'>, Id>;
@@ -63,6 +65,11 @@ class StaffingDb extends Dexie {
           );
         }),
     );
+    // v3: roles; allocations point at a role instead of a position type.
+    this.version(3).stores({
+      roles: 'id, planningYearId, positionTypeId',
+      allocations: 'id, planningYearId, staffId, roleId, coveringLeaveId',
+    });
   }
 
   scopedTables(): Table<Scoped, Id>[] {
@@ -81,6 +88,7 @@ function scopedCollection<T extends Scoped>(table: Table<T, Id>): ScopedCollecti
       await table.bulkPut(records);
     },
     delete: (id) => table.delete(id),
+    deleteMany: (ids) => table.bulkDelete(ids),
   };
 }
 
@@ -101,6 +109,7 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
     positionTypes: scopedCollection(db.positionTypes),
     entitlements: scopedCollection(db.entitlements),
     staff: scopedCollection(db.staff),
+    roles: scopedCollection(db.roles),
     leave: scopedCollection(db.leave),
     allocations: scopedCollection(db.allocations),
     classStructures: scopedCollection(db.classStructures),
@@ -118,6 +127,7 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
           positionTypes: await byYear('positionTypes'),
           entitlements: await byYear('entitlements'),
           staff: await byYear('staff'),
+          roles: await byYear('roles'),
           leave: await byYear('leave'),
           allocations: await byYear('allocations'),
           classStructures: await byYear('classStructures'),

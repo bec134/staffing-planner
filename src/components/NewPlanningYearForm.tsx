@@ -22,6 +22,7 @@ export function NewPlanningYearForm({ onCreated }: { onCreated(id: Id): Promise<
         positionTypes: plan.positionTypes,
         entitlements: [plan.entitlement],
         staff: [],
+        roles: [],
         leave: [],
         allocations: [],
         classStructures: [],
