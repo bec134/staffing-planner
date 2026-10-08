@@ -55,7 +55,7 @@ Nine core records, all scoped to a planning year so a school can keep more than 
 | Record | Key fields |
 | --- | --- |
 | PlanningYear | year, school name, created/updated dates |
-| Entitlement | planning year, total FTE, list of {position type, fortnight days} |
+| Entitlement | planning year, total FTE, list of {position type, FTE} — exact decimal FTE as supplied by the department (up to 3 decimals), stored as thousandths |
 | PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
 | Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year |
 | Leave | staff member, start date, end date, FTE affected, leave type (open text until Bec supplies a list), fortnight days on leave |
@@ -66,7 +66,7 @@ Nine core records, all scoped to a planning year so a school can keep more than 
 
 Allocations carry dates so one record type covers full-year roles and date-based leave cover.
 
-**FTE rule:** most staff work the same days every week, so the default is a weekly pattern (Mon–Fri, 1 day = 0.2 FTE). For the rare case that needs it (e.g. 0.5 FTE = 5 days per fortnight), a staff member or role can switch to a fortnightly pattern (Week A and Week B, 1 day = 0.1 FTE). Behind the scenes everything is stored as 10 fortnight days, with a weekly pattern simply repeated, so calculations work the same for both. Whole days only; FTE is always calculated from days, never entered separately.
+**FTE rule:** most staff work the same days every week, so the default is a weekly pattern (Mon–Fri, 1 day = 0.2 FTE). For the rare case that needs it (e.g. 0.5 FTE = 5 days per fortnight), a staff member or role can switch to a fortnightly pattern (Week A and Week B, 1 day = 0.1 FTE). Behind the scenes everything is stored as 10 fortnight days, with a weekly pattern simply repeated, so calculations work the same for both. Whole days only; FTE is always calculated from days, never entered separately. The one exception is entitlement, which is entered as exact decimal FTE (e.g. 2.316) because that is how the department supplies it; allocations are still whole days, so the dashboard can show small remainders.
 
 ## Module specifications
 
@@ -167,3 +167,4 @@ These details weren't assumed; Claude Code should ask for them, or use placehold
 - [ ] Sample CSV layouts for staff and leave imports.
 - [ ] Preferred layouts for printed/PDF reports.
 - [ ] Whether passphrase-encrypted exports are wanted in the first release.
+- [ ] Confirm that allocations covering leave should not count against entitlement (current behaviour: the person on leave keeps the entitlement, so cover is excluded).

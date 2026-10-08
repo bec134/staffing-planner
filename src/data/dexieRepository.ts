@@ -46,6 +46,23 @@ class StaffingDb extends Dexie {
       enrolments: 'id, planningYearId',
       classRules: 'id, planningYearId',
     });
+    // v2: entitlement moved from whole fortnight days to exact milli-FTE.
+    this.version(2).upgrade((tx) =>
+      tx
+        .table('entitlements')
+        .toCollection()
+        .modify((e: Record<string, unknown>) => {
+          if (typeof e.totalFortnightDays === 'number') {
+            e.totalMilliFte = e.totalFortnightDays * 100;
+            delete e.totalFortnightDays;
+          }
+          e.lines = ((e.lines as Record<string, unknown>[] | undefined) ?? []).map((l) =>
+            typeof l.fortnightDays === 'number'
+              ? { positionTypeId: l.positionTypeId, milliFte: l.fortnightDays * 100 }
+              : l,
+          );
+        }),
+    );
   }
 
   scopedTables(): Table<Scoped, Id>[] {
