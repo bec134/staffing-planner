@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { movePositionType, validatePositionTypeName } from '../../domain/positionTypes';
 import {
   POSITION_CATEGORY_LABELS,
-  type Allocation,
   type Entitlement,
   type Id,
   type PositionCategory,
   type PositionType,
+  type Role,
 } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 
@@ -14,8 +14,7 @@ interface Props {
   planningYearId: Id;
   positionTypes: PositionType[];
   entitlement: Entitlement | undefined;
-  allocations: Allocation[];
-  onChange(): Promise<void>;
+  roles: Role[];
 }
 
 const CATEGORIES = Object.keys(POSITION_CATEGORY_LABELS) as PositionCategory[];
@@ -40,7 +39,7 @@ function NameInput({ pt, others, onRename }: { pt: PositionType; others: Positio
   );
 }
 
-export function PositionTypesEditor({ planningYearId, positionTypes, entitlement, allocations, onChange }: Props) {
+export function PositionTypesEditor({ planningYearId, positionTypes, entitlement, roles }: Props) {
   const repo = useRepository();
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState<PositionCategory>('other_teaching');
@@ -49,19 +48,17 @@ export function PositionTypesEditor({ planningYearId, positionTypes, entitlement
 
   const update = async (pt: PositionType) => {
     await repo.positionTypes.put(pt);
-    await onChange();
   };
 
   const move = async (id: Id, direction: -1 | 1) => {
     await repo.positionTypes.putMany(movePositionType(positionTypes, id, direction));
-    await onChange();
   };
 
   const remove = async (pt: PositionType) => {
     setMessage(null);
-    const allocated = allocations.filter((a) => a.positionTypeId === pt.id).length;
-    if (allocated > 0) {
-      setMessage(`"${pt.name}" can't be deleted while ${allocated} allocation(s) use it.`);
+    const used = roles.filter((r) => r.positionTypeId === pt.id).length;
+    if (used > 0) {
+      setMessage(`"${pt.name}" can't be deleted while ${used} role(s) use it. Change or delete those roles first.`);
       return;
     }
     const line = entitlement?.lines.find((l) => l.positionTypeId === pt.id);
@@ -74,7 +71,6 @@ export function PositionTypesEditor({ planningYearId, positionTypes, entitlement
       });
     }
     await repo.positionTypes.delete(pt.id);
-    await onChange();
   };
 
   const add = async () => {
@@ -87,7 +83,6 @@ export function PositionTypesEditor({ planningYearId, positionTypes, entitlement
       sortOrder: Math.max(-1, ...positionTypes.map((p) => p.sortOrder)) + 1,
     });
     setNewName('');
-    await onChange();
   };
 
   return (

@@ -50,7 +50,7 @@ Note: a GitHub Pages site is publicly reachable, but it holds no data — each u
 
 ## Data model
 
-Nine core records, all scoped to a planning year so a school can keep more than one year's plan.
+Ten core records, all scoped to a planning year so a school can keep more than one year's plan.
 
 | Record | Key fields |
 | --- | --- |
@@ -59,12 +59,13 @@ Nine core records, all scoped to a planning year so a school can keep more than 
 | PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
 | Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year |
 | Leave | staff member, start date, end date, FTE affected, leave type (open text until Bec supplies a list), fortnight days on leave |
-| Allocation | staff member, role or class, fortnight days, start date, end date, covering-for (optional link to a Leave record) |
+| Role | name (e.g. "3/4B", "RFF 1"), position type, fortnight days it runs — added with Bec in Phase 3 so staff are allocated to named roles and unfilled role days can be found |
+| Allocation | staff member, role, fortnight days, start date, end date (optional; omitted = whole year), covering-for (optional link to a Leave record) |
 | ClassStructure | grade/grade combination, number of classes, students per class, rule set used |
 | Enrolment | grade, projected student count (numbers only) |
 | ClassRules | max class size per grade, permitted composite combinations, available classrooms/teachers |
 
-Allocations carry dates so one record type covers full-year roles and date-based leave cover.
+Allocations carry dates so one record type covers full-year roles and date-based leave cover. Until Phase 4, every allocation is treated as full-year (Bec).
 
 **FTE rule:** most staff work the same days every week, so the default is a weekly pattern (Mon–Fri, 1 day = 0.2 FTE). For the rare case that needs it (e.g. 0.5 FTE = 5 days per fortnight), a staff member or role can switch to a fortnightly pattern (Week A and Week B, 1 day = 0.1 FTE). Behind the scenes everything is stored as 10 fortnight days, with a weekly pattern simply repeated, so calculations work the same for both. Whole days only; FTE is always calculated from days, never entered separately. The one exception is entitlement, which is entered as exact decimal FTE (e.g. 2.316) because that is how the department supplies it; allocations are still whole days, so the dashboard can show small remainders.
 
@@ -113,7 +114,7 @@ Three checks run whenever data changes and appear in a warnings panel, with a li
 
 | Flag | Triggers when |
 | --- | --- |
-| Over/under entitlement | Allocated FTE differs from entitlement, in total or for a position type |
+| Over/under entitlement | Allocated FTE differs from entitlement, in total or for a position type. Over is always flagged; under only when short by 0.1 FTE (one fortnight day) or more, since smaller decimal remainders can't be filled (Bec) |
 | Staff over their FTE | A staff member is allocated on a day they don't work, or to two roles on the same day |
 | Unfilled roles or leave gaps | A role has a day with no one assigned, including days left by leave |
 
@@ -123,7 +124,7 @@ Checks are date- and day-aware: two part-year roles only clash if their dates ov
 
 **Import**
 
-- CSV for staff, leave, enrolment counts and staff intentions, with a preview and column-mapping step before anything is saved.
+- CSV for staff, leave, enrolment counts and staff intentions, with a preview and column-mapping step before anything is saved. Staff import (Phase 3) maps name, employment type, current role and days worked (one text column such as "Mon Tue Wed", or a yes/no column per weekday); fortnightly patterns are set by hand afterwards.
 - Full backup file (JSON) to restore a plan or move it to another device.
 
 **Export**

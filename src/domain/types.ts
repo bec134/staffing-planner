@@ -82,14 +82,25 @@ export interface Leave extends Scoped {
   leaveType: string;
 }
 
+/**
+ * A role staff are allocated to, e.g. "Class 3/4B" or "RFF 1". Its FTE comes
+ * from the days it runs. Roles run all year for now (Bec: full-year only
+ * until date-based leave cover in Phase 4).
+ */
+export interface Role extends Scoped {
+  name: string;
+  positionTypeId: Id;
+  days: DayPattern;
+  sortOrder: number;
+}
+
 export interface Allocation extends Scoped {
   staffId: Id;
-  positionTypeId: Id;
-  /** Optional class label (e.g. a class created from a class structure). */
-  classLabel?: string;
+  roleId: Id;
   days: DayPattern;
-  startDate: IsoDate;
-  endDate: IsoDate;
+  /** Omitted = whole planning year. Date-based allocations arrive in Phase 4. */
+  startDate?: IsoDate;
+  endDate?: IsoDate;
   /** Set when this allocation covers someone's leave. */
   coveringLeaveId?: Id;
 }

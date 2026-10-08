@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Id, PlanningYear } from '../domain/types';
-import { useRepository } from '../data/RepositoryContext';
+import { useDataVersion, useRepository } from '../data/RepositoryContext';
 
 interface PlanningYearState {
   years: PlanningYear[];
@@ -31,6 +31,7 @@ function save(id: Id) {
 
 export function PlanningYearProvider({ children }: { children: ReactNode }) {
   const repo = useRepository();
+  const version = useDataVersion();
   const [years, setYears] = useState<PlanningYear[]>([]);
   const [currentId, setCurrentId] = useState<Id | null>(readSaved);
   const [loading, setLoading] = useState(true);
@@ -42,7 +43,7 @@ export function PlanningYearProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+  }, [refresh, version]);
 
   const select = useCallback((id: Id) => {
     setCurrentId(id);

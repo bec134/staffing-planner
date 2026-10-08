@@ -21,6 +21,10 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
   - The same list is used both for the entitlement breakdown and as the roles staff are allocated to.
 - **Position categories:** `class_teacher` (Classroom Teacher), `executive` (both AP roles and DP) and `other_teaching` (the rest).
 - **Entitlement is exact decimal FTE**, entered as the department supplies it (up to 3 decimals, e.g. 2.316) and stored as integer milli-FTE (`totalMilliFte`, `milliFte`; 1000 = 1.0 FTE). Use `parseFte`/`formatFte`/`milliFteOf` in `src/domain/fte.ts`; never do FTE arithmetic in floating point.
+- **Roles:** staff are allocated to named `Role` records (position type + days), not directly to position types. A role day is held by one person (leave cover aside); a person never holds two roles on the same day and is only allocated on days they work. Rules live in `src/domain/allocation.ts`.
+- **Full-year allocations for now:** allocations count as whole-year against entitlement until Phase 4 adds date-based cover.
+- **Under-entitlement tolerance:** flag "under" only when short by ≥ 0.1 FTE (`UNDER_ENTITLEMENT_TOLERANCE`); always flag "over".
+- **Flags** are computed in `src/domain/flags.ts` from the whole plan and shown in the warnings panel on every screen. Writes go through the observable repository, so screens and flags refresh automatically (`usePlanData`).
 - **IT/privacy confirmation** for storing real names is still pending, so development uses fictional data only.
 
 ## Stack and layout

@@ -41,8 +41,8 @@ export function EntitlementDashboard({ summary }: { summary: EntitlementSummary 
         </div>
       </div>
       <p className="muted small">
-        FTE. Negative remaining means over-allocated. Allocations are added in Phase 3; leave cover is not counted
-        against entitlement.
+        FTE. Allocated is the staff days allocated to roles of each position type. Negative remaining means
+        over-allocated. Leave cover is not counted against entitlement.
       </p>
 
       <table>
@@ -81,7 +81,7 @@ export function EntitlementDashboard({ summary }: { summary: EntitlementSummary 
       </table>
       {summary.unknownPositionTypeAllocated > 0 && (
         <p className="warning" role="alert">
-          {formatFte(summary.unknownPositionTypeAllocated)} FTE is allocated to position types that no longer exist.
+          {formatFte(summary.unknownPositionTypeAllocated)} FTE is allocated to roles or position types that no longer exist.
         </p>
       )}
     </section>

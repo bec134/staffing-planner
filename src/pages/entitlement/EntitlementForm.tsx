@@ -130,7 +130,7 @@ export function EntitlementForm({ planningYearId, positionTypes, entitlement, on
         </table>
 
         {total.ok && (
-          <p className={difference === 0 ? 'ok' : 'warning'} role="status">
+          <p className={difference === 0 ? 'ok' : 'warning'} role="status" aria-label="Breakdown check">
             Breakdown sums to {formatFte(breakdownTotal)} FTE.{' '}
             {difference === 0
               ? 'This matches the total.'

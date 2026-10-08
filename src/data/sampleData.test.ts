@@ -29,4 +29,25 @@ describe('sample data', () => {
     const id = sample.planningYear.id;
     expect([...sample.positionTypes, ...sample.entitlements, ...sample.staff].every((r) => r.planningYearId === id)).toBe(true);
   });
+
+  it('has valid allocations: real staff and roles, on days both work, with no clashes', async () => {
+    const { computeFlags } = await import('../domain/flags');
+    const flags = computeFlags({
+      entitlement: sample.entitlements[0],
+      positionTypes: sample.positionTypes,
+      roles: sample.roles,
+      staff: sample.staff,
+      allocations: sample.allocations,
+    });
+    const staffIds = new Set(sample.staff.map((s) => s.id));
+    const roleIds = new Set(sample.roles.map((r) => r.id));
+    expect(sample.allocations.every((a) => staffIds.has(a.staffId) && roleIds.has(a.roleId))).toBe(true);
+    // Only entitlement shortfalls; no staff problems in the sample.
+    expect(flags.every((f) => f.kind === 'under_entitlement')).toBe(true);
+    expect(flags.map((f) => f.message)).toContain(
+      'RFF Teacher: allocated 0.7 FTE, 0.616 under the entitlement of 1.316',
+    );
+    // Teacher Librarian is 0.042 under: shown on the dashboard but not flagged.
+    expect(flags.some((f) => f.message.startsWith('Teacher Librarian'))).toBe(false);
+  });
 });

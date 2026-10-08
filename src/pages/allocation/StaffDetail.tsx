@@ -1,0 +1,89 @@
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { staffBusyDays } from '../../domain/allocation';
+import { subtract } from '../../domain/dayPattern';
+import { staffLink, type Flag } from '../../domain/flags';
+import { formatFte, milliFteOf } from '../../domain/fte';
+import { EMPLOYMENT_TYPE_LABELS } from '../../domain/types';
+import { useRepository } from '../../data/RepositoryContext';
+import { AllocationTable } from './AllocationTable';
+import { StaffForm } from './StaffForm';
+import { daysLabel, type PlanData } from './shared';
+
+export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) {
+  const { id } = useParams();
+  const repo = useRepository();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState(false);
+  const staff = data.staff.find((s) => s.id === id);
+  if (!staff) {
+    return (
+      <p>
+        Staff member not found. <Link to="/allocation">Back to staff</Link>
+      </p>
+    );
+  }
+
+  const allocations = data.allocations.filter((a) => a.staffId === staff.id);
+  const allocatedMilli = allocations.reduce((s, a) => s + milliFteOf(a.days), 0);
+  const unallocated = subtract(staff.workPattern, staffBusyDays(staff.id, data.allocations));
+  const myFlags = flags.filter((f) => f.link === staffLink(staff.id));
+
+  const remove = async () => {
+    const extra = allocations.length ? ` Their ${allocations.length} allocation(s) will also be removed.` : '';
+    if (!confirm(`Delete ${staff.name}?${extra}`)) return;
+    await repo.allocations.deleteMany(allocations.map((a) => a.id));
+    await repo.staff.delete(staff.id);
+    navigate('/allocation');
+  };
+
+  return (
+    <section>
+      <p>
+        <Link to="/allocation">← All staff</Link>
+      </p>
+      <h2>{staff.name}</h2>
+      {myFlags.length > 0 && (
+        <ul className="warning">
+          {myFlags.map((f) => (
+            <li key={f.key}>{f.message}</li>
+          ))}
+        </ul>
+      )}
+      {editing ? (
+        <StaffForm
+          planningYearId={data.planningYear.id}
+          existing={staff}
+          otherNames={data.staff.filter((s) => s.id !== staff.id).map((s) => s.name)}
+          onDone={() => setEditing(false)}
+        />
+      ) : (
+        <>
+          <dl className="facts">
+            <dt>Employment</dt>
+            <dd>{EMPLOYMENT_TYPE_LABELS[staff.employmentType]}</dd>
+            <dt>Current role</dt>
+            <dd>{staff.currentRole || '—'}</dd>
+            <dt>Days worked</dt>
+            <dd>
+              {daysLabel(staff.workPattern)} ({formatFte(milliFteOf(staff.workPattern))} FTE)
+            </dd>
+            <dt>Allocated</dt>
+            <dd>{formatFte(allocatedMilli)} FTE</dd>
+            <dt>Unallocated days</dt>
+            <dd>{daysLabel(unallocated) === 'none' ? '—' : daysLabel(unallocated)}</dd>
+          </dl>
+          <div className="actions">
+            <button className="secondary" onClick={() => setEditing(true)}>
+              Edit details
+            </button>
+            <button className="danger" onClick={() => void remove()}>
+              Delete staff member
+            </button>
+          </div>
+        </>
+      )}
+      <AllocationTable data={data} show="role" allocations={allocations} fixed={{ staffId: staff.id }} />
+    </section>
+  );
+}
