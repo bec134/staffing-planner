@@ -61,9 +61,9 @@ Ten core records, all scoped to a planning year so a school can keep more than o
 | Leave | staff member, start date, end date, FTE affected, leave type (Long Service Leave, Leave without pay, Maternity Leave, Paternity Leave), fortnight days on leave |
 | Role | name (e.g. "3/4B", "RFF 1"), position type, fortnight days it runs — added with Bec in Phase 3 so staff are allocated to named roles and unfilled role days can be found |
 | Allocation | staff member, role, fortnight days, start date, end date (optional; omitted = whole year), covering-for (optional link to a Leave record) |
-| ClassStructure | grade/grade combination, number of classes, students per class, rule set used |
+| ClassStructure | one record per class in the accepted structure: name, students per grade (two grades for a composite), linked class teacher role |
 | Enrolment | grade, projected student count (numbers only) |
-| ClassRules | max class size per grade, permitted composite combinations, available classrooms/teachers |
+| ClassRules | total number of classes, guide (average) size per grade, allowance over guide, permitted composites |
 
 Allocations carry dates so one record type covers full-year roles and date-based leave cover. Until Phase 4, every allocation is treated as full-year (Bec).
 
@@ -103,6 +103,8 @@ Each module is a screen in the app, reachable from a persistent side or top navi
 - Enter rules: max class size per grade, permitted composite combinations, available classrooms/teachers.
 - Generate one or more suggested structures that satisfy the rules; show why any rule can't be met.
 - Accepting a structure creates the class teacher roles used in module 2.
+- Rules from Bec: the user enters the **total number of classes** and students per grade. Guide (average) sizes: Kindergarten 20, Year 1 22, Year 2 24, Years 3–6 30. Composites only as 1/2, 3/4 or 5/6; a composite uses the lower of its two guides (so 1/2 uses 22). A class may go 1 or 2 over its guide rather than creating a composite where possible.
+- The user accepts a suggestion or asks for another, then can edit the accepted structure by hand (rename, move students, add or remove classes). "Create class roles" makes a Classroom Teacher role per class; renaming a class renames its role.
 
 ### 5. Staff intentions
 
@@ -164,7 +166,7 @@ These details weren't assumed; Claude Code should ask for them, or use placehold
 - [ ] Confirm with IT/privacy contact that storing staff names in the browser and in exported files is permitted.
 - [x] List of position types used in the entitlement breakdown. *Supplied: Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher. Categories: class teacher (Classroom Teacher), executive (APs, DP), other teaching (the rest).*
 - [x] List of other teaching roles to allocate (release, support, etc.). *Same list as the position types.*
-- [ ] Class structure rules: max class size per grade, permitted composite combinations, how classroom/teacher limits apply.
+- [x] Class structure rules: max class size per grade, permitted composite combinations, how classroom/teacher limits apply. *Supplied: see module 4 (guides K 20, Y1 22, Y2 24, Y3–6 30; 1–2 over allowed; composites 1/2, 3/4, 5/6; 1/2 composite guide 22; user sets total classes).*
 - [ ] Fields captured for staff intentions, and a sample export from the form you'll use.
 - [x] Leave types to track, if a fixed list is wanted. *Supplied: Long Service Leave; Leave without pay; Maternity Leave; Paternity Leave.*
 - [ ] Sample CSV layouts for staff and leave imports.

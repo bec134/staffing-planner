@@ -122,24 +122,53 @@ export interface Allocation extends Scoped {
   coveringLeaveId?: Id;
 }
 
+export const GRADES = ['K', '1', '2', '3', '4', '5', '6'] as const;
+export type Grade = (typeof GRADES)[number];
+export const GRADE_LABELS: Record<Grade, string> = {
+  K: 'Kindergarten',
+  '1': 'Year 1',
+  '2': 'Year 2',
+  '3': 'Year 3',
+  '4': 'Year 4',
+  '5': 'Year 5',
+  '6': 'Year 6',
+};
+
+/** The only composite classes allowed (Bec). */
+export const COMPOSITE_PAIRS = [
+  ['1', '2'],
+  ['3', '4'],
+  ['5', '6'],
+] as const satisfies readonly (readonly [Grade, Grade])[];
+
+/**
+ * One class in the accepted class structure. Accepting a structure creates
+ * one record per class; they can then be edited by hand.
+ */
 export interface ClassStructure extends Scoped {
-  /** e.g. "K", "1", "3/4" */
-  grades: string;
-  numberOfClasses: number;
-  studentsPerClass: number;
-  ruleSetId?: Id;
+  /** e.g. "KA", "1/2A", or whatever the school renames it to. */
+  name: string;
+  /** Students in this class by grade; two grades for a composite. */
+  students: Partial<Record<Grade, number>>;
+  sortOrder: number;
+  /** The class teacher role created for this class, if any. */
+  roleId?: Id;
 }
 
 export interface Enrolment extends Scoped {
-  grade: string;
+  grade: Grade;
   /** Numbers only; no student names are ever stored. */
   projectedCount: number;
 }
 
-/** TODO(open item): actual rules to be supplied by Bec. */
+/** Inputs and rules for suggesting a class structure (Bec, Phase 5). */
 export interface ClassRules extends Scoped {
-  maxClassSizeByGrade: Record<string, number>;
+  /** Total number of classes across the school. */
+  totalClasses: number;
+  /** Average class size to aim for, per grade. */
+  guide: Record<Grade, number>;
+  /** How far over the guide a class may go before a composite is preferred. */
+  allowance: number;
+  /** Which of the allowed composite pairs may be used, e.g. ["1/2", "3/4"]. */
   permittedComposites: string[];
-  availableClassrooms: number;
-  availableTeachers: number;
 }

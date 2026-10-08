@@ -2,6 +2,7 @@ import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { PlanningYearProvider } from './components/PlanningYearContext';
 import { WarningsPanel } from './components/WarningsPanel';
 import { AllocationPage } from './pages/allocation/AllocationPage';
+import { ClassStructuresPage } from './pages/classes/ClassStructuresPage';
 import { EntitlementPage } from './pages/entitlement/EntitlementPage';
 import { LeavePage } from './pages/leave/LeavePage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -45,7 +46,8 @@ export function App() {
               <Route path="/entitlement" element={<EntitlementPage />} />
               <Route path="/allocation/*" element={<AllocationPage />} />
               <Route path="/leave/*" element={<LeavePage />} />
-              {MODULES.filter((m) => !['/entitlement', '/allocation', '/leave'].includes(m.path)).map((m) => (
+              <Route path="/classes" element={<ClassStructuresPage />} />
+              {MODULES.filter((m) => !['/entitlement', '/allocation', '/leave', '/classes'].includes(m.path)).map((m) => (
                 <Route key={m.path} path={m.path} element={<PlaceholderPage title={m.label} phase={m.phase} />} />
               ))}
               <Route path="*" element={<PlaceholderPage title="Not found" />} />
