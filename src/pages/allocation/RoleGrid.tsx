@@ -2,7 +2,7 @@ import { useState, type DragEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { staffBusyDays } from '../../domain/allocation';
 import { formatDate, formatRange, yearRange } from '../../domain/dates';
-import { FORTNIGHT_DAYS, WEEKDAYS, describeDayIndices, dayIndices, repeatsWeekly, subtract, union } from '../../domain/dayPattern';
+import { FORTNIGHT_DAYS, WEEKDAYS, describeDayIndices, dayIndices, fteOf, repeatsWeekly, subtract, union } from '../../domain/dayPattern';
 import { roleLink, staffLink } from '../../domain/flags';
 import { allocationRange, leaveRange } from '../../domain/leave';
 import {
@@ -10,6 +10,7 @@ import {
   candidatesFor,
   cellView,
   planAssign,
+  planFill,
   planRemove,
   type GridData,
   type Tile,
@@ -71,8 +72,35 @@ export function RoleGrid({ data }: { data: PlanData }) {
     if (puts.length) await repo.allocations.putMany(puts);
   };
 
+  /**
+   * A full-time person placed on an empty day of a class fills the whole
+   * week (Bec); anyone dropped on a role's name fills all their free days.
+   */
+  const shouldFill = (payload: DragPayload, role: Role, indices: number[]) => {
+    if (payload.from) return false;
+    const staff = staffById.get(payload.staffId);
+    const isClass = positionTypeById.get(role.positionTypeId)?.category === 'class_teacher';
+    const emptyDay = cellView(role, indices, grid).empty;
+    return !!staff && isClass && emptyDay && fteOf(staff.workPattern) === 1;
+  };
+
+  const fill = async (staffId: string, role: Role) => {
+    setPicking(null);
+    const result = planFill(grid, staffId, role.id, () => crypto.randomUUID());
+    if (!result.ok) {
+      setMessage({ ok: false, text: result.errors.join('. ') });
+      return;
+    }
+    await write(result.put, []);
+    setMessage({ ok: true, text: result.message });
+  };
+
   /** Assign (or move) someone to a role on these days, asking to extend their days worked if needed. */
   const assign = async (payload: DragPayload, role: Role, indices: number[]) => {
+    if (shouldFill(payload, role, indices)) {
+      await fill(payload.staffId, role);
+      return;
+    }
     setPicking(null);
     let base = grid;
     let removal: { put?: Allocation; deleteId?: string } = {};
@@ -155,8 +183,9 @@ export function RoleGrid({ data }: { data: PlanData }) {
         Week B separately
       </label>
       <p className="muted small">
-        Drag a name onto a role and day, or use <strong>+</strong> to choose one. Drag a tile to move it; × removes that
-        day. Greyed tiles are on leave; dropping someone there assigns cover for that leave.
+        Drag a name onto a role and day, or use <strong>+</strong> to choose one. A full-time teacher placed on a class
+        fills the whole week, and dropping a name on a role's name fills every day they're free. Drag a tile to move
+        it; × removes that day. Greyed tiles are on leave; dropping someone there assigns cover for that leave.
         {!splitWeeks && anyFortnightly && ' Tiles marked "A only" or "B only" apply to one week of the fortnight.'}
         {asAt && ` As at ${formatDate(asAt)}.`}
       </p>
@@ -212,7 +241,27 @@ export function RoleGrid({ data }: { data: PlanData }) {
                 </tr>
               ),
               <tr key={role.id}>
-                <th scope="row">
+                <th
+                  scope="row"
+                  className={`role-name ${dropTarget === `${role.id}:all` ? 'over' : ''}`}
+                  title="Drop a name here to give them every day they're free"
+                  data-testid={`role-${role.name}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDropTarget(`${role.id}:all`);
+                  }}
+                  onDragLeave={() => setDropTarget((t) => (t === `${role.id}:all` ? null : t))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDropTarget(null);
+                    try {
+                      const payload = JSON.parse(e.dataTransfer.getData(MIME) || e.dataTransfer.getData('text/plain')) as DragPayload;
+                      if (!payload.from) void fill(payload.staffId, role);
+                    } catch {
+                      // Not one of our tiles.
+                    }
+                  }}
+                >
                   <Link to={roleLink(role.id)}>{role.name}</Link>
                 </th>
                 {columns.map((c) => {

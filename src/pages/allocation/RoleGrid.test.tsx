@@ -34,6 +34,26 @@ async function setup() {
     preferences: '',
     }),
   );
+  // A part-timer (Mon–Wed) and an empty class to fill.
+  await act(async () => {
+    await repo.staff.put({
+      id: 'pt',
+      planningYearId: Y,
+      name: 'Pip Example',
+      workPattern: { mode: 'weekly', days: [true, true, true, false, false, true, true, true, false, false] },
+      currentRole: '',
+      employmentType: 'tpt',
+      preferences: '',
+    });
+    await repo.roles.put({
+      id: 'k-green',
+      planningYearId: Y,
+      name: 'K Green',
+      positionTypeId: `${Y}-pt-classroom-teacher`,
+      days: FULL_TIME,
+      sortOrder: 99,
+    });
+  });
   fireEvent.click(screen.getByRole('link', { name: 'Staff & allocation' }));
   fireEvent.click(await screen.findByRole('link', { name: 'Role grid' }));
   await screen.findByTestId('cell-K Blue-Mon');
@@ -75,7 +95,7 @@ describe('Role grid', () => {
     const repo = await setup();
     fireEvent.click(screen.getByRole('button', { name: 'Choose someone for Executive release on Mon' }));
     const picker = screen.getByLabelText('Assign to Executive release on Mon');
-    expect(within(picker).getAllByRole('option').map((o) => o.textContent)).toEqual(['Choose…', 'Fern Example']);
+    expect(within(picker).getAllByRole('option').map((o) => o.textContent)).toEqual(['Choose…', 'Fern Example', 'Pip Example']);
     fireEvent.change(picker, { target: { value: 'free' } });
 
     expect(await within(cell('Executive release', 'Mon')).findByText('Fern Example')).toBeInTheDocument();
@@ -139,6 +159,43 @@ describe('Role grid', () => {
     const noor = await repo.staff.get(`${Y}-staff-14`);
     expect(noor!.workPattern.days.slice(0, 5)).toEqual([false, false, true, true, true]);
     confirm.mockRestore();
+    repo.close();
+  });
+
+  it('fills the whole week when a full-time teacher is dropped on a class, and × removes single days', async () => {
+    const repo = await setup();
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Fern Example', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell('K Green', 'Wed'), { dataTransfer: dt });
+    for (const day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']) {
+      expect(await within(cell('K Green', day)).findByText('Fern Example')).toBeInTheDocument();
+    }
+    expect(result()).toHaveTextContent('Fern Example → K Green on Mon, Tue, Wed, Thu, Fri');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Fern Example from K Green on Fri' }));
+    await waitFor(() => expect(within(cell('K Green', 'Fri')).queryByText('Fern Example')).not.toBeInTheDocument());
+    const [alloc] = (await repo.allocations.listByYear(Y)).filter((a) => a.staffId === 'free');
+    expect(alloc!.days.days.slice(0, 5)).toEqual([true, true, true, true, false]);
+    repo.close();
+  });
+
+  it('fills every free day when a name is dropped on the role name', async () => {
+    const repo = await setup();
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Fern Example', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(screen.getByTestId('role-Executive release'), { dataTransfer: dt });
+    expect(await within(cell('Executive release', 'Mon')).findByText('Fern Example')).toBeInTheDocument();
+    expect(within(cell('Executive release', 'Tue')).getByText('Fern Example')).toBeInTheDocument();
+    repo.close();
+  });
+
+  it('places a part-timer on just the day dropped, even on a class', async () => {
+    const repo = await setup();
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Pip Example', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell('K Green', 'Tue'), { dataTransfer: dt });
+    expect(await within(cell('K Green', 'Tue')).findByText('Pip Example')).toBeInTheDocument();
+    expect(within(cell('K Green', 'Mon')).queryByText('Pip Example')).not.toBeInTheDocument();
     repo.close();
   });
 });

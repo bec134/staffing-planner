@@ -237,3 +237,48 @@ export function applyRemove(allocations: Allocation[], change: { put?: Allocatio
 export function candidatesFor(data: GridData, roleId: Id, indices: number[]): Staff[] {
   return data.staff.filter((s) => planAssign(data, s.id, roleId, indices, () => 'probe').ok);
 }
+
+/**
+ * Days a person could be given in a role all at once: days the role runs,
+ * they work and are free, and nobody else holds the role. Also returns the
+ * role days skipped because someone else holds them.
+ */
+export function fillableDays(data: GridData, staffId: Id, roleId: Id): { indices: number[]; heldByOthers: number[] } {
+  const staff = data.staff.find((s) => s.id === staffId);
+  const role = data.roles.find((r) => r.id === roleId);
+  if (!staff || !role) return { indices: [], heldByOthers: [] };
+  const busy = union(data.allocations.filter((a) => a.staffId === staffId).map((a) => a.days));
+  const indices: number[] = [];
+  const heldByOthers: number[] = [];
+  for (const d of dayIndices(role.days)) {
+    const holder = data.allocations.find((a) => a.roleId === roleId && !a.coveringLeaveId && a.days.days[d]);
+    if (holder) {
+      if (holder.staffId !== staffId) heldByOthers.push(d);
+      continue;
+    }
+    if (staff.workPattern.days[d] && !busy.days[d]) indices.push(d);
+  }
+  return { indices, heldByOthers };
+}
+
+/**
+ * Give someone every day they can take in a role in one go (Bec: a
+ * full-time teacher dropped on a class fills the whole week). Days can be
+ * removed one at a time afterwards.
+ */
+export function planFill(data: GridData, staffId: Id, roleId: Id, newId: () => Id): AssignResult {
+  const staff = data.staff.find((s) => s.id === staffId);
+  const role = data.roles.find((r) => r.id === roleId);
+  if (!staff || !role) return { ok: false, errors: ['That staff member or role no longer exists'] };
+  const { indices, heldByOthers } = fillableDays(data, staffId, roleId);
+  if (!indices.length) {
+    return {
+      ok: false,
+      errors: [`${staff.name} has no free days that ${role.name} still needs filled`],
+    };
+  }
+  const result = planAssign(data, staffId, roleId, indices, newId);
+  if (!result.ok) return result;
+  const skipped = heldByOthers.length ? ` (${describeDayIndices(heldByOthers)} already held)` : '';
+  return { ...result, message: `${result.message}${skipped}` };
+}
