@@ -1,0 +1,74 @@
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --text: #1d2125;
+  --muted: #5c6670;
+  --border: #d9dde1;
+  --accent: #1f5f8b;
+  --accent-soft: #e3eef6;
+  --danger: #a12a2a;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+.shell { display: flex; min-height: 100vh; }
+
+.sidenav {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+}
+.brand { font-weight: 700; font-size: 1.1rem; margin: 0 8px 16px; }
+.sidenav ul { list-style: none; margin: 0; padding: 0; }
+.sidenav a {
+  display: block;
+  padding: 8px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+.sidenav a:hover { background: var(--bg); }
+.sidenav a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-note { font-size: 0.8rem; color: var(--muted); margin: 24px 8px 0; }
+
+.content { flex: 1; padding: 24px 32px; max-width: 1100px; }
+
+.muted { color: var(--muted); }
+.field { display: block; margin: 12px 0; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+button.danger { background: var(--surface); color: var(--danger); border-color: var(--danger); }
+button:disabled { opacity: 0.5; cursor: default; }
+select { font: inherit; padding: 4px; }
+
+table { border-collapse: collapse; width: 100%; background: var(--surface); margin-bottom: 24px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+th { font-weight: 600; background: var(--bg); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 700px) {
+  .shell { flex-direction: column; }
+  .sidenav { width: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .sidenav ul { display: flex; flex-wrap: wrap; gap: 4px; }
+  .content { padding: 16px; }
+}
+
+@media print {
+  .sidenav, .actions { display: none; }
+  .content { padding: 0; max-width: none; }
+}
