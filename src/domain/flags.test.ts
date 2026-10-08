@@ -1,7 +1,11 @@
 import { FULL_TIME, weekdays, type DayPattern } from './dayPattern';
-import { computeFlags, type FlagInput } from './flags';
+import { computeFlags as computeAllFlags, type FlagInput } from './flags';
 import { defaultPositionTypeId, defaultPositionTypes } from './positionTypes';
-import type { Allocation, Role, Staff } from './types';
+import type { Allocation, Leave, Role, Staff } from './types';
+
+// The original Phase 3 tests use part-filled roles; leave the unfilled-role
+// flag to its own tests below.
+const computeFlags = (input: FlagInput) => computeAllFlags(input).filter((f) => f.kind !== 'role_unfilled');
 
 const Y = 'y';
 const types = defaultPositionTypes(Y);
@@ -49,6 +53,7 @@ const base = (over: Partial<FlagInput> = {}): FlagInput => ({
   roles: [role('c1', CT), role('r1', RFF)],
   staff: [person('s1'), person('s2', weekdays('Mon', 'Tue'))],
   allocations: [],
+  leave: [],
   ...over,
 });
 const kinds = (input: FlagInput) => computeFlags(input).map((f) => f.kind);
@@ -143,5 +148,72 @@ describe('staff flags', () => {
     ]);
     const keys = flags.map((f) => f.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('unfilled role flags', () => {
+  it('flags role days with no one allocated, ignoring leave cover', () => {
+    const flags = computeAllFlags(
+      base({
+        entitlement: undefined,
+        roles: [role('r1', RFF, weekdays('Mon', 'Tue', 'Wed'))],
+        allocations: [alloc('s1', 'r1', weekdays('Mon')), alloc('s2', 'r1', weekdays('Tue'), { coveringLeaveId: 'l' })],
+      }),
+    );
+    expect(flags.map((f) => [f.kind, f.message, f.link])).toEqual([
+      ['role_unfilled', 'Role r1 has no one allocated on Tue, Wed', '/allocation/roles/r1'],
+    ]);
+  });
+});
+
+describe('leave gap flags', () => {
+  const leave: Leave = {
+    id: 'L1',
+    planningYearId: Y,
+    staffId: 's1',
+    startDate: '2027-04-28',
+    endDate: '2027-07-02',
+    daysAffected: FULL_TIME,
+    leaveType: 'lsl',
+  };
+
+  it('flags each uncovered stretch with days and dates', () => {
+    const flags = computeAllFlags(
+      base({
+        entitlement: undefined,
+        roles: [role('c1', CT)],
+        allocations: [
+          alloc('s1', 'c1', FULL_TIME),
+          // s2 covers Mon–Tue for the first half only.
+          alloc('s2', 'c1', weekdays('Mon', 'Tue'), {
+            coveringLeaveId: 'L1',
+            startDate: '2027-04-28',
+            endDate: '2027-05-31',
+          }),
+        ],
+        leave: [leave],
+      }),
+    );
+    expect(flags.map((f) => f.message)).toEqual([
+      "Role c1: no cover for Teacher s1's Long Service Leave on Mon, Tue, 1 Jun – 2 Jul 2027",
+      "Role c1: no cover for Teacher s1's Long Service Leave on Wed, Thu, Fri, 28 Apr – 2 Jul 2027",
+    ]);
+    expect(flags[0]!.link).toBe('/leave/L1');
+  });
+
+  it('is quiet when the leave is fully covered', () => {
+    const flags = computeAllFlags(
+      base({
+        entitlement: undefined,
+        roles: [role('c1', CT)],
+        allocations: [
+          alloc('s1', 'c1', FULL_TIME),
+          alloc('s2', 'c1', FULL_TIME, { coveringLeaveId: 'L1', startDate: '2027-04-28', endDate: '2027-07-02' }),
+        ],
+        staff: [person('s1'), person('s2')],
+        leave: [leave],
+      }),
+    );
+    expect(flags).toEqual([]);
   });
 });

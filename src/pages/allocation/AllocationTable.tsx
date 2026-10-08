@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { roleLink, staffLink } from '../../domain/flags';
+import { formatRange } from '../../domain/dates';
+import { leaveLink, roleLink, staffLink } from '../../domain/flags';
+import { allocationRange } from '../../domain/leave';
 import { formatFte, milliFteOf } from '../../domain/fte';
 import type { Allocation } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
@@ -56,11 +58,16 @@ export function AllocationTable({ data, show, allocations, fixed }: {
                       'Deleted staff member'
                     )}
                     {a.coveringLeaveId && <span className="badge">cover</span>}
+                    {a.coveringLeaveId && <div className="muted small">{formatRange(allocationRange(a))}</div>}
                   </td>
                   {show === 'role' && <td>{role ? positionTypeById.get(role.positionTypeId)?.name : ''}</td>}
                   <td>{daysLabel(a.days)}</td>
                   <td className="num">{formatFte(milliFteOf(a.days))}</td>
                   <td className="nowrap">
+                    {a.coveringLeaveId ? (
+                      <Link to={leaveLink(a.coveringLeaveId)}>Manage on the leave page</Link>
+                    ) : (
+                      <>
                     <button type="button" className="secondary" onClick={() => setEditing(a.id)}>
                       Edit
                     </button>{' '}
@@ -73,6 +80,8 @@ export function AllocationTable({ data, show, allocations, fixed }: {
                     >
                       Remove
                     </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               );

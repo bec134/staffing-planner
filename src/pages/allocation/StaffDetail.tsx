@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { staffBusyDays } from '../../domain/allocation';
 import { subtract } from '../../domain/dayPattern';
-import { staffLink, type Flag } from '../../domain/flags';
+import { leaveLink, staffLink, type Flag } from '../../domain/flags';
+import { formatRange } from '../../domain/dates';
+import { leaveRange } from '../../domain/leave';
 import { formatFte, milliFteOf } from '../../domain/fte';
-import { EMPLOYMENT_TYPE_LABELS } from '../../domain/types';
+import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_LABELS } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 import { AllocationTable } from './AllocationTable';
 import { StaffForm } from './StaffForm';
@@ -29,10 +31,20 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
   const unallocated = subtract(staff.workPattern, staffBusyDays(staff.id, data.allocations));
   const myFlags = flags.filter((f) => f.link === staffLink(staff.id));
 
+  const leave = data.leave.filter((l) => l.staffId === staff.id).sort((a, b) => a.startDate.localeCompare(b.startDate));
+
   const remove = async () => {
-    const extra = allocations.length ? ` Their ${allocations.length} allocation(s) will also be removed.` : '';
+    // Their allocations, their leave, and any cover arranged for that leave.
+    const leaveIds = new Set(leave.map((l) => l.id));
+    const doomed = data.allocations.filter((a) => a.staffId === staff.id || (a.coveringLeaveId && leaveIds.has(a.coveringLeaveId)));
+    const parts = [
+      doomed.length ? `${doomed.length} allocation(s)` : '',
+      leave.length ? `${leave.length} leave record(s)` : '',
+    ].filter(Boolean);
+    const extra = parts.length ? ` Their ${parts.join(' and ')} will also be removed.` : '';
     if (!confirm(`Delete ${staff.name}?${extra}`)) return;
-    await repo.allocations.deleteMany(allocations.map((a) => a.id));
+    await repo.allocations.deleteMany(doomed.map((a) => a.id));
+    await repo.leave.deleteMany([...leaveIds]);
     await repo.staff.delete(staff.id);
     navigate('/allocation');
   };
@@ -84,6 +96,21 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
         </>
       )}
       <AllocationTable data={data} show="role" allocations={allocations} fixed={{ staffId: staff.id }} />
+      <h2>Leave</h2>
+      {leave.length === 0 ? (
+        <p className="muted">
+          None. <Link to="/leave">Record leave</Link>
+        </p>
+      ) : (
+        <ul>
+          {leave.map((l) => (
+            <li key={l.id}>
+              <Link to={leaveLink(l.id)}>{LEAVE_TYPE_LABELS[l.leaveType]}</Link>, {formatRange(leaveRange(l))} (
+              {daysLabel(l.daysAffected)})
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

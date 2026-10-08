@@ -6,7 +6,7 @@
  */
 import { FULL_TIME, fortnightlyPattern, weekdays, type DayPattern } from '../domain/dayPattern';
 import { defaultPositionTypeId, defaultPositionTypes } from '../domain/positionTypes';
-import type { Allocation, Entitlement, PlanningYear, Role, Staff } from '../domain/types';
+import type { Allocation, Entitlement, Leave, PlanningYear, Role, Staff } from '../domain/types';
 import type { PlanningYearSnapshot } from './repository';
 
 export const SAMPLE_PLANNING_YEAR_ID = 'sample-2027';
@@ -19,6 +19,13 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     id: Y,
     year: 2027,
     schoolName: 'Wattle Creek Public School (fictional sample)',
+    // Illustrative term dates for the sample only; schools enter their own.
+    terms: [
+      { start: '2027-01-28', end: '2027-04-09' },
+      { start: '2027-04-27', end: '2027-07-02' },
+      { start: '2027-07-20', end: '2027-09-24' },
+      { start: '2027-10-12', end: '2027-12-17' },
+    ],
     createdAt: now,
     updatedAt: now,
   };
@@ -86,6 +93,8 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     ),
     person(14, 'Noor Haddon', 'Learning & Support Teacher', weekdays('Thu', 'Fri')),
     person(15, 'Oak Delaney', 'EaLD Teacher', weekdays('Mon'), 'tpt'),
+    // Temporary teacher employed to cover leave.
+    person(16, 'Sam Ridley', 'Classroom Teacher', FULL_TIME, 'temporary'),
   ];
 
   const role = (key: string, name: string, positionType: string, days: DayPattern, order: number): Role => ({
@@ -147,6 +156,39 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     allocate('Oak Delaney', 'eald'),
   ];
 
+  const leave: Leave[] = [
+    // Term 2 long service leave, covered Mon–Wed only: Thu–Fri is a gap.
+    {
+      id: `${Y}-leave-01`,
+      planningYearId: Y,
+      staffId: staffId('Jules Fernhill'),
+      startDate: '2027-04-27',
+      endDate: '2027-07-02',
+      daysAffected: FULL_TIME,
+      leaveType: 'lsl',
+    },
+    // Two weeks of paternity leave in Term 3, fully covered.
+    {
+      id: `${Y}-leave-02`,
+      planningYearId: Y,
+      staffId: staffId('Kit Ashdown'),
+      startDate: '2027-08-02',
+      endDate: '2027-08-13',
+      daysAffected: FULL_TIME,
+      leaveType: 'paternity',
+    },
+  ];
+  const cover = (roleKey: string, leaveId: string, days: DayPattern, startDate: string, endDate: string): Allocation => ({
+    ...allocate('Sam Ridley', roleKey, days),
+    coveringLeaveId: leaveId,
+    startDate,
+    endDate,
+  });
+  allocations.push(
+    cover('34-red', `${Y}-leave-01`, weekdays('Mon', 'Tue', 'Wed'), '2027-04-27', '2027-07-02'),
+    cover('56-gold', `${Y}-leave-02`, FULL_TIME, '2027-08-02', '2027-08-13'),
+  );
+
   return {
     planningYear,
     positionTypes,
@@ -154,9 +196,8 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     staff,
     roles,
     allocations,
-    // Leave types are an open item; class structures, enrolments and rules
-    // arrive in later phases.
-    leave: [],
+    leave,
+    // Class structures, enrolments and rules arrive in later phases.
     classStructures: [],
     enrolments: [],
     classRules: [],

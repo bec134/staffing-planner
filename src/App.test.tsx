@@ -21,8 +21,8 @@ describe('App shell', () => {
     expect(await screen.findByText('Morgan Pike')).toBeInTheDocument();
     expect(screen.getByText('A: Mon, Tue, Wed · B: Mon, Tue')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: 'Leave cover' }));
-    expect(await screen.findByText(/built in Phase 4/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Class structures' }));
+    expect(await screen.findByText(/built in Phase 5/)).toBeInTheDocument();
     repo.close();
   });
 });

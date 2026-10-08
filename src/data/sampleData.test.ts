@@ -31,23 +31,26 @@ describe('sample data', () => {
   });
 
   it('has valid allocations: real staff and roles, on days both work, with no clashes', async () => {
-    const { computeFlags } = await import('../domain/flags');
-    const flags = computeFlags({
-      entitlement: sample.entitlements[0],
-      positionTypes: sample.positionTypes,
-      roles: sample.roles,
-      staff: sample.staff,
-      allocations: sample.allocations,
-    });
+    const { computeFlags, flagInputFrom } = await import('../domain/flags');
+    const flags = computeFlags(flagInputFrom(sample));
     const staffIds = new Set(sample.staff.map((s) => s.id));
     const roleIds = new Set(sample.roles.map((r) => r.id));
     expect(sample.allocations.every((a) => staffIds.has(a.staffId) && roleIds.has(a.roleId))).toBe(true);
-    // Only entitlement shortfalls; no staff problems in the sample.
-    expect(flags.every((f) => f.kind === 'under_entitlement')).toBe(true);
+    // Only shortfalls and vacancies; no staff problems in the sample.
+    expect(new Set(flags.map((f) => f.kind))).toEqual(new Set(['under_entitlement', 'role_unfilled', 'leave_gap']));
     expect(flags.map((f) => f.message)).toContain(
       'RFF Teacher: allocated 0.7 FTE, 0.616 under the entitlement of 1.316',
     );
     // Teacher Librarian is 0.042 under: shown on the dashboard but not flagged.
     expect(flags.some((f) => f.message.startsWith('Teacher Librarian'))).toBe(false);
+  });
+
+  it('has one partly covered and one fully covered leave', async () => {
+    const { coverGaps } = await import('../domain/leave');
+    const { validateLeave } = await import('../domain/leave');
+    for (const l of sample.leave) {
+      expect(validateLeave(l, sample.staff.find((s) => s.id === l.staffId)!)).toEqual([]);
+    }
+    expect(sample.leave.map((l) => coverGaps(l, sample.allocations).length)).toEqual([1, 0]);
   });
 });

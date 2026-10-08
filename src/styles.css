@@ -175,3 +175,41 @@ tr.row-skip td { color: var(--muted); }
 @media print {
   .tabs, .panel { display: none; }
 }
+
+/* Phase 4: leave cover */
+input[type='date'] { font: inherit; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; align-items: center; }
+button.small { padding: 2px 8px; font-size: 0.85rem; }
+
+.status { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: 0.85rem; }
+.status.covered { background: #e3f3e8; color: var(--ok); }
+.status.partial { background: var(--warn-soft); color: var(--warn); }
+.status.uncovered { background: #fbe4e4; color: var(--danger); }
+.status.nothing { background: var(--bg); color: var(--muted); }
+
+.cell.onleave { background: #ece6f6; }
+.cell.covering { background: #e3f3e8; }
+.cell.gap { background: #fbe4e4; }
+.cell .line.leave { color: #5b3f8c; font-size: 0.78rem; }
+.cell .line.cover { color: var(--ok); font-size: 0.78rem; }
+.cell .line.gap { color: var(--danger); font-weight: 600; font-size: 0.78rem; }
+.cell.clash .line { color: #fff; }
+
+.timeline { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; overflow-x: auto; }
+.tl-row { display: flex; border-bottom: 1px solid var(--border); padding: 6px 0; min-width: 640px; }
+.tl-row:last-child { border-bottom: none; }
+.tl-label { width: 160px; flex-shrink: 0; padding-right: 8px; font-size: 0.9rem; }
+.tl-lanes { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.tl-track { position: relative; height: 22px; flex: 1; }
+.tl-head .tl-track { height: 18px; }
+.tl-month { position: absolute; font-size: 0.75rem; color: var(--muted); border-left: 1px solid var(--border); padding-left: 3px; }
+.tl-bar { position: absolute; top: 0; height: 22px; border-radius: 4px; font-size: 0.75rem; line-height: 22px; padding: 0 4px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; box-sizing: border-box; }
+.tl-bar a { color: inherit; }
+.tl-bar.held { background: var(--accent-soft); color: var(--accent); }
+.tl-bar.leave { background: #d9cdee; color: #4a2f7a; }
+.tl-bar.cover { background: #cfe9d8; color: var(--ok); }
+.tl-bar.gap { background: #f6cccc; color: var(--danger); font-weight: 600; }
+.legend .tl-bar { position: static; display: inline-block; height: auto; line-height: 1.6; margin-right: 6px; }
+.tl-lanes .tl-track { flex: none; }
+ul.warning { padding-left: 28px; }
