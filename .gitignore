@@ -1,0 +1,18 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.vite/
+
+# Never commit real staff data (see CLAUDE.md). Exports, backups and imports
+# belong outside the repo. Fictional sample data lives in src/data/sampleData.ts.
+*.csv
+*.xlsx
+*.xls
+*.backup.json
+*.staffing.json
+*.enc
+private/
+exports/
+*.tsbuildinfo
