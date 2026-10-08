@@ -82,7 +82,7 @@ describe('Staff & allocation', () => {
 
   it('shows Week A / Week B columns in the grid when someone works fortnightly', async () => {
     const repo = await setupWithSample();
-    fireEvent.click(screen.getByRole('link', { name: 'Weekly grid' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     expect(await screen.findByText('Week A')).toBeInTheDocument();
     const row = screen.getByRole('link', { name: 'Morgan Pike' }).closest('tr')!;
     const cells = within(row).getAllByRole('cell');

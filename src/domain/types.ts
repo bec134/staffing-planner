@@ -92,6 +92,14 @@ export interface Leave extends Scoped {
 export const LEAVE_TYPES = ['lsl', 'lwop', 'maternity', 'paternity'] as const;
 export type LeaveType = (typeof LEAVE_TYPES)[number];
 
+/** Short labels for tight spaces such as grid cells. */
+export const LEAVE_TYPE_SHORT: Record<LeaveType, string> = {
+  lsl: 'LSL',
+  lwop: 'LWOP',
+  maternity: 'Maternity leave',
+  paternity: 'Paternity leave',
+};
+
 export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   lsl: 'Long Service Leave',
   lwop: 'Leave without pay',

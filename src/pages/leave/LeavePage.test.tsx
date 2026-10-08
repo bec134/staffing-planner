@@ -135,7 +135,7 @@ describe('Leave cover', () => {
 describe('Weekly grid with leave', () => {
   it('shows the holder on leave with their cover, and the coverer with whose leave', async () => {
     const repo = await setup('Staff & allocation');
-    fireEvent.click(screen.getByRole('link', { name: 'Weekly grid' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     const jules = (await screen.findByRole('link', { name: 'Jules Fernhill' })).closest('tr')!;
     const [mon, , , thu] = within(jules).getAllByRole('cell');
     expect(mon).toHaveTextContent('3/4 Red');
@@ -164,7 +164,7 @@ describe('Weekly grid with leave', () => {
 
   it('shows whole-year part-week leave without pay, covered and uncovered', async () => {
     const repo = await setup('Staff & allocation');
-    fireEvent.click(screen.getByRole('link', { name: 'Weekly grid' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     const indi = (await screen.findByRole('link', { name: 'Indi Calloway' })).closest('tr')!;
     const [iMon, , , iThu] = within(indi).getAllByRole('cell');
     expect(iMon).toHaveTextContent(/^1\/2 Green$/);

@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WEEKDAYS } from '../../domain/dayPattern';
-import { guessMapping, parseStaffRows, type ColumnIndex, type StaffMapping } from '../../domain/staffImport';
+import { STAFF_TEMPLATES, guessMapping, parseStaffRows, type ColumnIndex, type StaffMapping } from '../../domain/staffImport';
 import { EMPLOYMENT_TYPE_LABELS, type EmploymentType, type Staff } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 import { daysLabel, type PlanData } from './shared';
@@ -84,6 +84,23 @@ export function StaffImport({ data }: { data: PlanData }) {
       <p className="muted small">
         The file is read in this browser only; nothing is uploaded. Save a spreadsheet as CSV with a header row first.
       </p>
+      <div className="templates">
+        <strong>Templates:</strong>{' '}
+        {STAFF_TEMPLATES.map((t) => (
+          <a
+            key={t.file}
+            className="button-link secondary small"
+            href={`data:text/csv;charset=utf-8,${encodeURIComponent(t.csv)}`}
+            download={t.file}
+          >
+            {t.label}
+          </a>
+        ))}
+        <p className="muted small">
+          Fill in a template in Excel or Google Sheets, replacing the example rows, and save it as CSV. Employment type
+          is Permanent, TPT or Temporary. Days can be written like "Mon-Fri" or "Mon Tue Wed".
+        </p>
+      </div>
       {imported !== null && (
         <p className="ok" role="status">
           Imported {imported} staff member{imported === 1 ? '' : 's'}. <Link to="/allocation">View staff</Link>

@@ -5,15 +5,8 @@ import { containsDate, formatDate, formatRange, intersectRange } from '../../dom
 import { FORTNIGHT_DAYS, WEEKDAYS, repeatsWeekly } from '../../domain/dayPattern';
 import { staffLink } from '../../domain/flags';
 import { allocationRange, coverGaps, leaveRange } from '../../domain/leave';
-import type { Allocation, DateRange, LeaveType, Staff } from '../../domain/types';
+import { LEAVE_TYPE_SHORT, type Allocation, type DateRange, type Staff } from '../../domain/types';
 import { byName, lookups, type PlanData } from './shared';
-
-const LEAVE_SHORT: Record<LeaveType, string> = {
-  lsl: 'LSL',
-  lwop: 'LWOP',
-  maternity: 'Maternity leave',
-  paternity: 'Paternity leave',
-};
 
 interface Line {
   text: string;
@@ -80,7 +73,7 @@ export function WeeklyGrid({ data }: { data: PlanData }) {
         const range = intersectRange(leaveRange(l), allocationRange(a));
         if (!range) continue;
         onLeave = true;
-        lines.push({ kind: 'leave', text: `On ${LEAVE_SHORT[l.leaveType]}${when(range)}` });
+        lines.push({ kind: 'leave', text: `On ${LEAVE_TYPE_SHORT[l.leaveType]}${when(range)}` });
         const covers = data.allocations.filter(
           (c) =>
             c.coveringLeaveId === l.id &&

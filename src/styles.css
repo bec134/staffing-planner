@@ -220,3 +220,30 @@ details.rules summary { cursor: pointer; font-weight: 600; color: var(--accent);
 .grade-count { margin-right: 10px; white-space: nowrap; }
 caption { text-align: left; font-weight: 600; padding: 4px 0; }
 .grade-count input { width: 4.5em; }
+
+/* Role grid */
+.palette { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; padding: 8px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; }
+.tile { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 6px; font-size: 0.8rem;
+  border: 1px solid transparent; cursor: grab; margin: 1px 0; max-width: 100%; }
+.tile a { color: inherit; text-decoration: none; }
+.tile .tag { font-size: 0.7rem; opacity: 0.85; }
+.tile .remove { background: none; border: none; color: inherit; padding: 0 2px; cursor: pointer; font-size: 0.9rem; line-height: 1; }
+.tile.holder { background: var(--accent-soft); color: var(--accent); border-color: #c4d8e8; }
+.tile.on-leave { background: #eceef0; color: #8a9199; border-color: #d6dadd; text-decoration: none; }
+.tile.on-leave a { text-decoration: line-through; }
+.tile.cover { background: #cfe9d8; color: var(--ok); border-color: #a9d6b8; }
+.palette-tile { background: var(--surface); border-color: var(--border); flex-direction: column; align-items: flex-start; }
+.palette-tile .free { font-size: 0.7rem; color: var(--muted); }
+.palette-tile.full { opacity: 0.6; }
+table.role-table td.cell { text-align: left; vertical-align: top; min-width: 90px; }
+td.cell.unfilled { background: #fff8ec; }
+td.cell.over { outline: 2px dashed var(--accent); outline-offset: -3px; }
+.cell .add { padding: 0 6px; font-size: 0.8rem; background: var(--surface); color: var(--accent); margin-top: 2px; }
+.cell select { font-size: 0.8rem; max-width: 120px; }
+tr.group-row th { background: var(--bg); text-align: left; font-size: 0.8rem; color: var(--muted); padding-top: 10px; }
+.legend .tile { cursor: default; }
+.templates { margin: 8px 0 12px; }
+.templates .button-link { margin-right: 6px; }
+.tile.on-leave.part-year { background: var(--accent-soft); color: var(--accent); border: 1px dashed #8fb3cf; }
+.tile.on-leave.part-year a { text-decoration: none; }

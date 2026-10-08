@@ -1,5 +1,5 @@
 import { describePattern } from './dayPattern';
-import { guessMapping, parseDaysText, parseEmploymentType, parseStaffRows, type StaffMapping } from './staffImport';
+import { STAFF_TEMPLATES, guessMapping, parseDaysText, parseEmploymentType, parseStaffRows, type StaffMapping } from './staffImport';
 
 describe('parseDaysText', () => {
   it.each([
@@ -117,5 +117,22 @@ describe('parseStaffRows', () => {
   it('defaults to full time when days are not mapped', () => {
     const [row] = parseStaffRows([['A Person']], { ...mapping, days: { kind: 'none' } }, []);
     expect(describePattern(row!.draft!.workPattern)).toBe('Mon, Tue, Wed, Thu, Fri');
+  });
+});
+
+describe('staff templates', () => {
+  it.each(STAFF_TEMPLATES.map((t) => [t.file, t.csv] as const))('%s maps and parses with no errors', (_file, csv) => {
+    const [headers, ...rows] = csv.split('\r\n').map((line) => line.split(','));
+    const mapping = guessMapping(headers!);
+    expect(mapping.name).toBe(0);
+    expect(mapping.employmentType).toBe(1);
+    expect(mapping.currentRole).toBe(2);
+    const parsed = parseStaffRows(rows, mapping, []);
+    expect(parsed.every((r) => r.errors.length === 0 && r.draft && !r.skipReason)).toBe(true);
+    expect(parsed.map((r) => [r.draft!.employmentType, describePattern(r.draft!.workPattern)])).toEqual([
+      ['permanent', 'Mon, Tue, Wed, Thu, Fri'],
+      ['tpt', 'Mon, Tue, Wed'],
+      ['temporary', 'Thu, Fri'],
+    ]);
   });
 });
