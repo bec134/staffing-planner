@@ -2,21 +2,25 @@
  * Automatic flags (PLAN.md "Automatic flags"). Recomputed whenever data
  * changes and shown in the warnings panel, each linking to its record.
  *
- * Phase 3 covers over/under entitlement and staff over their FTE. Unfilled
- * roles and leave gaps arrive with leave cover in Phase 4.
+ * Covers over/under entitlement, staff over their FTE, and unfilled roles
+ * or leave gaps.
  */
-import { datesOverlap } from './allocation';
+import { datesOverlap, unfilledDays } from './allocation';
+import { formatRange } from './dates';
 import { dayIndices, describeDayIndices, intersect, subtract } from './dayPattern';
 import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement';
 import { formatFte } from './fte';
-import type { Allocation, Entitlement, Id, PositionType, Role, Staff } from './types';
+import { coverGaps } from './leave';
+import { LEAVE_TYPE_LABELS, type Allocation, type Entitlement, type Id, type Leave, type PositionType, type Role, type Staff } from './types';
 
 export type FlagKind =
   | 'over_entitlement'
   | 'under_entitlement'
   | 'staff_not_working'
   | 'staff_double_booked'
-  | 'outside_role_days';
+  | 'outside_role_days'
+  | 'role_unfilled'
+  | 'leave_gap';
 
 export interface Flag {
   /** Stable key, so the panel can render lists without duplicates. */
@@ -33,10 +37,29 @@ export interface FlagInput {
   roles: Role[];
   staff: Staff[];
   allocations: Allocation[];
+  leave: Leave[];
 }
+
+/** Everything the flags need, from a plan snapshot. */
+export const flagInputFrom = (d: {
+  entitlements: Entitlement[];
+  positionTypes: PositionType[];
+  roles: Role[];
+  staff: Staff[];
+  allocations: Allocation[];
+  leave: Leave[];
+}): FlagInput => ({
+  entitlement: d.entitlements[0],
+  positionTypes: d.positionTypes,
+  roles: d.roles,
+  staff: d.staff,
+  allocations: d.allocations,
+  leave: d.leave,
+});
 
 export const staffLink = (id: Id) => `/allocation/staff/${id}`;
 export const roleLink = (id: Id) => `/allocation/roles/${id}`;
+export const leaveLink = (id: Id) => `/leave/${id}`;
 
 function entitlementFlags(input: FlagInput): Flag[] {
   const summary = summariseEntitlement(input.entitlement, input.positionTypes, input.roles, input.allocations);
@@ -126,6 +149,35 @@ function staffFlags(input: FlagInput): Flag[] {
   return flags;
 }
 
+function vacancyFlags(input: FlagInput): Flag[] {
+  const flags: Flag[] = [];
+  for (const role of input.roles) {
+    const empty = dayIndices(unfilledDays(role, input.allocations));
+    if (empty.length) {
+      flags.push({
+        key: `unfilled:${role.id}`,
+        kind: 'role_unfilled',
+        message: `${role.name} has no one allocated on ${describeDayIndices(empty)}`,
+        link: roleLink(role.id),
+      });
+    }
+  }
+  const staffById = new Map(input.staff.map((s) => [s.id, s]));
+  const roleById = new Map(input.roles.map((r) => [r.id, r]));
+  for (const leave of input.leave) {
+    const who = staffById.get(leave.staffId)?.name ?? 'A deleted staff member';
+    for (const gap of coverGaps(leave, input.allocations)) {
+      flags.push({
+        key: `gap:${leave.id}:${gap.roleId}:${gap.days.join(',')}:${gap.range.start}`,
+        kind: 'leave_gap',
+        message: `${roleById.get(gap.roleId)?.name ?? 'A deleted role'}: no cover for ${who}'s ${LEAVE_TYPE_LABELS[leave.leaveType]} on ${describeDayIndices(gap.days)}, ${formatRange(gap.range)}`,
+        link: leaveLink(leave.id),
+      });
+    }
+  }
+  return flags;
+}
+
 export function computeFlags(input: FlagInput): Flag[] {
-  return [...staffFlags(input), ...entitlementFlags(input)];
+  return [...staffFlags(input), ...vacancyFlags(input), ...entitlementFlags(input)];
 }

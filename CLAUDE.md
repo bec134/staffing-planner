@@ -25,6 +25,9 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 - **Full-year allocations for now:** allocations count as whole-year against entitlement until Phase 4 adds date-based cover.
 - **Under-entitlement tolerance:** flag "under" only when short by ≥ 0.1 FTE (`UNDER_ENTITLEMENT_TOLERANCE`); always flag "over".
 - **Flags** are computed in `src/domain/flags.ts` from the whole plan and shown in the warnings panel on every screen. Writes go through the observable repository, so screens and flags refresh automatically (`usePlanData`).
+- **Leave types:** fixed list `LEAVE_TYPES` — Long Service Leave, Leave without pay, Maternity Leave, Paternity Leave.
+- **Leave cover:** the person on leave keeps their position (their allocation stays and counts against entitlement). Cover is an `Allocation` with `coveringLeaveId`, start/end dates and days, and is not counted against entitlement. Gap and cover rules live in `src/domain/leave.ts`; dates are ISO strings handled by `src/domain/dates.ts`.
+- **Weekly grid** shows the position holder (with leave and who covers) and the coverer (with whose leave), for the whole year or as at a date.
 - **IT/privacy confirmation** for storing real names is still pending, so development uses fictional data only.
 
 ## Stack and layout

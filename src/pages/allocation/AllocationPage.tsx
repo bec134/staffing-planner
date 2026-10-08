@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import { usePlanningYear } from '../../components/PlanningYearContext';
-import { computeFlags } from '../../domain/flags';
+import { computeFlags, flagInputFrom } from '../../domain/flags';
 import { usePlanData } from '../../data/usePlanData';
 import { RoleDetail } from './RoleDetail';
 import { RoleList } from './RoleList';
@@ -16,13 +16,7 @@ export function AllocationPage() {
   const flags = useMemo(
     () =>
       data
-        ? computeFlags({
-            entitlement: data.entitlements[0],
-            positionTypes: data.positionTypes,
-            roles: data.roles,
-            staff: data.staff,
-            allocations: data.allocations,
-          })
+        ? computeFlags(flagInputFrom(data))
         : [],
     [data],
   );

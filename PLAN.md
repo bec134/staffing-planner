@@ -54,11 +54,11 @@ Ten core records, all scoped to a planning year so a school can keep more than o
 
 | Record | Key fields |
 | --- | --- |
-| PlanningYear | year, school name, created/updated dates |
+| PlanningYear | year, school name, Term 1–4 dates (entered by the school; quick picks for cover), created/updated dates |
 | Entitlement | planning year, total FTE, list of {position type, FTE} — exact decimal FTE as supplied by the department (up to 3 decimals), stored as thousandths |
 | PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
 | Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year |
-| Leave | staff member, start date, end date, FTE affected, leave type (open text until Bec supplies a list), fortnight days on leave |
+| Leave | staff member, start date, end date, FTE affected, leave type (Long Service Leave, Leave without pay, Maternity Leave, Paternity Leave), fortnight days on leave |
 | Role | name (e.g. "3/4B", "RFF 1"), position type, fortnight days it runs — added with Bec in Phase 3 so staff are allocated to named roles and unfilled role days can be found |
 | Allocation | staff member, role, fortnight days, start date, end date (optional; omitted = whole year), covering-for (optional link to a Leave record) |
 | ClassStructure | grade/grade combination, number of classes, students per class, rule set used |
@@ -94,6 +94,8 @@ Each module is a screen in the app, reachable from a persistent side or top navi
 - Show positions left uncovered by leave, by date range and day.
 - Assign cover by day: full-year, partial FTE, or term/date-based.
 - Timeline view of each position showing who covers it, on which days, and when.
+- The person on leave keeps their position (Bec): their allocation stays and counts against entitlement; cover doesn't.
+- The weekly grid shows both the person who holds the position (with their leave) and the person covering it (with whose leave), for the whole year or as at a chosen date.
 
 ### 4. Class structures
 
@@ -164,8 +166,8 @@ These details weren't assumed; Claude Code should ask for them, or use placehold
 - [x] List of other teaching roles to allocate (release, support, etc.). *Same list as the position types.*
 - [ ] Class structure rules: max class size per grade, permitted composite combinations, how classroom/teacher limits apply.
 - [ ] Fields captured for staff intentions, and a sample export from the form you'll use.
-- [ ] Leave types to track, if a fixed list is wanted.
+- [x] Leave types to track, if a fixed list is wanted. *Supplied: Long Service Leave; Leave without pay; Maternity Leave; Paternity Leave.*
 - [ ] Sample CSV layouts for staff and leave imports.
 - [ ] Preferred layouts for printed/PDF reports.
 - [ ] Whether passphrase-encrypted exports are wanted in the first release.
-- [ ] Confirm that allocations covering leave should not count against entitlement (current behaviour: the person on leave keeps the entitlement, so cover is excluded).
+- [x] Confirm that allocations covering leave should not count against entitlement. *Confirmed: the person on leave still holds their position.*

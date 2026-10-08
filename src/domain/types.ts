@@ -11,10 +11,17 @@ export type Id = string;
 /** ISO calendar date, YYYY-MM-DD. */
 export type IsoDate = string;
 
+export interface DateRange {
+  start: IsoDate;
+  end: IsoDate;
+}
+
 export interface PlanningYear {
   id: Id;
   year: number;
   schoolName: string;
+  /** Term 1–4 dates, entered by the school; used as quick picks for cover. */
+  terms?: (DateRange | null)[];
   createdAt: string;
   updatedAt: string;
 }
@@ -78,9 +85,19 @@ export interface Leave extends Scoped {
   endDate: IsoDate;
   /** Days on leave; FTE affected is derived from this. */
   daysAffected: DayPattern;
-  /** TODO(open item): free text until Bec supplies a list of leave types. */
-  leaveType: string;
+  leaveType: LeaveType;
 }
+
+/** Leave types supplied by Bec. */
+export const LEAVE_TYPES = ['lsl', 'lwop', 'maternity', 'paternity'] as const;
+export type LeaveType = (typeof LEAVE_TYPES)[number];
+
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  lsl: 'Long Service Leave',
+  lwop: 'Leave without pay',
+  maternity: 'Maternity Leave',
+  paternity: 'Paternity Leave',
+};
 
 /**
  * A role staff are allocated to, e.g. "Class 3/4B" or "RFF 1". Its FTE comes

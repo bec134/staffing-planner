@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { computeFlags } from '../domain/flags';
+import { computeFlags, flagInputFrom } from '../domain/flags';
 import { usePlanData } from '../data/usePlanData';
 import { usePlanningYear } from './PlanningYearContext';
 
@@ -11,13 +11,7 @@ export function WarningsPanel() {
   const flags = useMemo(
     () =>
       data
-        ? computeFlags({
-            entitlement: data.entitlements[0],
-            positionTypes: data.positionTypes,
-            roles: data.roles,
-            staff: data.staff,
-            allocations: data.allocations,
-          })
+        ? computeFlags(flagInputFrom(data))
         : [],
     [data],
   );
