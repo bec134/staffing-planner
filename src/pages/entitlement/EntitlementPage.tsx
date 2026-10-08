@@ -28,7 +28,8 @@ export function EntitlementPage() {
 
   const positionTypes = [...data.positionTypes].sort((a, b) => a.sortOrder - b.sortOrder);
   const entitlement = data.entitlements[0];
-  const summary = summariseEntitlement(entitlement, positionTypes, data.roles, data.allocations);
+  // Part 1 matching is what counts against the entitlement (Bec).
+  const summary = summariseEntitlement(entitlement, positionTypes, data.positions, data.matches);
   const save = (e: Entitlement) => repo.entitlements.put(e);
 
   return (
@@ -48,7 +49,7 @@ export function EntitlementPage() {
         planningYearId={current.id}
         positionTypes={positionTypes}
         entitlement={entitlement}
-        roles={data.roles}
+        roles={[...data.roles, ...data.positions]}
       />
     </section>
   );

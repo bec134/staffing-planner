@@ -7,12 +7,14 @@
 import { FULL_TIME, fortnightlyPattern, weekdays, type DayPattern } from '../domain/dayPattern';
 import { defaultPositionTypeId, defaultPositionTypes } from '../domain/positionTypes';
 import { defaultRules } from '../domain/classStructure';
+import { positionsToCreate } from '../domain/matching';
 import {
   GRADES,
   type Allocation,
   type ClassStructure,
   type Enrolment,
   type Entitlement,
+  type EntitlementMatch,
   type Grade,
   type Leave,
   type PlanningYear,
@@ -48,6 +50,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
   // department-style decimals. Sized so the sample plan shows a mix of
   // balanced, under-allocated and within-tolerance position types.
   const lines: [string, number][] = [
+    ['Principal', 1000],
     ['Classroom Teacher', 6000],
     ['Assistant Principal', 2000],
     ['Assistant Principal - Curriculum & Instruction', 1000],
@@ -109,6 +112,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     person(16, 'Sam Ridley', 'Classroom Teacher', FULL_TIME, 'temporary'),
     // Part-time temporary teacher backfilling a whole-year leave without pay.
     person(17, 'Tara Quinlan', 'Classroom Teacher', weekdays('Thu', 'Fri'), 'tpt'),
+    person(18, 'Rowan Hale', 'Principal'),
   ];
 
   const role = (key: string, name: string, positionType: string, days: DayPattern, order: number): Role => ({
@@ -130,6 +134,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     role('ap-s2-s3', 'AP Stages 2 & 3', 'Assistant Principal', FULL_TIME, 7),
     role('apci', 'AP Curriculum & Instruction', 'Assistant Principal - Curriculum & Instruction', FULL_TIME, 8),
     role('dp', 'Deputy Principal', 'Deputy Principal', FULL_TIME, 9),
+    role('principal', 'Principal', 'Principal', FULL_TIME, 16),
     role('library', 'Library', 'Teacher Librarian', weekdays('Mon', 'Tue', 'Wed', 'Thu'), 10),
     role('rff-1', 'RFF 1', 'RFF Teacher', FULL_TIME, 11),
     role('rff-2', 'RFF 2', 'RFF Teacher', weekdays('Wed'), 12),
@@ -151,6 +156,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     };
   };
   const allocations: Allocation[] = [
+    allocate('Rowan Hale', 'principal'),
     allocate('Avery Quill', 'dp'),
     allocate('Bodhi Marsh', 'ap-es1-s1'),
     allocate('Casey Wren', 'ap-s2-s3'),
@@ -258,6 +264,48 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     klass('5/6 Gold', '56-gold', { '5': 14, '6': 16 }, 5),
   ];
 
+  // Part 1: positions from the entitlement, and staff matched to them.
+  let positionNumber = 0;
+  const positions = positionsToCreate(entitlement, positionTypes, [], Y, () => `${Y}-pos-${String(++positionNumber).padStart(2, '0')}`);
+  const position = (name: string) => positions.find((p) => p.name === name)!;
+  // Part positions whose days are set to suit the staff available.
+  position('RFF Teacher 2').days = fortnightlyPattern([false, false, true, true, false], [false, false, true, false, false]);
+  position('Learning & Support Teacher 1').days = weekdays('Wed', 'Thu', 'Fri');
+  let matchNumber = 0;
+  const match = (name: string, positionName: string, days?: DayPattern): EntitlementMatch => ({
+    id: `${Y}-match-${String(++matchNumber).padStart(2, '0')}`,
+    planningYearId: Y,
+    staffId: staffId(name),
+    roleId: position(positionName).id,
+    days: days ?? staff.find((p) => p.name === name)!.workPattern,
+  });
+  const matches: EntitlementMatch[] = [
+    match('Rowan Hale', 'Principal 1'),
+    match('Eli Brookfield', 'Classroom Teacher 1'),
+    match('Harper Vale', 'Classroom Teacher 2'),
+    match('Indi Calloway', 'Classroom Teacher 3'),
+    match('Jules Fernhill', 'Classroom Teacher 4'),
+    match('Kit Ashdown', 'Classroom Teacher 5'),
+    match('Frankie Lowe', 'Classroom Teacher 6'),
+    match('Gus Penrose', 'Classroom Teacher 6', weekdays('Thu', 'Fri')),
+    match('Bodhi Marsh', 'Assistant Principal 1'),
+    match('Casey Wren', 'Assistant Principal 2'),
+    match('Dana Thistle', 'Assistant Principal - Curriculum & Instruction 1'),
+    match('Avery Quill', 'Deputy Principal 1'),
+    match('Lou Merriweather', 'Teacher Librarian 1'),
+    match('Morgan Pike', 'RFF Teacher 1'),
+    match('Gus Penrose', 'RFF Teacher 2', weekdays('Wed')),
+    match('Noor Haddon', 'Learning & Support Teacher 1'),
+    match('Oak Delaney', 'EaLD Teacher 1'),
+    // Tara backfills Indi's whole-year LWOP (Thu–Fri). Eli's (Mon–Tue) is left open.
+    {
+      ...match('Tara Quinlan', 'Classroom Teacher 3', weekdays('Thu', 'Fri')),
+      coveringLeaveId: `${Y}-leave-03`,
+      startDate: '2027-01-28',
+      endDate: '2027-12-17',
+    },
+  ];
+
   return {
     planningYear,
     positionTypes,
@@ -269,5 +317,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     classStructures,
     enrolments,
     classRules: [{ ...defaultRules(Y), totalClasses: 6 }],
+    positions,
+    matches,
   };
 }

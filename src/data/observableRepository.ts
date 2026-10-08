@@ -20,6 +20,8 @@ const SCOPED_KEYS = [
   'classStructures',
   'enrolments',
   'classRules',
+  'positions',
+  'matches',
 ] as const satisfies readonly (keyof Repository)[];
 
 export function observeRepository(repo: Repository): ObservableRepository {

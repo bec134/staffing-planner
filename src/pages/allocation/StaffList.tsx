@@ -52,6 +52,11 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
                 <tr key={s.id}>
                   <td>
                     <Link to={staffLink(s.id)}>{s.name}</Link>
+                    {s.nominatedForTransfer && (
+                      <span className="badge warn" title={s.transferNotes || 'Nominated for transfer'}>
+                        transfer
+                      </span>
+                    )}
                     {warnings > 0 && (
                       <span className="badge warn" title={`${warnings} warning(s)`}>
                         ⚠ {warnings}

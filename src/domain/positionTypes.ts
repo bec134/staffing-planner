@@ -2,6 +2,7 @@ import type { Id, PositionCategory, PositionType } from './types';
 
 /** Position types supplied by Bec; used for entitlement and as allocatable roles. */
 export const DEFAULT_POSITION_TYPES: readonly { name: string; category: PositionCategory }[] = [
+  { name: 'Principal', category: 'executive' },
   { name: 'Classroom Teacher', category: 'class_teacher' },
   { name: 'Assistant Principal', category: 'executive' },
   { name: 'Assistant Principal - Curriculum & Instruction', category: 'executive' },

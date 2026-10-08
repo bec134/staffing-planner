@@ -17,9 +17,9 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 
 ## Decisions made with Bec (beyond PLAN.md)
 
-- **Position types:** Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher.
+- **Position types:** Principal; Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher.
   - The same list is used both for the entitlement breakdown and as the roles staff are allocated to.
-- **Position categories:** `class_teacher` (Classroom Teacher), `executive` (both AP roles and DP) and `other_teaching` (the rest).
+- **Position categories:** `class_teacher` (Classroom Teacher), `executive` (Principal, both AP roles and DP) and `other_teaching` (the rest).
 - **Entitlement is exact decimal FTE**, entered as the department supplies it (up to 3 decimals, e.g. 2.316) and stored as integer milli-FTE (`totalMilliFte`, `milliFte`; 1000 = 1.0 FTE). Use `parseFte`/`formatFte`/`milliFteOf` in `src/domain/fte.ts`; never do FTE arithmetic in floating point.
 - **Roles:** staff are allocated to named `Role` records (position type + days), not directly to position types. A role day is held by one person (leave cover aside); a person never holds two roles on the same day and is only allocated on days they work. Rules live in `src/domain/allocation.ts`.
 - **Full-year allocations for now:** allocations count as whole-year against entitlement until Phase 4 adds date-based cover.
@@ -31,6 +31,7 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 - **Class structures:** user enters total classes and students per grade. Guides K 20, Y1 22, Y2 24, Y3–6 30; up to 2 over the guide before preferring a composite; composites only 1/2, 3/4, 5/6, using the lower guide (1/2 = 22). The engine in `src/domain/classStructure.ts` scores every structure that totals the class count and offers the best 10. The accepted structure is one `ClassStructure` record per class, linked to a class teacher role.
 - **Role grid** (`src/domain/roleGrid.ts`, `RoleGrid.tsx`): drag-and-drop or pick-a-name allocation by role and day; dropping on a holder's leave day creates cover for that leave's dates. Whole-year leave is greyed; part-year leave shows in colour with dates. A 1.0 FTE teacher dropped (or picked) on an empty class day fills the whole week (`planFill`); dropping on a role's name fills all free days for anyone.
 - **CSV templates** are built in code (`STAFF_TEMPLATES`) and offered as downloads; never add template `.csv` files to the repo.
+- **Two parts (Bec):** Part 1 matches staff to entitlement positions by day (`positions` and `matches` tables, `src/domain/matching.ts`, `/matching`); Part 2 places them in roles (`roles`, `allocations`). **Entitlement counts Part 1 matches.** Only whole-year leave greys out in Part 1 and can be backfilled (a match with `coveringLeaveId`). Part 1 tiles are coloured by employment type; leave greys any type. Staff can be nominated for transfer (`nominatedForTransfer`, `transferNotes`). Part 2 offers matched staff by default and flags placed ≠ matched FTE. Both parts use the shared `AssignmentGrid`.
 - **IT/privacy confirmation** for storing real names is still pending, so development uses fictional data only.
 
 ## Stack and layout

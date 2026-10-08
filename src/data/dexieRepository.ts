@@ -18,6 +18,8 @@ const SCOPED_TABLES = [
   'classStructures',
   'enrolments',
   'classRules',
+  'positions',
+  'matches',
 ] as const satisfies readonly (keyof PlanningYearSnapshot)[];
 
 type ScopedTableName = (typeof SCOPED_TABLES)[number];
@@ -34,6 +36,8 @@ class StaffingDb extends Dexie {
   classStructures!: Table<RecordOf<'classStructures'>, Id>;
   enrolments!: Table<RecordOf<'enrolments'>, Id>;
   classRules!: Table<RecordOf<'classRules'>, Id>;
+  positions!: Table<RecordOf<'positions'>, Id>;
+  matches!: Table<RecordOf<'matches'>, Id>;
 
   constructor(name: string) {
     super(name);
@@ -69,6 +73,11 @@ class StaffingDb extends Dexie {
     this.version(3).stores({
       roles: 'id, planningYearId, positionTypeId',
       allocations: 'id, planningYearId, staffId, roleId, coveringLeaveId',
+    });
+    // v4: Part 1 entitlement positions and matches.
+    this.version(4).stores({
+      positions: 'id, planningYearId, positionTypeId',
+      matches: 'id, planningYearId, staffId, roleId, coveringLeaveId',
     });
   }
 
@@ -115,6 +124,8 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
     classStructures: scopedCollection(db.classStructures),
     enrolments: scopedCollection(db.enrolments),
     classRules: scopedCollection(db.classRules),
+    positions: scopedCollection(db.positions),
+    matches: scopedCollection(db.matches),
 
     async exportPlanningYear(id) {
       return db.transaction('r', [db.planningYears, ...db.scopedTables()], async () => {
@@ -133,6 +144,8 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
           classStructures: await byYear('classStructures'),
           enrolments: await byYear('enrolments'),
           classRules: await byYear('classRules'),
+          positions: await byYear('positions'),
+          matches: await byYear('matches'),
         };
       });
     },
