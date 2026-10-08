@@ -2,8 +2,10 @@
  * Automatic flags (PLAN.md "Automatic flags"). Recomputed whenever data
  * changes and shown in the warnings panel, each linking to its record.
  *
- * Covers over/under entitlement, staff over their FTE, and unfilled roles
- * or leave gaps.
+ * Part 1 (matching to entitlement): over/under entitlement, permanent or
+ * TPT staff left unmatched, and temporary staff matched ahead of them.
+ * Part 2 (placement): staff over their FTE, unfilled roles, leave gaps, and
+ * placements that don't add up to what each person was matched for.
  */
 import { datesOverlap, unfilledDays } from './allocation';
 import { formatRange } from './dates';
@@ -11,7 +13,22 @@ import { dayIndices, describeDayIndices, intersect, subtract } from './dayPatter
 import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement';
 import { formatFte } from './fte';
 import { coverGaps } from './leave';
-import { LEAVE_TYPE_LABELS, type Allocation, type Entitlement, type Id, type Leave, type PositionType, type Role, type Staff } from './types';
+import { MATCH_ORDER, matchStatus, schoolYear, unmatchedDayCount, wholeYearPlacedMilli } from './matching';
+import {
+  EMPLOYMENT_TYPE_LABELS,
+  LEAVE_TYPE_LABELS,
+  type Allocation,
+  type DateRange,
+  type Entitlement,
+  type EntitlementMatch,
+  type EntitlementPosition,
+  type Id,
+  type Leave,
+  type PlanningYear,
+  type PositionType,
+  type Role,
+  type Staff,
+} from './types';
 
 export type FlagKind =
   | 'over_entitlement'
@@ -20,7 +37,10 @@ export type FlagKind =
   | 'staff_double_booked'
   | 'outside_role_days'
   | 'role_unfilled'
-  | 'leave_gap';
+  | 'leave_gap'
+  | 'unmatched_staff'
+  | 'temporary_before_permanent'
+  | 'placement_mismatch';
 
 export interface Flag {
   /** Stable key, so the panel can render lists without duplicates. */
@@ -38,6 +58,11 @@ export interface FlagInput {
   staff: Staff[];
   allocations: Allocation[];
   leave: Leave[];
+  /** Part 1. */
+  positions: EntitlementPosition[];
+  matches: EntitlementMatch[];
+  /** The school year, to tell whole-year leave and placements apart. */
+  year?: DateRange;
 }
 
 /** Everything the flags need, from a plan snapshot. */
@@ -48,6 +73,9 @@ export const flagInputFrom = (d: {
   staff: Staff[];
   allocations: Allocation[];
   leave: Leave[];
+  positions: EntitlementPosition[];
+  matches: EntitlementMatch[];
+  planningYear: PlanningYear;
 }): FlagInput => ({
   entitlement: d.entitlements[0],
   positionTypes: d.positionTypes,
@@ -55,14 +83,19 @@ export const flagInputFrom = (d: {
   staff: d.staff,
   allocations: d.allocations,
   leave: d.leave,
+  positions: d.positions,
+  matches: d.matches,
+  year: schoolYear(d.planningYear),
 });
 
 export const staffLink = (id: Id) => `/allocation/staff/${id}`;
 export const roleLink = (id: Id) => `/allocation/roles/${id}`;
 export const leaveLink = (id: Id) => `/leave/${id}`;
+export const MATCHING_LINK = '/matching';
 
 function entitlementFlags(input: FlagInput): Flag[] {
-  const summary = summariseEntitlement(input.entitlement, input.positionTypes, input.roles, input.allocations);
+  // Part 1 matching is what counts against the entitlement (Bec).
+  const summary = summariseEntitlement(input.entitlement, input.positionTypes, input.positions, input.matches);
   const flags: Flag[] = [];
   const check = (key: string, label: string, entitled: number, allocated: number, remaining: number) => {
     if (remaining < 0) {
@@ -82,7 +115,7 @@ function entitlementFlags(input: FlagInput): Flag[] {
     }
   };
   // Nothing entered yet is a blank plan, not a problem worth flagging.
-  if (!input.entitlement || (input.entitlement.totalMilliFte === 0 && input.allocations.length === 0)) return [];
+  if (!input.entitlement || (input.entitlement.totalMilliFte === 0 && input.matches.length === 0)) return [];
   check('total', 'Total', summary.total.entitled, summary.total.allocated, summary.total.remaining);
   for (const row of summary.byPositionType) {
     if (row.entitled === 0 && row.allocated === 0) continue;
@@ -178,6 +211,74 @@ function vacancyFlags(input: FlagInput): Flag[] {
   return flags;
 }
 
+/** Part 1: unmatched permanent/TPT staff, and temporaries matched ahead of them. */
+function matchingFlags(input: FlagInput): Flag[] {
+  // Nothing to say until matching has started.
+  if (input.positions.length === 0) return [];
+  const flags: Flag[] = [];
+  const statuses = input.staff.filter((s) => !s.nominatedForTransfer).map((s) => matchStatus(s, input.matches));
+  const waiting = statuses.filter(
+    (st) => st.staff.employmentType !== 'temporary' && unmatchedDayCount(st) > 0,
+  );
+  for (const st of waiting.sort(
+    (a, b) => MATCH_ORDER.indexOf(a.staff.employmentType) - MATCH_ORDER.indexOf(b.staff.employmentType),
+  )) {
+    const left = st.workMilli - st.matchedMilli;
+    flags.push({
+      key: `unmatched:${st.staff.id}`,
+      kind: 'unmatched_staff',
+      message: `${st.staff.name} (${EMPLOYMENT_TYPE_LABELS[st.staff.employmentType]}) has ${formatFte(left)} FTE not matched to the entitlement (${describeDayIndices(dayIndices(st.unmatched))}): match them or nominate for transfer`,
+      link: MATCHING_LINK,
+    });
+  }
+  const temps = statuses.filter((st) => st.staff.employmentType === 'temporary' && st.matchedMilli > 0);
+  if (waiting.length && temps.length) {
+    flags.push({
+      key: 'temporary-before-permanent',
+      kind: 'temporary_before_permanent',
+      message: `Temporary staff (${temps.map((t) => t.staff.name).join(', ')}) are matched while permanent or TPT staff are still unmatched`,
+      link: MATCHING_LINK,
+    });
+  }
+  return flags;
+}
+
+/** Part 2 against Part 1: each person's placed FTE should equal what they were matched for. */
+function placementFlags(input: FlagInput): Flag[] {
+  if (input.positions.length === 0 || !input.year) return [];
+  const flags: Flag[] = [];
+  for (const staff of input.staff) {
+    const matched = matchStatus(staff, input.matches).matchedMilli;
+    const placed = wholeYearPlacedMilli(staff.id, input.allocations, input.leave, input.year);
+    if (staff.nominatedForTransfer) {
+      if (placed > 0) {
+        flags.push({
+          key: `placed-transfer:${staff.id}`,
+          kind: 'placement_mismatch',
+          message: `${staff.name} is nominated for transfer but still placed for ${formatFte(placed)} FTE`,
+          link: staffLink(staff.id),
+        });
+      }
+      continue;
+    }
+    if (matched !== placed) {
+      flags.push({
+        key: `placement:${staff.id}`,
+        kind: 'placement_mismatch',
+        message: `${staff.name} is matched for ${formatFte(matched)} FTE but placed for ${formatFte(placed)} FTE`,
+        link: staffLink(staff.id),
+      });
+    }
+  }
+  return flags;
+}
+
 export function computeFlags(input: FlagInput): Flag[] {
-  return [...staffFlags(input), ...vacancyFlags(input), ...entitlementFlags(input)];
+  return [
+    ...matchingFlags(input),
+    ...entitlementFlags(input),
+    ...placementFlags(input),
+    ...staffFlags(input),
+    ...vacancyFlags(input),
+  ];
 }

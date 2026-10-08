@@ -38,6 +38,8 @@ export function LeaveDetail({ data }: { data: PlanData }) {
     const extra = covers.length ? ` Its ${covers.length} cover allocation(s) will also be removed.` : '';
     if (!confirm(`Delete this leave?${extra}`)) return;
     await repo.allocations.deleteMany(covers.map((c) => c.id));
+    // Part 1 backfills against this leave go too.
+    await repo.matches.deleteMany(data.matches.filter((m) => m.coveringLeaveId === leave.id).map((m) => m.id));
     await repo.leave.delete(leave.id);
     navigate('/leave');
   };

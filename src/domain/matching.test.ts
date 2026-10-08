@@ -1,0 +1,151 @@
+import { buildSampleData } from '../data/sampleData';
+import { FULL_TIME, describePattern, weekdays } from './dayPattern';
+import { computeFlags, flagInputFrom } from './flags';
+import {
+  isMatched,
+  isWholeYearLeave,
+  matchStatus,
+  patternForFortnightDays,
+  positionsToCreate,
+  schoolYear,
+  wholeYearPlacedMilli,
+} from './matching';
+import type { Staff } from './types';
+
+const sample = () => buildSampleData('2026-01-01T00:00:00Z');
+const Y = 'sample-2027';
+let n = 0;
+const newId = () => `p${n++}`;
+
+describe('positions from the entitlement', () => {
+  it('fills part positions from Monday, extra day in Week A', () => {
+    expect(describePattern(patternForFortnightDays(10))).toBe('Mon, Tue, Wed, Thu, Fri');
+    expect(describePattern(patternForFortnightDays(4))).toBe('Mon, Tue');
+    expect(describePattern(patternForFortnightDays(3))).toBe('A: Mon, Tue · B: Mon');
+    expect(describePattern(patternForFortnightDays(8))).toBe('Mon, Tue, Wed, Thu');
+  });
+
+  it('makes whole positions plus a part position, ignoring remainders under a day', () => {
+    const s = sample();
+    const created = positionsToCreate(s.entitlements[0], s.positionTypes, [], Y, newId);
+    const names = created.map((p) => p.name);
+    expect(names.filter((x) => x.startsWith('Classroom Teacher'))).toHaveLength(6);
+    // RFF 1.316 → one full position and one of 3 fortnight days (0.016 left over).
+    const rff = created.filter((p) => p.name.startsWith('RFF'));
+    expect(rff.map((p) => describePattern(p.days))).toEqual(['Mon, Tue, Wed, Thu, Fri', 'A: Mon, Tue · B: Mon']);
+    // QTSS 0.526 → 5 fortnight days.
+    expect(describePattern(created.find((p) => p.name === 'QTSS Teacher 1')!.days)).toBe('A: Mon, Tue, Wed · B: Mon, Tue');
+  });
+
+  it('only adds positions that are missing', () => {
+    const s = sample();
+    expect(positionsToCreate(s.entitlements[0], s.positionTypes, s.positions, Y, newId)).toEqual([]);
+    const fewer = s.positions.filter((p) => p.name !== 'Classroom Teacher 6');
+    const added = positionsToCreate(s.entitlements[0], s.positionTypes, fewer, Y, newId);
+    expect(added.map((p) => p.name)).toEqual(['Classroom Teacher 6']);
+  });
+});
+
+describe('whole-year leave and placement', () => {
+  it('uses Term 1 start to Term 4 end as the school year', () => {
+    const s = sample();
+    const year = schoolYear(s.planningYear);
+    expect(year).toEqual({ start: '2027-01-28', end: '2027-12-17' });
+    expect(s.leave.map((l) => isWholeYearLeave(l, year))).toEqual([false, false, true, true]);
+    expect(schoolYear({ ...s.planningYear, terms: undefined })).toEqual({ start: '2027-01-01', end: '2027-12-31' });
+  });
+
+  it('counts whole-year placements and whole-year cover, not part-year cover', () => {
+    const s = sample();
+    const year = schoolYear(s.planningYear);
+    const placed = (id: string) => wholeYearPlacedMilli(`${Y}-staff-${id}`, s.allocations, s.leave, year);
+    expect(placed('17')).toBe(400); // Tara: cover for Indi's whole-year LWOP
+    expect(placed('16')).toBe(0); // Sam: only part-year cover
+    expect(placed('07')).toBe(600); // Gus: class Thu–Fri + RFF Wed
+  });
+
+  it("reports each person's matched and unmatched days", () => {
+    const s = sample();
+    const frankie = s.staff.find((x) => x.name === 'Frankie Lowe')!;
+    expect(matchStatus(frankie, s.matches)).toMatchObject({ workMilli: 600, matchedMilli: 600 });
+    const sam = s.staff.find((x) => x.name === 'Sam Ridley')!;
+    expect(describePattern(matchStatus(sam, s.matches).unmatched)).toBe('Mon, Tue, Wed, Thu, Fri');
+    expect(isMatched(frankie, s.matches)).toBe(true);
+    expect(isMatched(sam, s.matches)).toBe(false);
+    expect(isMatched({ ...frankie, nominatedForTransfer: true }, s.matches)).toBe(false);
+  });
+});
+
+describe('Part 1 flags', () => {
+  const extra = (over: Partial<Staff>): Staff => ({
+    id: 'extra',
+    planningYearId: Y,
+    name: 'Extra Person',
+    workPattern: FULL_TIME,
+    currentRole: '',
+    employmentType: 'permanent',
+    preferences: '',
+    ...over,
+  });
+  const flagsWith = (staff: Staff[], change: (s: ReturnType<typeof sample>) => void = () => {}) => {
+    const s = sample();
+    s.staff.push(...staff);
+    change(s);
+    return computeFlags(flagInputFrom(s));
+  };
+
+  it('has none in the sample', () => {
+    const kinds = new Set(flagsWith([]).map((f) => f.kind));
+    expect(kinds.has('unmatched_staff')).toBe(false);
+    expect(kinds.has('placement_mismatch')).toBe(false);
+  });
+
+  it('flags permanent or TPT staff left unmatched, but not temporary staff', () => {
+    const flags = flagsWith([extra({}), extra({ id: 'temp', name: 'Temp Person', employmentType: 'temporary' })]);
+    const unmatched = flags.filter((f) => f.kind === 'unmatched_staff');
+    expect(unmatched.map((f) => f.message)).toEqual([
+      'Extra Person (Permanent) has 1.0 FTE not matched to the entitlement (Mon, Tue, Wed, Thu, Fri): match them or nominate for transfer',
+    ]);
+    expect(unmatched[0]!.link).toBe('/matching');
+  });
+
+  it('stops flagging someone nominated for transfer', () => {
+    const flags = flagsWith([extra({ nominatedForTransfer: true, transferNotes: 'Nominated 1 Nov' })]);
+    expect(flags.some((f) => f.kind === 'unmatched_staff')).toBe(false);
+  });
+
+  it('flags temporary staff matched while permanent staff are unmatched', () => {
+    const flags = flagsWith([extra({})], (s) => {
+      const sam = s.staff.find((x) => x.name === 'Sam Ridley')!;
+      s.matches.push({
+        id: 'm-sam',
+        planningYearId: Y,
+        staffId: sam.id,
+        roleId: s.positions.find((p) => p.name === 'Executive Release Teacher 1')!.id,
+        days: weekdays('Mon', 'Tue'),
+      });
+    });
+    const message = flags.find((f) => f.kind === 'temporary_before_permanent')?.message ?? '';
+    expect(message).toMatch(/^Temporary staff \(.*Sam Ridley.*\) are matched while permanent or TPT staff are still unmatched$/);
+    expect(message).toContain('Harper Vale');
+  });
+
+  it('flags placement that differs from matching, and placed staff nominated for transfer', () => {
+    const flags = flagsWith([], (s) => {
+      const lou = s.staff.find((x) => x.name === 'Lou Merriweather')!;
+      s.allocations = s.allocations.filter((a) => a.staffId !== lou.id);
+      const harper = s.staff.find((x) => x.name === 'Harper Vale')!;
+      harper.nominatedForTransfer = true;
+    });
+    const msgs = flags.filter((f) => f.kind === 'placement_mismatch').map((f) => f.message);
+    expect(msgs).toContain('Lou Merriweather is matched for 0.8 FTE but placed for 0.0 FTE');
+    expect(msgs).toContain('Harper Vale is nominated for transfer but still placed for 1.0 FTE');
+  });
+
+  it('counts entitlement against Part 1 matching, not Part 2 placement', () => {
+    const flags = flagsWith([], (s) => {
+      s.allocations = [];
+    });
+    expect(flags.some((f) => f.message.startsWith('Classroom Teacher:'))).toBe(false);
+  });
+});

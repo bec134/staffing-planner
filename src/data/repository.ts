@@ -11,6 +11,8 @@ import type {
   ClassStructure,
   Enrolment,
   Entitlement,
+  EntitlementMatch,
+  EntitlementPosition,
   Id,
   Leave,
   PlanningYear,
@@ -47,6 +49,9 @@ export interface PlanningYearSnapshot {
   classStructures: ClassStructure[];
   enrolments: Enrolment[];
   classRules: ClassRules[];
+  /** Part 1: entitlement positions and the staff matched to them. */
+  positions: EntitlementPosition[];
+  matches: EntitlementMatch[];
 }
 
 export interface Repository {
@@ -60,6 +65,8 @@ export interface Repository {
   classStructures: ScopedCollection<ClassStructure>;
   enrolments: ScopedCollection<Enrolment>;
   classRules: ScopedCollection<ClassRules>;
+  positions: ScopedCollection<EntitlementPosition>;
+  matches: ScopedCollection<EntitlementMatch>;
 
   /** Read a planning year and all its records. */
   exportPlanningYear(id: Id): Promise<PlanningYearSnapshot | undefined>;

@@ -57,6 +57,8 @@ async function setup() {
   fireEvent.click(screen.getByRole('link', { name: 'Staff & allocation' }));
   fireEvent.click(await screen.findByRole('link', { name: 'Role grid' }));
   await screen.findByTestId('cell-K Blue-Mon');
+  // The test people aren't matched in Part 1, so include everyone.
+  fireEvent.click(screen.getByLabelText(/Show all staff/));
   return repo;
 }
 
@@ -196,6 +198,17 @@ describe('Role grid', () => {
     fireEvent.drop(cell('K Green', 'Tue'), { dataTransfer: dt });
     expect(await within(cell('K Green', 'Tue')).findByText('Pip Example')).toBeInTheDocument();
     expect(within(cell('K Green', 'Mon')).queryByText('Pip Example')).not.toBeInTheDocument();
+    repo.close();
+  });
+
+  it('offers only staff matched in Part 1 unless asked to show everyone', async () => {
+    const repo = await setup();
+    const palette = () => screen.getByLabelText('Staff to drag');
+    expect(within(palette()).getByText('Fern Example')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Show all staff/));
+    expect(within(palette()).queryByText('Fern Example')).not.toBeInTheDocument();
+    expect(within(palette()).queryByText('Sam Ridley')).not.toBeInTheDocument(); // part-year cover only, not matched
+    expect(within(palette()).getByText('Tara Quinlan')).toBeInTheDocument(); // matched as a backfill
     repo.close();
   });
 });

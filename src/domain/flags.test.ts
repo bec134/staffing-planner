@@ -4,8 +4,9 @@ import { defaultPositionTypeId, defaultPositionTypes } from './positionTypes';
 import type { Allocation, Leave, Role, Staff } from './types';
 
 // The original Phase 3 tests use part-filled roles; leave the unfilled-role
-// flag to its own tests below.
-const computeFlags = (input: FlagInput) => computeAllFlags(input).filter((f) => f.kind !== 'role_unfilled');
+// and Part 1 matching flags to their own tests below.
+const LATER = new Set(['role_unfilled', 'unmatched_staff', 'temporary_before_permanent', 'placement_mismatch']);
+const computeFlags = (input: FlagInput) => computeAllFlags(input).filter((f) => !LATER.has(f.kind));
 
 const Y = 'y';
 const types = defaultPositionTypes(Y);
@@ -39,23 +40,30 @@ const alloc = (staffId: string, roleId: string, days: DayPattern, extra: Partial
   ...extra,
 });
 
-const base = (over: Partial<FlagInput> = {}): FlagInput => ({
-  entitlement: {
-    id: 'e',
-    planningYearId: Y,
-    totalMilliFte: 1316,
-    lines: [
-      { positionTypeId: CT, milliFte: 1000 },
-      { positionTypeId: RFF, milliFte: 316 },
-    ],
-  },
-  positionTypes: types,
-  roles: [role('c1', CT), role('r1', RFF)],
-  staff: [person('s1'), person('s2', weekdays('Mon', 'Tue'))],
-  allocations: [],
-  leave: [],
-  ...over,
-});
+/**
+ * Entitlement is now measured on Part 1 matches; these older tests use the
+ * same roles and allocations as positions and matches unless given others.
+ */
+const base = (over: Partial<FlagInput> = {}): FlagInput => {
+  const input = {
+    entitlement: {
+      id: 'e',
+      planningYearId: Y,
+      totalMilliFte: 1316,
+      lines: [
+        { positionTypeId: CT, milliFte: 1000 },
+        { positionTypeId: RFF, milliFte: 316 },
+      ],
+    },
+    positionTypes: types,
+    roles: [role('c1', CT), role('r1', RFF)],
+    staff: [person('s1'), person('s2', weekdays('Mon', 'Tue'))],
+    allocations: [] as Allocation[],
+    leave: [] as Leave[],
+    ...over,
+  };
+  return { ...input, positions: over.positions ?? input.roles, matches: over.matches ?? input.allocations };
+};
 const kinds = (input: FlagInput) => computeFlags(input).map((f) => f.kind);
 
 describe('entitlement flags', () => {
@@ -158,6 +166,7 @@ describe('unfilled role flags', () => {
         entitlement: undefined,
         roles: [role('r1', RFF, weekdays('Mon', 'Tue', 'Wed'))],
         allocations: [alloc('s1', 'r1', weekdays('Mon')), alloc('s2', 'r1', weekdays('Tue'), { coveringLeaveId: 'l' })],
+        positions: [],
       }),
     );
     expect(flags.map((f) => [f.kind, f.message, f.link])).toEqual([

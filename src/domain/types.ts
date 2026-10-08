@@ -77,6 +77,9 @@ export interface Staff extends Scoped {
   employmentType: EmploymentType;
   /** TODO(open item): structured intention fields to be supplied by Bec. */
   preferences: string;
+  /** Part 1: surplus to entitlement and nominated for transfer (Bec). */
+  nominatedForTransfer?: boolean;
+  transferNotes?: string;
 }
 
 export interface Leave extends Scoped {
@@ -118,6 +121,20 @@ export interface Role extends Scoped {
   days: DayPattern;
   sortOrder: number;
 }
+
+/**
+ * Part 1 (Bec): a position within the entitlement, e.g. "Classroom Teacher 3"
+ * Mon–Fri or "RFF Teacher 2" on 3 fortnight days. Same shape as a Role so the
+ * same grid logic serves both parts, but stored separately.
+ */
+export type EntitlementPosition = Role;
+
+/**
+ * Part 1: a staff member matched to an entitlement position on some days.
+ * `roleId` is the position. A backfill against whole-year leave sets
+ * `coveringLeaveId` (and the leave's dates), like cover in Part 2.
+ */
+export type EntitlementMatch = Allocation;
 
 export interface Allocation extends Scoped {
   staffId: Id;

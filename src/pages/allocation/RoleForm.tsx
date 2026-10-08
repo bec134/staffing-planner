@@ -11,9 +11,14 @@ interface Props {
   otherNames: string[];
   nextSortOrder: number;
   onDone(saved?: Role): void;
+  /** Where to save; defaults to Part 2 roles. Part 1 positions pass their own. */
+  save?(role: Role): Promise<void>;
+  /** "role" (Part 2) or "position" (Part 1). */
+  noun?: string;
 }
 
-export function RoleForm({ planningYearId, positionTypes, existing, otherNames, nextSortOrder, onDone }: Props) {
+export function RoleForm({ planningYearId, positionTypes, existing, otherNames, nextSortOrder, onDone, save: saveTo, noun = 'role' }: Props) {
+  const Noun = noun[0]!.toUpperCase() + noun.slice(1);
   const repo = useRepository();
   const [name, setName] = useState(existing?.name ?? '');
   const [positionTypeId, setPositionTypeId] = useState(existing?.positionTypeId ?? positionTypes[0]?.id ?? '');
@@ -24,7 +29,7 @@ export function RoleForm({ planningYearId, positionTypes, existing, otherNames, 
   const error = !name.trim()
     ? 'Enter a name'
     : duplicate
-      ? 'A role with this name already exists'
+      ? `A ${noun} with this name already exists`
       : !positionTypeId
         ? 'Add a position type on the Entitlement page first'
         : dayIndices(days).length === 0
@@ -43,7 +48,7 @@ export function RoleForm({ planningYearId, positionTypes, existing, otherNames, 
     };
     setSaving(true);
     try {
-      await repo.roles.put(role);
+      await (saveTo ? saveTo(role) : repo.roles.put(role));
       onDone(role);
     } finally {
       setSaving(false);
@@ -53,7 +58,7 @@ export function RoleForm({ planningYearId, positionTypes, existing, otherNames, 
   return (
     <form
       className="panel"
-      aria-label={existing ? `Edit ${existing.name}` : 'Add role'}
+      aria-label={existing ? `Edit ${existing.name}` : `Add ${noun}`}
       onSubmit={(e) => {
         e.preventDefault();
         void save();
@@ -61,7 +66,7 @@ export function RoleForm({ planningYearId, positionTypes, existing, otherNames, 
     >
       <div className="form-grid">
         <label>
-          Role name <input value={name} placeholder="e.g. 3/4B or RFF 1" onChange={(e) => setName(e.target.value)} autoFocus />
+          {Noun} name <input value={name} placeholder="e.g. 3/4B or RFF 1" onChange={(e) => setName(e.target.value)} autoFocus />
         </label>
         <label>
           Position type{' '}
@@ -74,11 +79,11 @@ export function RoleForm({ planningYearId, positionTypes, existing, otherNames, 
           </select>
         </label>
       </div>
-      <DayPatternEditor legend="Days the role runs" value={days} onChange={setDays} />
-      {existing && <p className="muted small">Allocations on days the role no longer runs will be flagged.</p>}
+      <DayPatternEditor legend={`Days the ${noun} runs`} value={days} onChange={setDays} />
+      {existing && <p className="muted small">Staff on days the {noun} no longer runs will be flagged.</p>}
       <div className="actions">
         <button type="submit" disabled={!!error || saving}>
-          {existing ? 'Save changes' : 'Add role'}
+          {existing ? 'Save changes' : `Add ${noun}`}
         </button>
         <button type="button" className="secondary" onClick={() => onDone()}>
           Cancel

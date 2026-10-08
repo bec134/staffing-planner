@@ -23,14 +23,14 @@ export function EntitlementDashboard({ summary }: { summary: EntitlementSummary 
   const { total } = summary;
   return (
     <section aria-labelledby="dashboard-heading">
-      <h2 id="dashboard-heading">Entitlement vs allocated</h2>
+      <h2 id="dashboard-heading">Entitlement vs matched</h2>
       <div className="stat-row">
         <div className="stat">
           <div className="stat-label">Entitlement</div>
           <div className="stat-value">{formatFte(total.entitled)}</div>
         </div>
         <div className="stat">
-          <div className="stat-label">Allocated</div>
+          <div className="stat-label">Matched</div>
           <div className="stat-value">{formatFte(total.allocated)}</div>
         </div>
         <div className="stat">
@@ -41,8 +41,8 @@ export function EntitlementDashboard({ summary }: { summary: EntitlementSummary 
         </div>
       </div>
       <p className="muted small">
-        FTE. Allocated is the staff days allocated to roles of each position type. Negative remaining means
-        over-allocated. Leave cover is not counted against entitlement.
+        FTE. Matched is the staff matched to each position type in Part 1 (Match staff). Negative remaining means
+        over-matched. Backfills for leave are not counted against entitlement.
       </p>
 
       <table>
@@ -50,7 +50,7 @@ export function EntitlementDashboard({ summary }: { summary: EntitlementSummary 
           <tr>
             <th>Position type</th>
             <th className="num">Entitlement</th>
-            <th className="num">Allocated</th>
+            <th className="num">Matched</th>
             <th className="num">Remaining</th>
           </tr>
         </thead>
@@ -81,7 +81,7 @@ export function EntitlementDashboard({ summary }: { summary: EntitlementSummary 
       </table>
       {summary.unknownPositionTypeAllocated > 0 && (
         <p className="warning" role="alert">
-          {formatFte(summary.unknownPositionTypeAllocated)} FTE is allocated to roles or position types that no longer exist.
+          {formatFte(summary.unknownPositionTypeAllocated)} FTE is matched to positions or position types that no longer exist.
         </p>
       )}
     </section>

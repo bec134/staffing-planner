@@ -50,17 +50,19 @@ Note: a GitHub Pages site is publicly reachable, but it holds no data — each u
 
 ## Data model
 
-Ten core records, all scoped to a planning year so a school can keep more than one year's plan.
+Twelve core records, all scoped to a planning year so a school can keep more than one year's plan.
 
 | Record | Key fields |
 | --- | --- |
 | PlanningYear | year, school name, Term 1–4 dates (entered by the school; quick picks for cover), created/updated dates |
 | Entitlement | planning year, total FTE, list of {position type, FTE} — exact decimal FTE as supplied by the department (up to 3 decimals), stored as thousandths |
 | PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
-| Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year |
+| Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year, nominated for transfer (with notes) |
 | Leave | staff member, start date, end date, FTE affected, leave type (Long Service Leave, Leave without pay, Maternity Leave, Paternity Leave), fortnight days on leave |
 | Role | name (e.g. "3/4B", "RFF 1"), position type, fortnight days it runs — added with Bec in Phase 3 so staff are allocated to named roles and unfilled role days can be found |
 | Allocation | staff member, role, fortnight days, start date, end date (optional; omitted = whole year), covering-for (optional link to a Leave record) |
+| EntitlementPosition | Part 1: a position within an entitlement line (name, position type, fortnight days) |
+| EntitlementMatch | Part 1: staff member matched to a position on some days; a backfill links to whole-year leave |
 | ClassStructure | one record per class in the accepted structure: name, students per grade (two grades for a composite), linked class teacher role |
 | Enrolment | grade, projected student count (numbers only) |
 | ClassRules | total number of classes, guide (average) size per grade, allowance over guide, permitted composites |
@@ -68,6 +70,13 @@ Ten core records, all scoped to a planning year so a school can keep more than o
 Allocations carry dates so one record type covers full-year roles and date-based leave cover. Until Phase 4, every allocation is treated as full-year (Bec).
 
 **FTE rule:** most staff work the same days every week, so the default is a weekly pattern (Mon–Fri, 1 day = 0.2 FTE). For the rare case that needs it (e.g. 0.5 FTE = 5 days per fortnight), a staff member or role can switch to a fortnightly pattern (Week A and Week B, 1 day = 0.1 FTE). Behind the scenes everything is stored as 10 fortnight days, with a weekly pattern simply repeated, so calculations work the same for both. Whole days only; FTE is always calculated from days, never entered separately. The one exception is entitlement, which is entered as exact decimal FTE (e.g. 2.316) because that is how the department supplies it; allocations are still whole days, so the dashboard can show small remainders.
+
+## Two parts of staffing (Bec)
+
+Planning happens in two parts, and the app's menu is grouped the same way.
+
+1. **Part 1 · Match staff to entitlement.** Each entitlement line becomes positions by day (Classroom Teacher 6.0 → six Mon–Fri positions; RFF 1.316 → one Mon–Fri position plus one of 3 fortnight days, with 0.016 left as an unfillable remainder). Staff are matched to positions on the days they work — permanent first, then TPT, then temporary (tiles colour-coded by employment type). Part-timers fill part of a position (e.g. Mon–Wed = 0.6 of a Classroom Teacher position). **Whole-year leave** (e.g. full-year maternity, or LWOP two days a week all year) greys out the matched days for any employment type, and another teacher can be matched there as a backfill, which doesn't use extra entitlement. Permanent or TPT staff left unmatched are flagged and can be **nominated for transfer** (with notes); a backfill against whole-year leave can absorb what would otherwise be a surplus. **The entitlement dashboard and over/under warnings count Part 1 matches.** Matching is by hand (no automatic suggestions).
+2. **Part 2 · Place staff in classes and roles.** Class structures, the role and staff grids, and part-year leave cover. Only staff matched in Part 1 (and not nominated for transfer) are offered by default. Placement is independent of matching (someone matched to RFF may be placed on a class); each person's whole-year placed FTE is checked against their matched FTE.
 
 ## Module specifications
 
@@ -119,8 +128,11 @@ Three checks run whenever data changes and appear in a warnings panel, with a li
 
 | Flag | Triggers when |
 | --- | --- |
-| Over/under entitlement | Allocated FTE differs from entitlement, in total or for a position type. Over is always flagged; under only when short by 0.1 FTE (one fortnight day) or more, since smaller decimal remainders can't be filled (Bec) |
+| Over/under entitlement | Part 1 matched FTE differs from entitlement, in total or for a position type. Over is always flagged; under only when short by 0.1 FTE (one fortnight day) or more, since smaller decimal remainders can't be filled (Bec) |
 | Staff over their FTE | A staff member is allocated on a day they don't work, or to two roles on the same day |
+| Unmatched staff (Part 1) | A permanent or TPT staff member has days not matched to the entitlement and isn't nominated for transfer |
+| Temporary before permanent (Part 1) | Temporary staff are matched while permanent or TPT staff are still unmatched |
+| Placement differs from matching | A person's whole-year placed FTE in Part 2 differs from their Part 1 matched FTE, or someone nominated for transfer is still placed |
 | Unfilled roles or leave gaps | A role has a day with no one assigned, including days left by leave |
 
 Checks are date- and day-aware: two part-year roles only clash if their dates overlap and they share a working day. All flag logic gets unit tests.

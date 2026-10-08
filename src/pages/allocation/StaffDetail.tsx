@@ -44,6 +44,12 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
     const extra = parts.length ? ` Their ${parts.join(' and ')} will also be removed.` : '';
     if (!confirm(`Delete ${staff.name}?${extra}`)) return;
     await repo.allocations.deleteMany(doomed.map((a) => a.id));
+    // Part 1 too: their matches, and backfills against their leave.
+    await repo.matches.deleteMany(
+      data.matches
+        .filter((m) => m.staffId === staff.id || (m.coveringLeaveId && leaveIds.has(m.coveringLeaveId)))
+        .map((m) => m.id),
+    );
     await repo.leave.deleteMany([...leaveIds]);
     await repo.staff.delete(staff.id);
     navigate('/allocation');
