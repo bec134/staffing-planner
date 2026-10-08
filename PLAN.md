@@ -56,7 +56,7 @@ Nine core records, all scoped to a planning year so a school can keep more than 
 | --- | --- |
 | PlanningYear | year, school name, created/updated dates |
 | Entitlement | planning year, total FTE, list of {position type, fortnight days} |
-| PositionType | name (list supplied by Bec), category (class teacher / other teaching) |
+| PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
 | Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year |
 | Leave | staff member, start date, end date, FTE affected, leave type (open text until Bec supplies a list), fortnight days on leave |
 | Allocation | staff member, role or class, fortnight days, start date, end date, covering-for (optional link to a Leave record) |
@@ -159,8 +159,8 @@ Each phase ends with unit tests for its logic and a short manual test checklist.
 These details weren't assumed; Claude Code should ask for them, or use placeholders, until they're supplied.
 
 - [ ] Confirm with IT/privacy contact that storing staff names in the browser and in exported files is permitted.
-- [ ] List of position types used in the entitlement breakdown.
-- [ ] List of other teaching roles to allocate (release, support, etc.).
+- [x] List of position types used in the entitlement breakdown. *Supplied: Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher. Categories: class teacher (Classroom Teacher), executive (APs, DP), other teaching (the rest).*
+- [x] List of other teaching roles to allocate (release, support, etc.). *Same list as the position types.*
 - [ ] Class structure rules: max class size per grade, permitted composite combinations, how classroom/teacher limits apply.
 - [ ] Fields captured for staff intentions, and a sample export from the form you'll use.
 - [ ] Leave types to track, if a fixed list is wanted.
