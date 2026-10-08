@@ -4,6 +4,7 @@ import { usePlanningYear } from '../../components/PlanningYearContext';
 import { computeFlags, flagInputFrom } from '../../domain/flags';
 import { usePlanData } from '../../data/usePlanData';
 import { RoleDetail } from './RoleDetail';
+import { RoleGrid } from './RoleGrid';
 import { RoleList } from './RoleList';
 import { StaffDetail } from './StaffDetail';
 import { StaffImport } from './StaffImport';
@@ -42,7 +43,8 @@ export function AllocationPage() {
           By staff
         </NavLink>
         <NavLink to="/allocation/roles">By role</NavLink>
-        <NavLink to="/allocation/grid">Weekly grid</NavLink>
+        <NavLink to="/allocation/grid">Staff grid</NavLink>
+        <NavLink to="/allocation/role-grid">Role grid</NavLink>
         <NavLink to="/allocation/import">Import CSV</NavLink>
       </nav>
       <Routes>
@@ -51,6 +53,7 @@ export function AllocationPage() {
         <Route path="roles" element={<RoleList data={data} />} />
         <Route path="roles/:id" element={<RoleDetail data={data} />} />
         <Route path="grid" element={<WeeklyGrid data={data} />} />
+        <Route path="role-grid" element={<RoleGrid data={data} />} />
         <Route path="import" element={<StaffImport data={data} />} />
       </Routes>
     </section>

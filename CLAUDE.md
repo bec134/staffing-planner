@@ -29,6 +29,8 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 - **Leave cover:** the person on leave keeps their position (their allocation stays and counts against entitlement). Cover is an `Allocation` with `coveringLeaveId`, start/end dates and days, and is not counted against entitlement. Gap and cover rules live in `src/domain/leave.ts`; dates are ISO strings handled by `src/domain/dates.ts`.
 - **Weekly grid** shows the position holder (with leave and who covers) and the coverer (with whose leave), for the whole year or as at a date.
 - **Class structures:** user enters total classes and students per grade. Guides K 20, Y1 22, Y2 24, Y3–6 30; up to 2 over the guide before preferring a composite; composites only 1/2, 3/4, 5/6, using the lower guide (1/2 = 22). The engine in `src/domain/classStructure.ts` scores every structure that totals the class count and offers the best 10. The accepted structure is one `ClassStructure` record per class, linked to a class teacher role.
+- **Role grid** (`src/domain/roleGrid.ts`, `RoleGrid.tsx`): drag-and-drop or pick-a-name allocation by role and day; dropping on a holder's leave day creates cover for that leave's dates. Whole-year leave is greyed; part-year leave shows in colour with dates.
+- **CSV templates** are built in code (`STAFF_TEMPLATES`) and offered as downloads; never add template `.csv` files to the repo.
 - **IT/privacy confirmation** for storing real names is still pending, so development uses fictional data only.
 
 ## Stack and layout

@@ -160,3 +160,30 @@ export function guessMapping(headers: string[]): StaffMapping {
     defaultEmploymentType: 'permanent',
   };
 }
+
+/**
+ * Downloadable templates for the staff import. Built in code (never stored
+ * as CSV files in the repo) with obviously made-up example rows.
+ */
+export const STAFF_TEMPLATES = [
+  {
+    file: 'staff-template-days-column.csv',
+    label: 'Days in one column',
+    csv: [
+      'Name,Employment type,Current role,Days worked',
+      'Example Teacher,Permanent,Classroom Teacher,Mon-Fri',
+      'Example Part-timer,TPT,RFF Teacher,Mon Tue Wed',
+      'Example Temp,Temporary,Learning & Support Teacher,Thu Fri',
+    ].join('\r\n'),
+  },
+  {
+    file: 'staff-template-weekday-columns.csv',
+    label: 'A Y/N column per weekday',
+    csv: [
+      'Name,Employment type,Current role,Mon,Tue,Wed,Thu,Fri',
+      'Example Teacher,Permanent,Classroom Teacher,Y,Y,Y,Y,Y',
+      'Example Part-timer,TPT,RFF Teacher,Y,Y,Y,N,N',
+      'Example Temp,Temporary,Learning & Support Teacher,N,N,N,Y,Y',
+    ].join('\r\n'),
+  },
+] as const;
