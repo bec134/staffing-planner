@@ -95,6 +95,8 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     person(15, 'Oak Delaney', 'EaLD Teacher', weekdays('Mon'), 'tpt'),
     // Temporary teacher employed to cover leave.
     person(16, 'Sam Ridley', 'Classroom Teacher', FULL_TIME, 'temporary'),
+    // Part-time temporary teacher backfilling a whole-year leave without pay.
+    person(17, 'Tara Quinlan', 'Classroom Teacher', weekdays('Thu', 'Fri'), 'tpt'),
   ];
 
   const role = (key: string, name: string, positionType: string, days: DayPattern, order: number): Role => ({
@@ -177,9 +179,37 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
       daysAffected: FULL_TIME,
       leaveType: 'paternity',
     },
+    // Leave without pay 2 days a week for the whole school year (Term 1 start
+    // to Term 4 end). Indi's Thu–Fri is covered all year by Tara (TPT).
+    {
+      id: `${Y}-leave-03`,
+      planningYearId: Y,
+      staffId: staffId('Indi Calloway'),
+      startDate: '2027-01-28',
+      endDate: '2027-12-17',
+      daysAffected: weekdays('Thu', 'Fri'),
+      leaveType: 'lwop',
+    },
+    // The same arrangement for Eli on Mon–Tue, with no cover yet.
+    {
+      id: `${Y}-leave-04`,
+      planningYearId: Y,
+      staffId: staffId('Eli Brookfield'),
+      startDate: '2027-01-28',
+      endDate: '2027-12-17',
+      daysAffected: weekdays('Mon', 'Tue'),
+      leaveType: 'lwop',
+    },
   ];
-  const cover = (roleKey: string, leaveId: string, days: DayPattern, startDate: string, endDate: string): Allocation => ({
-    ...allocate('Sam Ridley', roleKey, days),
+  const cover = (
+    roleKey: string,
+    leaveId: string,
+    days: DayPattern,
+    startDate: string,
+    endDate: string,
+    coverer = 'Sam Ridley',
+  ): Allocation => ({
+    ...allocate(coverer, roleKey, days),
     coveringLeaveId: leaveId,
     startDate,
     endDate,
@@ -187,6 +217,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
   allocations.push(
     cover('34-red', `${Y}-leave-01`, weekdays('Mon', 'Tue', 'Wed'), '2027-04-27', '2027-07-02'),
     cover('56-gold', `${Y}-leave-02`, FULL_TIME, '2027-08-02', '2027-08-13'),
+    cover('12-green', `${Y}-leave-03`, weekdays('Thu', 'Fri'), '2027-01-28', '2027-12-17', 'Tara Quinlan'),
   );
 
   return {

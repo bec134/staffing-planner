@@ -161,4 +161,27 @@ describe('Weekly grid with leave', () => {
     expect(within(sam).getAllByRole('cell')[0]).toHaveTextContent('3/4 Redcover for Jules Fernhill');
     repo.close();
   });
+
+  it('shows whole-year part-week leave without pay, covered and uncovered', async () => {
+    const repo = await setup('Staff & allocation');
+    fireEvent.click(screen.getByRole('link', { name: 'Weekly grid' }));
+    const indi = (await screen.findByRole('link', { name: 'Indi Calloway' })).closest('tr')!;
+    const [iMon, , , iThu] = within(indi).getAllByRole('cell');
+    expect(iMon).toHaveTextContent(/^1\/2 Green$/);
+    expect(iThu).toHaveTextContent('1/2 GreenOn LWOP, 28 Jan – 17 Dec 2027Cover: Tara Quinlan, 28 Jan – 17 Dec 2027');
+
+    const tara = screen.getByRole('link', { name: 'Tara Quinlan' }).closest('tr')!;
+    expect(within(tara).getAllByRole('cell')[3]).toHaveTextContent('1/2 Greencover for Indi Calloway');
+
+    const eli = screen.getByRole('link', { name: 'Eli Brookfield' }).closest('tr')!;
+    const [eMon, , eWed] = within(eli).getAllByRole('cell');
+    expect(eMon).toHaveTextContent('On LWOP, 28 Jan – 17 Dec 2027No cover, 28 Jan – 17 Dec 2027');
+    expect(eWed).toHaveTextContent(/^K Blue$/);
+    expect(
+      within(panel()).getByText(
+        "K Blue: no cover for Eli Brookfield's Leave without pay on Mon, Tue, 28 Jan – 17 Dec 2027",
+      ),
+    ).toBeInTheDocument();
+    repo.close();
+  });
 });

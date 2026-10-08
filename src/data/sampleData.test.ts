@@ -45,12 +45,22 @@ describe('sample data', () => {
     expect(flags.some((f) => f.message.startsWith('Teacher Librarian'))).toBe(false);
   });
 
-  it('has one partly covered and one fully covered leave', async () => {
+  it('has partly, fully and uncovered leave, including whole-year part-week LWOP', async () => {
     const { coverGaps } = await import('../domain/leave');
     const { validateLeave } = await import('../domain/leave');
     for (const l of sample.leave) {
       expect(validateLeave(l, sample.staff.find((s) => s.id === l.staffId)!)).toEqual([]);
     }
-    expect(sample.leave.map((l) => coverGaps(l, sample.allocations).length)).toEqual([1, 0]);
+    expect(sample.leave.map((l) => coverGaps(l, sample.allocations).length)).toEqual([1, 0, 0, 1]);
+
+    const { fteOf, describePattern } = await import('../domain/dayPattern');
+    const lwop = sample.leave.filter((l) => l.leaveType === 'lwop');
+    expect(lwop.map((l) => [describePattern(l.daysAffected), fteOf(l.daysAffected), l.startDate, l.endDate])).toEqual([
+      ['Thu, Fri', 0.4, '2027-01-28', '2027-12-17'],
+      ['Mon, Tue', 0.4, '2027-01-28', '2027-12-17'],
+    ]);
+    // Eli's gap is Mon–Tue for the whole year.
+    const [eliGap] = coverGaps(lwop[1]!, sample.allocations);
+    expect(eliGap).toMatchObject({ days: [0, 1, 5, 6], range: { start: '2027-01-28', end: '2027-12-17' } });
   });
 });
