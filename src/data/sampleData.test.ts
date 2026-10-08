@@ -63,4 +63,18 @@ describe('sample data', () => {
     const [eliGap] = coverGaps(lwop[1]!, sample.allocations);
     expect(eliGap).toMatchObject({ days: [0, 1, 5, 6], range: { start: '2027-01-28', end: '2027-12-17' } });
   });
+
+  it('has enrolments, rules and an accepted structure that places every student in a linked class', async () => {
+    const { placementGaps, suggestStructures, describeIssues } = await import('../domain/classStructure');
+    const enrol = Object.fromEntries(sample.enrolments.map((e) => [e.grade, e.projectedCount])) as Parameters<
+      typeof placementGaps
+    >[1];
+    expect(placementGaps(sample.classStructures, enrol)).toEqual({});
+    const rules = sample.classRules[0]!;
+    expect(rules.totalClasses).toBe(sample.classStructures.length);
+    const roleIds = new Set(sample.roles.map((r) => r.id));
+    expect(sample.classStructures.every((c) => c.roleId && roleIds.has(c.roleId))).toBe(true);
+    expect(describeIssues(sample.classStructures.map((c) => ({ grades: [], students: c.students })), rules)).toEqual([]);
+    expect(suggestStructures(enrol, rules).suggestions.length).toBeGreaterThan(1);
+  });
 });

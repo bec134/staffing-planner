@@ -213,3 +213,10 @@ button.small { padding: 2px 8px; font-size: 0.85rem; }
 .legend .tl-bar { position: static; display: inline-block; height: auto; line-height: 1.6; margin-right: 6px; }
 .tl-lanes .tl-track { flex: none; }
 ul.warning { padding-left: 28px; }
+
+/* Phase 5: class structures */
+details.rules { margin: 8px 0 12px; }
+details.rules summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.grade-count { margin-right: 10px; white-space: nowrap; }
+caption { text-align: left; font-weight: 600; padding: 4px 0; }
+.grade-count input { width: 4.5em; }

@@ -6,7 +6,19 @@
  */
 import { FULL_TIME, fortnightlyPattern, weekdays, type DayPattern } from '../domain/dayPattern';
 import { defaultPositionTypeId, defaultPositionTypes } from '../domain/positionTypes';
-import type { Allocation, Entitlement, Leave, PlanningYear, Role, Staff } from '../domain/types';
+import { defaultRules } from '../domain/classStructure';
+import {
+  GRADES,
+  type Allocation,
+  type ClassStructure,
+  type Enrolment,
+  type Entitlement,
+  type Grade,
+  type Leave,
+  type PlanningYear,
+  type Role,
+  type Staff,
+} from '../domain/types';
 import type { PlanningYearSnapshot } from './repository';
 
 export const SAMPLE_PLANNING_YEAR_ID = 'sample-2027';
@@ -220,6 +232,32 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     cover('12-green', `${Y}-leave-03`, weekdays('Thu', 'Fri'), '2027-01-28', '2027-12-17', 'Tara Quinlan'),
   );
 
+  // Fictional projected enrolments for 6 classes.
+  const counts: Record<Grade, number> = { K: 40, '1': 30, '2': 16, '3': 15, '4': 15, '5': 14, '6': 16 };
+  const enrolments: Enrolment[] = GRADES.map((g) => ({
+    id: `${Y}-enrolment-${g}`,
+    planningYearId: Y,
+    grade: g,
+    projectedCount: counts[g],
+  }));
+  // An accepted structure, renamed by hand to match the existing class roles.
+  const klass = (name: string, roleKey: string, students: Partial<Record<Grade, number>>, sortOrder: number): ClassStructure => ({
+    id: `${Y}-class-${roleKey}`,
+    planningYearId: Y,
+    name,
+    students,
+    sortOrder,
+    roleId: `${Y}-role-${roleKey}`,
+  });
+  const classStructures: ClassStructure[] = [
+    klass('K Blue', 'k-blue', { K: 20 }, 0),
+    klass('K Gold', 'k-gold', { K: 20 }, 1),
+    klass('1/2 Green', '12-green', { '1': 15, '2': 8 }, 2),
+    klass('1/2 Blue', '12-blue', { '1': 15, '2': 8 }, 3),
+    klass('3/4 Red', '34-red', { '3': 15, '4': 15 }, 4),
+    klass('5/6 Gold', '56-gold', { '5': 14, '6': 16 }, 5),
+  ];
+
   return {
     planningYear,
     positionTypes,
@@ -228,9 +266,8 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     roles,
     allocations,
     leave,
-    // Class structures, enrolments and rules arrive in later phases.
-    classStructures: [],
-    enrolments: [],
-    classRules: [],
+    classStructures,
+    enrolments,
+    classRules: [{ ...defaultRules(Y), totalClasses: 6 }],
   };
 }
