@@ -6,7 +6,8 @@ import { leaveLink, staffLink, type Flag } from '../../domain/flags';
 import { formatRange } from '../../domain/dates';
 import { leaveRange } from '../../domain/leave';
 import { formatFte, milliFteOf } from '../../domain/fte';
-import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_LABELS } from '../../domain/types';
+import { describeGrades, intentionForStaff } from '../../domain/intentions';
+import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_LABELS, WORK_PREFERENCE_LABELS } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 import { AllocationTable } from './AllocationTable';
 import { StaffForm } from './StaffForm';
@@ -30,6 +31,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
   const allocatedMilli = allocations.reduce((s, a) => s + milliFteOf(a.days), 0);
   const unallocated = subtract(staff.workPattern, staffBusyDays(staff.id, data.allocations));
   const myFlags = flags.filter((f) => f.link === staffLink(staff.id));
+  const intention = intentionForStaff(staff, data.intentions);
 
   const leave = data.leave.filter((l) => l.staffId === staff.id).sort((a, b) => a.startDate.localeCompare(b.startDate));
 
@@ -40,6 +42,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
     const parts = [
       doomed.length ? `${doomed.length} allocation(s)` : '',
       leave.length ? `${leave.length} leave record(s)` : '',
+      intention ? 'intentions' : '',
     ].filter(Boolean);
     const extra = parts.length ? ` Their ${parts.join(' and ')} will also be removed.` : '';
     if (!confirm(`Delete ${staff.name}?${extra}`)) return;
@@ -51,6 +54,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
         .map((m) => m.id),
     );
     await repo.leave.deleteMany([...leaveIds]);
+    if (intention) await repo.intentions.delete(intention.id);
     await repo.staff.delete(staff.id);
     navigate('/allocation');
   };
@@ -90,6 +94,18 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
             <dd>{formatFte(allocatedMilli)} FTE</dd>
             <dt>Unallocated days</dt>
             <dd>{daysLabel(unallocated) === 'none' ? '—' : daysLabel(unallocated)}</dd>
+            <dt>Intentions</dt>
+            <dd>
+              {intention ? (
+                <>
+                  {WORK_PREFERENCE_LABELS[intention.workPreference]}, prefers {daysLabel(intention.preferredDays)}
+                  {intention.gradePreferences.length > 0 && `; grades ${describeGrades(intention.gradePreferences)}`}.{' '}
+                </>
+              ) : (
+                'None entered. '
+              )}
+              <Link to="/intentions">Staff intentions</Link>
+            </dd>
           </dl>
           <div className="actions">
             <button className="secondary" onClick={() => setEditing(true)}>

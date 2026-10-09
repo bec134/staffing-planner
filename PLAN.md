@@ -57,7 +57,7 @@ Twelve core records, all scoped to a planning year so a school can keep more tha
 | PlanningYear | year, school name, Term 1–4 dates (entered by the school; quick picks for cover), created/updated dates |
 | Entitlement | planning year, total FTE, list of {position type, FTE} — exact decimal FTE as supplied by the department (up to 3 decimals), stored as thousandths |
 | PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
-| Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TPT / temporary), preferences for next year, nominated for transfer (with notes) |
+| Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TWT = Temporary Workforce Transition / temporary), preferences for next year, nominated for transfer (with notes) |
 | Leave | staff member, start date, end date, FTE affected, leave type (Long Service Leave, Leave without pay, Maternity Leave, Paternity Leave), fortnight days on leave |
 | Role | name (e.g. "3/4B", "RFF 1"), position type, fortnight days it runs — added with Bec in Phase 3 so staff are allocated to named roles and unfilled role days can be found |
 | Allocation | staff member, role, fortnight days, start date, end date (optional; omitted = whole year), covering-for (optional link to a Leave record) |
@@ -75,7 +75,7 @@ Allocations carry dates so one record type covers full-year roles and date-based
 
 Planning happens in two parts, and the app's menu is grouped the same way.
 
-1. **Part 1 · Match staff to entitlement.** Each entitlement line becomes positions by day (Classroom Teacher 6.0 → six Mon–Fri positions; RFF 1.316 → one Mon–Fri position plus one of 3 fortnight days, with 0.016 left as an unfillable remainder). Staff are matched to positions on the days they work — permanent first, then TPT, then temporary (tiles colour-coded by employment type). Part-timers fill part of a position (e.g. Mon–Wed = 0.6 of a Classroom Teacher position). **Whole-year leave** (e.g. full-year maternity, or LWOP two days a week all year) greys out the matched days for any employment type, and another teacher can be matched there as a backfill, which doesn't use extra entitlement. Permanent or TPT staff left unmatched are flagged and can be **nominated for transfer** (with notes); a backfill against whole-year leave can absorb what would otherwise be a surplus. **The entitlement dashboard and over/under warnings count Part 1 matches.** Matching is by hand (no automatic suggestions).
+1. **Part 1 · Match staff to entitlement.** Each entitlement line becomes positions by day (Classroom Teacher 6.0 → six Mon–Fri positions; RFF 1.316 → one Mon–Fri position plus one of 3 fortnight days, with 0.016 left as an unfillable remainder). Staff are matched to positions on the days they work — permanent first, then TWT, then temporary (tiles colour-coded by employment type). Part-timers fill part of a position (e.g. Mon–Wed = 0.6 of a Classroom Teacher position). **Whole-year leave** (e.g. full-year maternity, or LWOP two days a week all year) greys out the matched days for any employment type, and another teacher can be matched there as a backfill, which doesn't use extra entitlement. Permanent or TWT staff left unmatched are flagged and can be **nominated for transfer** (with notes); a backfill against whole-year leave can absorb what would otherwise be a surplus. **The entitlement dashboard and over/under warnings count Part 1 matches.** Matching is by hand (no automatic suggestions).
 2. **Part 2 · Place staff in classes and roles.** Class structures, the role and staff grids, and part-year leave cover. Only staff matched in Part 1 (and not nominated for transfer) are offered by default. Placement is independent of matching (someone matched to RFF may be placed on a class); each person's whole-year placed FTE is checked against their matched FTE.
 
 ## Module specifications
@@ -118,20 +118,23 @@ Each module is a screen in the app, reachable from a persistent side or top navi
 
 ### 5. Staff intentions
 
-- Record each staff member's intentions for next year (fields to be supplied by Bec).
-- Manual entry plus CSV import from an external form, with a column-mapping step.
-- Intentions visible beside each staff member during allocation.
+- Fields (Bec): Name; Employment Status (Permanent, TWT, Temporary); Permanent FTE (Permanent or TWT only); Work Preference (Full or Part time); Preferred days; Whole year leave days (if applicable) and their leave type (LWOP if blank); Grade Preference 1–3.
+- Entered by hand or imported from CSV (column mapping, preview, downloadable template built in code). No external form.
+- Intentions are saved on their own and **applied on confirm**: applying sets the person's employment status and days worked (preferred days + whole-year leave days) and their whole-year leave for the school year, adding new staff where needed. That feeds **Part 1**. Cover and backfills for days no longer on leave are removed. Permanent/TWT staff whose days don't add up to their permanent FTE are flagged.
+- Grade preferences feed **Part 2**: shown on staff name tiles in the role grid, and flagged when someone is placed on a class with none of their preferred grades.
 
 ## Automatic flags
 
-Three checks run whenever data changes and appear in a warnings panel, with a link to the record causing each one.
+Checks run whenever data changes and appear in a warnings panel, with a link to the record causing each one.
 
 | Flag | Triggers when |
 | --- | --- |
 | Over/under entitlement | Part 1 matched FTE differs from entitlement, in total or for a position type. Over is always flagged; under only when short by 0.1 FTE (one fortnight day) or more, since smaller decimal remainders can't be filled (Bec) |
 | Staff over their FTE | A staff member is allocated on a day they don't work, or to two roles on the same day |
-| Unmatched staff (Part 1) | A permanent or TPT staff member has days not matched to the entitlement and isn't nominated for transfer |
-| Temporary before permanent (Part 1) | Temporary staff are matched while permanent or TPT staff are still unmatched |
+| Unmatched staff (Part 1) | A permanent or TWT staff member has days not matched to the entitlement and isn't nominated for transfer |
+| Temporary before permanent (Part 1) | Temporary staff are matched while permanent or TWT staff are still unmatched |
+| Intentions not applied | A staff member's intentions differ from the plan, or don't add up (e.g. days ≠ permanent FTE) |
+| Outside grade preferences | Someone is placed on a class with none of their preferred grades |
 | Placement differs from matching | A person's whole-year placed FTE in Part 2 differs from their Part 1 matched FTE, or someone nominated for transfer is still placed |
 | Unfilled roles or leave gaps | A role has a day with no one assigned, including days left by leave |
 
@@ -180,7 +183,7 @@ These details weren't assumed; Claude Code should ask for them, or use placehold
 - [x] List of position types used in the entitlement breakdown. *Supplied: Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher. Categories: class teacher (Classroom Teacher), executive (APs, DP), other teaching (the rest).*
 - [x] List of other teaching roles to allocate (release, support, etc.). *Same list as the position types.*
 - [x] Class structure rules: max class size per grade, permitted composite combinations, how classroom/teacher limits apply. *Supplied: see module 4 (guides K 20, Y1 22, Y2 24, Y3–6 30; 1–2 over allowed; composites 1/2, 3/4, 5/6; 1/2 composite guide 22; user sets total classes).*
-- [ ] Fields captured for staff intentions, and a sample export from the form you'll use.
+- [x] Fields captured for staff intentions. *Supplied (see module 5); CSV upload or manual entry instead of a form.*
 - [x] Leave types to track, if a fixed list is wanted. *Supplied: Long Service Leave; Leave without pay; Maternity Leave; Paternity Leave.*
 - [ ] Sample CSV layouts for staff and leave imports.
 - [ ] Preferred layouts for printed/PDF reports.

@@ -4,7 +4,7 @@
  * Every name here is invented. Never replace these with real staff names and
  * never commit real staff data to the repository (see CLAUDE.md).
  */
-import { FULL_TIME, fortnightlyPattern, weekdays, type DayPattern } from '../domain/dayPattern';
+import { FULL_TIME, NO_DAYS, fortnightlyPattern, weekdays, type DayPattern } from '../domain/dayPattern';
 import { defaultPositionTypeId, defaultPositionTypes } from '../domain/positionTypes';
 import { defaultRules } from '../domain/classStructure';
 import { positionsToCreate } from '../domain/matching';
@@ -20,6 +20,7 @@ import {
   type PlanningYear,
   type Role,
   type Staff,
+  type StaffIntention,
 } from '../domain/types';
 import type { PlanningYearSnapshot } from './repository';
 
@@ -107,11 +108,11 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
       'temporary',
     ),
     person(14, 'Noor Haddon', 'Learning & Support Teacher', weekdays('Thu', 'Fri')),
-    person(15, 'Oak Delaney', 'EaLD Teacher', weekdays('Mon'), 'tpt'),
+    person(15, 'Oak Delaney', 'EaLD Teacher', weekdays('Mon'), 'twt'),
     // Temporary teacher employed to cover leave.
     person(16, 'Sam Ridley', 'Classroom Teacher', FULL_TIME, 'temporary'),
     // Part-time temporary teacher backfilling a whole-year leave without pay.
-    person(17, 'Tara Quinlan', 'Classroom Teacher', weekdays('Thu', 'Fri'), 'tpt'),
+    person(17, 'Tara Quinlan', 'Classroom Teacher', weekdays('Thu', 'Fri'), 'twt'),
     person(18, 'Rowan Hale', 'Principal'),
   ];
 
@@ -198,7 +199,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
       leaveType: 'paternity',
     },
     // Leave without pay 2 days a week for the whole school year (Term 1 start
-    // to Term 4 end). Indi's Thu–Fri is covered all year by Tara (TPT).
+    // to Term 4 end). Indi's Thu–Fri is covered all year by Tara (TWT).
     {
       id: `${Y}-leave-03`,
       planningYearId: Y,
@@ -306,6 +307,57 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     },
   ];
 
+  // Staff intentions for next year. All are already applied to the plan
+  // except Kit's (going part time with LWOP Thu–Fri), to show applying one.
+  // Jules prefers K–2 but is placed on 3/4 Red, to show the grade flag.
+  const intend = (
+    name: string,
+    opts: {
+      fte?: number;
+      preferred?: DayPattern;
+      leave?: DayPattern;
+      leaveType?: StaffIntention['leaveType'];
+      grades?: Grade[];
+    } = {},
+  ): StaffIntention => {
+    const p = staff.find((x) => x.name === name)!;
+    const leaveDays = opts.leave ?? NO_DAYS;
+    const preferredDays = opts.preferred ?? p.workPattern;
+    return {
+      id: `${Y}-intention-${p.id.slice(-2)}`,
+      planningYearId: Y,
+      name,
+      staffId: p.id,
+      employmentType: p.employmentType,
+      permanentMilliFte: p.employmentType === 'temporary' ? undefined : (opts.fte ?? 1000),
+      workPreference: leaveDays.days.some(Boolean) || preferredDays.days.some((d) => !d) ? 'part_time' : 'full_time',
+      preferredDays,
+      leaveDays,
+      leaveType: opts.leaveType ?? 'lwop',
+      gradePreferences: opts.grades ?? [],
+    };
+  };
+  const intentions: StaffIntention[] = [
+    intend('Rowan Hale'),
+    intend('Avery Quill'),
+    intend('Bodhi Marsh', { grades: ['K', '1', '2'] }),
+    intend('Casey Wren', { grades: ['5', '6', '4'] }),
+    intend('Dana Thistle'),
+    intend('Eli Brookfield', { preferred: weekdays('Wed', 'Thu', 'Fri'), leave: weekdays('Mon', 'Tue'), grades: ['K', '1'] }),
+    intend('Frankie Lowe', { fte: 600, grades: ['1', '2'] }),
+    intend('Gus Penrose', { fte: 600, grades: ['2', '1', '3'] }),
+    intend('Harper Vale', { grades: ['K'] }),
+    intend('Indi Calloway', { preferred: weekdays('Mon', 'Tue', 'Wed'), leave: weekdays('Thu', 'Fri'), grades: ['1', '2'] }),
+    intend('Jules Fernhill', { grades: ['K', '1', '2'] }),
+    intend('Kit Ashdown', { preferred: weekdays('Mon', 'Tue', 'Wed'), leave: weekdays('Thu', 'Fri'), grades: ['5', '6'] }),
+    intend('Lou Merriweather', { fte: 800 }),
+    intend('Morgan Pike'),
+    intend('Noor Haddon', { fte: 400 }),
+    intend('Oak Delaney', { fte: 200 }),
+    intend('Sam Ridley', { grades: ['3', '4', '5'] }),
+    intend('Tara Quinlan', { fte: 400, grades: ['1', '2'] }),
+  ];
+
   return {
     planningYear,
     positionTypes,
@@ -319,5 +371,6 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     classRules: [{ ...defaultRules(Y), totalClasses: 6 }],
     positions,
     matches,
+    intentions,
   };
 }

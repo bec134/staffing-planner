@@ -3,7 +3,7 @@
  * changes and shown in the warnings panel, each linking to its record.
  *
  * Part 1 (matching to entitlement): over/under entitlement, permanent or
- * TPT staff left unmatched, and temporary staff matched ahead of them.
+ * TWT staff left unmatched, and temporary staff matched ahead of them.
  * Part 2 (placement): staff over their FTE, unfilled roles, leave gaps, and
  * placements that don't add up to what each person was matched for.
  */
@@ -12,12 +12,14 @@ import { formatRange } from './dates';
 import { dayIndices, describeDayIndices, intersect, subtract } from './dayPattern';
 import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement';
 import { formatFte } from './fte';
+import { checkIntention, describeGrades, gradePreferenceMismatches, planApplyIntention } from './intentions';
 import { coverGaps } from './leave';
 import { MATCH_ORDER, matchStatus, schoolYear, unmatchedDayCount, wholeYearPlacedMilli } from './matching';
 import {
   EMPLOYMENT_TYPE_LABELS,
   LEAVE_TYPE_LABELS,
   type Allocation,
+  type ClassStructure,
   type DateRange,
   type Entitlement,
   type EntitlementMatch,
@@ -28,6 +30,7 @@ import {
   type PositionType,
   type Role,
   type Staff,
+  type StaffIntention,
 } from './types';
 
 export type FlagKind =
@@ -40,7 +43,10 @@ export type FlagKind =
   | 'leave_gap'
   | 'unmatched_staff'
   | 'temporary_before_permanent'
-  | 'placement_mismatch';
+  | 'placement_mismatch'
+  | 'intention_not_applied'
+  | 'intention_check'
+  | 'grade_preference';
 
 export interface Flag {
   /** Stable key, so the panel can render lists without duplicates. */
@@ -63,6 +69,9 @@ export interface FlagInput {
   matches: EntitlementMatch[];
   /** The school year, to tell whole-year leave and placements apart. */
   year?: DateRange;
+  /** Staff intentions, and the classes they're compared with. */
+  intentions?: StaffIntention[];
+  classStructures?: ClassStructure[];
 }
 
 /** Everything the flags need, from a plan snapshot. */
@@ -76,6 +85,8 @@ export const flagInputFrom = (d: {
   positions: EntitlementPosition[];
   matches: EntitlementMatch[];
   planningYear: PlanningYear;
+  intentions?: StaffIntention[];
+  classStructures?: ClassStructure[];
 }): FlagInput => ({
   entitlement: d.entitlements[0],
   positionTypes: d.positionTypes,
@@ -86,12 +97,15 @@ export const flagInputFrom = (d: {
   positions: d.positions,
   matches: d.matches,
   year: schoolYear(d.planningYear),
+  intentions: d.intentions,
+  classStructures: d.classStructures,
 });
 
 export const staffLink = (id: Id) => `/allocation/staff/${id}`;
 export const roleLink = (id: Id) => `/allocation/roles/${id}`;
 export const leaveLink = (id: Id) => `/leave/${id}`;
 export const MATCHING_LINK = '/matching';
+export const INTENTIONS_LINK = '/intentions';
 
 function entitlementFlags(input: FlagInput): Flag[] {
   // Part 1 matching is what counts against the entitlement (Bec).
@@ -211,7 +225,7 @@ function vacancyFlags(input: FlagInput): Flag[] {
   return flags;
 }
 
-/** Part 1: unmatched permanent/TPT staff, and temporaries matched ahead of them. */
+/** Part 1: unmatched permanent/TWT staff, and temporaries matched ahead of them. */
 function matchingFlags(input: FlagInput): Flag[] {
   // Nothing to say until matching has started.
   if (input.positions.length === 0) return [];
@@ -236,7 +250,7 @@ function matchingFlags(input: FlagInput): Flag[] {
     flags.push({
       key: 'temporary-before-permanent',
       kind: 'temporary_before_permanent',
-      message: `Temporary staff (${temps.map((t) => t.staff.name).join(', ')}) are matched while permanent or TPT staff are still unmatched`,
+      message: `Temporary staff (${temps.map((t) => t.staff.name).join(', ')}) are matched while permanent or TWT staff are still unmatched`,
       link: MATCHING_LINK,
     });
   }
@@ -273,8 +287,49 @@ function placementFlags(input: FlagInput): Flag[] {
   return flags;
 }
 
+/** Intentions not yet reflected in the plan, or that don't add up; grade preferences. */
+function intentionFlags(input: FlagInput): Flag[] {
+  const intentions = input.intentions ?? [];
+  const flags: Flag[] = [];
+  for (const i of intentions) {
+    const { errors, warnings } = checkIntention(i);
+    for (const problem of [...errors, ...warnings]) {
+      flags.push({
+        key: `intention-check:${i.id}:${problem}`,
+        kind: 'intention_check',
+        message: `${i.name || 'An intention'}: ${problem}`,
+        link: INTENTIONS_LINK,
+      });
+    }
+    if (errors.length || !input.year) continue;
+    const plan = planApplyIntention(
+      i,
+      { planningYearId: i.planningYearId, year: input.year, staff: input.staff, leave: input.leave, allocations: input.allocations, matches: input.matches },
+      () => 'probe',
+    );
+    if (plan.changes.length) {
+      flags.push({
+        key: `intention-pending:${i.id}`,
+        kind: 'intention_not_applied',
+        message: `${i.name}'s intentions aren't applied to the plan yet: ${plan.changes.join('; ')}`,
+        link: INTENTIONS_LINK,
+      });
+    }
+  }
+  for (const m of gradePreferenceMismatches(input.staff, intentions, input.classStructures ?? [], input.allocations)) {
+    flags.push({
+      key: `grade:${m.staff.id}:${m.classStructure.id}`,
+      kind: 'grade_preference',
+      message: `${m.staff.name} is placed on ${m.classStructure.name}, outside their grade preferences (${describeGrades(m.preferences)})`,
+      link: staffLink(m.staff.id),
+    });
+  }
+  return flags;
+}
+
 export function computeFlags(input: FlagInput): Flag[] {
   return [
+    ...intentionFlags(input),
     ...matchingFlags(input),
     ...entitlementFlags(input),
     ...placementFlags(input),

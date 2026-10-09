@@ -42,7 +42,8 @@ const norm = (s: string) => s.trim().toLowerCase();
 export function parseEmploymentType(text: string): EmploymentType | null {
   const t = norm(text).replace(/[\s_-]+/g, ' ');
   if (['permanent', 'perm', 'p', 'ongoing'].includes(t)) return 'permanent';
-  if (['tpt', 'temporary part time', 'temp part time', 'part time temporary'].includes(t)) return 'tpt';
+  // TWT = Temporary Workforce Transition (Bec). "TPT" was the app's earlier label.
+  if (['twt', 'temporary workforce transition', 'tpt'].includes(t)) return 'twt';
   if (['temporary', 'temp', 't', 'temporary full time', 'temp full time'].includes(t)) return 'temporary';
   return null;
 }
@@ -172,7 +173,7 @@ export const STAFF_TEMPLATES = [
     csv: [
       'Name,Employment type,Current role,Days worked',
       'Example Teacher,Permanent,Classroom Teacher,Mon-Fri',
-      'Example Part-timer,TPT,RFF Teacher,Mon Tue Wed',
+      'Example Part-timer,TWT,RFF Teacher,Mon Tue Wed',
       'Example Temp,Temporary,Learning & Support Teacher,Thu Fri',
     ].join('\r\n'),
   },
@@ -182,7 +183,7 @@ export const STAFF_TEMPLATES = [
     csv: [
       'Name,Employment type,Current role,Mon,Tue,Wed,Thu,Fri',
       'Example Teacher,Permanent,Classroom Teacher,Y,Y,Y,Y,Y',
-      'Example Part-timer,TPT,RFF Teacher,Y,Y,Y,N,N',
+      'Example Part-timer,TWT,RFF Teacher,Y,Y,Y,N,N',
       'Example Temp,Temporary,Learning & Support Teacher,N,N,N,Y,Y',
     ].join('\r\n'),
   },

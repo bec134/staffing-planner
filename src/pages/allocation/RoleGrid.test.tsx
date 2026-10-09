@@ -42,7 +42,7 @@ async function setup() {
       name: 'Pip Example',
       workPattern: { mode: 'weekly', days: [true, true, true, false, false, true, true, true, false, false] },
       currentRole: '',
-      employmentType: 'tpt',
+      employmentType: 'twt',
       preferences: '',
     });
     await repo.roles.put({

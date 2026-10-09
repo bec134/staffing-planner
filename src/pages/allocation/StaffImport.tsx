@@ -13,7 +13,7 @@ interface Parsed {
   rows: string[][];
 }
 
-function ColumnSelect({ label, value, headers, onChange }: {
+export function ColumnSelect({ label, value, headers, onChange }: {
   label: string;
   value: ColumnIndex;
   headers: string[];
@@ -98,7 +98,7 @@ export function StaffImport({ data }: { data: PlanData }) {
         ))}
         <p className="muted small">
           Fill in a template in Excel or Google Sheets, replacing the example rows, and save it as CSV. Employment type
-          is Permanent, TPT or Temporary. Days can be written like "Mon-Fri" or "Mon Tue Wed".
+          is Permanent, TWT or Temporary. Days can be written like "Mon-Fri" or "Mon Tue Wed".
         </p>
       </div>
       {imported !== null && (

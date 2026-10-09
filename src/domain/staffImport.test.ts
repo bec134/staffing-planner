@@ -25,8 +25,9 @@ describe('parseEmploymentType', () => {
   it.each([
     ['Permanent', 'permanent'],
     ['perm', 'permanent'],
-    ['TPT', 'tpt'],
-    ['Temporary part-time', 'tpt'],
+    ['TWT', 'twt'],
+    ['Temporary Workforce Transition', 'twt'],
+    ['TPT', 'twt'],
     ['Temp', 'temporary'],
     ['temporary', 'temporary'],
   ])('reads %j', (input, expected) => {
@@ -131,7 +132,7 @@ describe('staff templates', () => {
     expect(parsed.every((r) => r.errors.length === 0 && r.draft && !r.skipReason)).toBe(true);
     expect(parsed.map((r) => [r.draft!.employmentType, describePattern(r.draft!.workPattern)])).toEqual([
       ['permanent', 'Mon, Tue, Wed, Thu, Fri'],
-      ['tpt', 'Mon, Tue, Wed'],
+      ['twt', 'Mon, Tue, Wed'],
       ['temporary', 'Thu, Fri'],
     ]);
   });

@@ -116,7 +116,7 @@ describe('Staff & allocation', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Import CSV' }));
     const csv = [
       'Staff name,Type,Days worked',
-      'Quinn Sample,TPT,Mon-Wed',
+      'Quinn Sample,TWT,Mon-Wed',
       'Avery Quill,Permanent,Mon-Fri',
       'Rory Sample,casual,Mon',
     ].join('\n');
@@ -131,7 +131,7 @@ describe('Staff & allocation', () => {
     expect(await screen.findByText(/Imported 1 staff member/)).toBeInTheDocument();
     const year = (await repo.planningYears.list())[0]!;
     const quinn = (await repo.staff.listByYear(year.id)).find((s) => s.name === 'Quinn Sample');
-    expect(quinn).toMatchObject({ employmentType: 'tpt' });
+    expect(quinn).toMatchObject({ employmentType: 'twt' });
     repo.close();
   });
 });

@@ -22,8 +22,8 @@ import { EntitlementDashboard } from '../entitlement/EntitlementDashboard';
 
 /**
  * Part 1 (Bec): match staff against the entitlement by day — permanent,
- * then TPT, then temporary. Whole-year leave greys out and can be
- * backfilled; permanent or TPT staff left over can be nominated for transfer.
+ * then TWT, then temporary. Whole-year leave greys out and can be
+ * backfilled; permanent or TWT staff left over can be nominated for transfer.
  */
 export function MatchingPage() {
   const { current, loading } = usePlanningYear();
@@ -57,7 +57,7 @@ function Matching({ data }: { data: PlanData }) {
     <section>
       <h1>Match staff to entitlement</h1>
       <p className="muted">
-        Part 1: match permanent staff first, then TPT, then temporary, against the entitlement positions. Whole-year
+        Part 1: match permanent staff first, then TWT, then temporary, against the entitlement positions. Whole-year
         leave greys out and can be backfilled. Classes and roles are set in Part 2.
       </p>
 
@@ -208,7 +208,7 @@ function Positions({ data }: { data: PlanData }) {
   );
 }
 
-/** Permanent and TPT staff not fully matched, and nominated transfers. */
+/** Permanent and TWT staff not fully matched, and nominated transfers. */
 function Unmatched({ data }: { data: PlanData }) {
   const repo = useRepository();
   const [nominating, setNominating] = useState<string | null>(null);
@@ -233,7 +233,7 @@ function Unmatched({ data }: { data: PlanData }) {
     <section aria-labelledby="unmatched-heading">
       <h2 id="unmatched-heading">Not yet matched</h2>
       {statuses.length === 0 ? (
-        <p className="ok">All permanent and TPT staff are fully matched.</p>
+        <p className="ok">All permanent and TWT staff are fully matched.</p>
       ) : (
         <table>
           <thead>

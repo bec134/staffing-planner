@@ -4,6 +4,7 @@ import { WarningsPanel } from './components/WarningsPanel';
 import { AllocationPage } from './pages/allocation/AllocationPage';
 import { ClassStructuresPage } from './pages/classes/ClassStructuresPage';
 import { EntitlementPage } from './pages/entitlement/EntitlementPage';
+import { IntentionsPage } from './pages/intentions/IntentionsPage';
 import { LeavePage } from './pages/leave/LeavePage';
 import { MatchingPage } from './pages/matching/MatchingPage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -64,7 +65,8 @@ export function App() {
               <Route path="/leave/*" element={<LeavePage />} />
               <Route path="/classes" element={<ClassStructuresPage />} />
               <Route path="/matching" element={<MatchingPage />} />
-              {MODULES.filter((m) => !['/entitlement', '/allocation', '/leave', '/classes', '/matching'].includes(m.path)).map((m) => (
+              <Route path="/intentions" element={<IntentionsPage />} />
+              {MODULES.filter((m) => !['/entitlement', '/allocation', '/leave', '/classes', '/matching', '/intentions'].includes(m.path)).map((m) => (
                 <Route key={m.path} path={m.path} element={<PlaceholderPage title={m.label} phase={m.phase} />} />
               ))}
               <Route path="*" element={<PlaceholderPage title="Not found" />} />
