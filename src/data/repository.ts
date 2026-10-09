@@ -19,6 +19,7 @@ import type {
   PositionType,
   Role,
   Staff,
+  StaffIntention,
 } from '../domain/types';
 
 /** CRUD for records scoped to a planning year. */
@@ -52,6 +53,8 @@ export interface PlanningYearSnapshot {
   /** Part 1: entitlement positions and the staff matched to them. */
   positions: EntitlementPosition[];
   matches: EntitlementMatch[];
+  /** Staff intentions for next year. */
+  intentions: StaffIntention[];
 }
 
 export interface Repository {
@@ -67,6 +70,7 @@ export interface Repository {
   classRules: ScopedCollection<ClassRules>;
   positions: ScopedCollection<EntitlementPosition>;
   matches: ScopedCollection<EntitlementMatch>;
+  intentions: ScopedCollection<StaffIntention>;
 
   /** Read a planning year and all its records. */
   exportPlanningYear(id: Id): Promise<PlanningYearSnapshot | undefined>;

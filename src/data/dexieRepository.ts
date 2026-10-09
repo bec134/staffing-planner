@@ -20,6 +20,7 @@ const SCOPED_TABLES = [
   'classRules',
   'positions',
   'matches',
+  'intentions',
 ] as const satisfies readonly (keyof PlanningYearSnapshot)[];
 
 type ScopedTableName = (typeof SCOPED_TABLES)[number];
@@ -38,6 +39,7 @@ class StaffingDb extends Dexie {
   classRules!: Table<RecordOf<'classRules'>, Id>;
   positions!: Table<RecordOf<'positions'>, Id>;
   matches!: Table<RecordOf<'matches'>, Id>;
+  intentions!: Table<RecordOf<'intentions'>, Id>;
 
   constructor(name: string) {
     super(name);
@@ -79,6 +81,17 @@ class StaffingDb extends Dexie {
       positions: 'id, planningYearId, positionTypeId',
       matches: 'id, planningYearId, staffId, roleId, coveringLeaveId',
     });
+    // v5: staff intentions; TPT renamed TWT (Temporary Workforce Transition).
+    this.version(5)
+      .stores({ intentions: 'id, planningYearId, staffId' })
+      .upgrade((tx) =>
+        tx
+          .table('staff')
+          .toCollection()
+          .modify((s: Record<string, unknown>) => {
+            if (s.employmentType === 'tpt') s.employmentType = 'twt';
+          }),
+      );
   }
 
   scopedTables(): Table<Scoped, Id>[] {
@@ -126,6 +139,7 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
     classRules: scopedCollection(db.classRules),
     positions: scopedCollection(db.positions),
     matches: scopedCollection(db.matches),
+    intentions: scopedCollection(db.intentions),
 
     async exportPlanningYear(id) {
       return db.transaction('r', [db.planningYears, ...db.scopedTables()], async () => {
@@ -146,6 +160,7 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
           classRules: await byYear('classRules'),
           positions: await byYear('positions'),
           matches: await byYear('matches'),
+          intentions: await byYear('intentions'),
         };
       });
     },
@@ -156,7 +171,8 @@ export function createDexieRepository(dbName = 'staffing-planner'): Repository &
         await deleteYearRecords(id);
         await db.planningYears.put(snapshot.planningYear);
         for (const name of SCOPED_TABLES) {
-          const records = snapshot[name] as Scoped[];
+          // Older snapshots may not have the newer tables.
+          const records = (snapshot[name] ?? []) as Scoped[];
           const foreign = records.find((r) => r.planningYearId !== id);
           if (foreign) {
             throw new Error(`${name} record ${foreign.id} belongs to a different planning year`);

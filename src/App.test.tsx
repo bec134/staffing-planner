@@ -21,8 +21,8 @@ describe('App shell', () => {
     expect(await screen.findByText('Morgan Pike')).toBeInTheDocument();
     expect(screen.getByText('A: Mon, Tue, Wed · B: Mon, Tue')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: 'Staff intentions' }));
-    expect(await screen.findByText(/built in Phase 6/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Export & reports' }));
+    expect(await screen.findByText(/built in Phase 7/)).toBeInTheDocument();
     repo.close();
   });
 });

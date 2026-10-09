@@ -100,7 +100,7 @@ describe('Part 1 flags', () => {
     expect(kinds.has('placement_mismatch')).toBe(false);
   });
 
-  it('flags permanent or TPT staff left unmatched, but not temporary staff', () => {
+  it('flags permanent or TWT staff left unmatched, but not temporary staff', () => {
     const flags = flagsWith([extra({}), extra({ id: 'temp', name: 'Temp Person', employmentType: 'temporary' })]);
     const unmatched = flags.filter((f) => f.kind === 'unmatched_staff');
     expect(unmatched.map((f) => f.message)).toEqual([
@@ -126,7 +126,7 @@ describe('Part 1 flags', () => {
       });
     });
     const message = flags.find((f) => f.kind === 'temporary_before_permanent')?.message ?? '';
-    expect(message).toMatch(/^Temporary staff \(.*Sam Ridley.*\) are matched while permanent or TPT staff are still unmatched$/);
+    expect(message).toMatch(/^Temporary staff \(.*Sam Ridley.*\) are matched while permanent or TWT staff are still unmatched$/);
     expect(message).toContain('Harper Vale');
   });
 

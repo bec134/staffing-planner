@@ -59,22 +59,22 @@ describe('Part 1: Match staff', () => {
     const repo = await setup();
     expect(tileOf(cell('Classroom Teacher 2', 'Mon'), 'Harper Vale')).toHaveClass('emp-temporary');
     expect(tileOf(cell('Classroom Teacher 3', 'Mon'), 'Indi Calloway')).toHaveClass('emp-permanent', 'holder');
-    // Indi's whole-year LWOP (Thu–Fri) greyed, with Tara (TPT) as the backfill.
+    // Indi's whole-year LWOP (Thu–Fri) greyed, with Tara (TWT) as the backfill.
     expect(tileOf(cell('Classroom Teacher 3', 'Thu'), 'Indi Calloway')).toHaveClass('on-leave');
     const tara = tileOf(cell('Classroom Teacher 3', 'Thu'), 'Tara Quinlan');
-    expect(tara).toHaveClass('cover', 'emp-tpt');
+    expect(tara).toHaveClass('cover', 'emp-twt');
     expect(tara).toHaveTextContent('backfill');
     // Term 2 LSL is part-year, so it isn't shown in Part 1.
     expect(tileOf(cell('Classroom Teacher 4', 'Mon'), 'Jules Fernhill')).toHaveClass('holder');
     repo.close();
   });
 
-  it('groups the staff list permanent, TPT, then temporary', async () => {
+  it('groups the staff list permanent, TWT, then temporary', async () => {
     const repo = await setup();
     const headings = within(screen.getByLabelText('Staff to drag'))
-      .getAllByText(/^(Permanent|TPT|Temporary)$/)
+      .getAllByText(/^(Permanent|TWT|Temporary)$/)
       .map((h) => h.textContent);
-    expect(headings).toEqual(['Permanent', 'TPT', 'Temporary']);
+    expect(headings).toEqual(['Permanent', 'TWT', 'Temporary']);
     repo.close();
   });
 

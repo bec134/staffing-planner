@@ -235,6 +235,7 @@ caption { text-align: left; font-weight: 600; padding: 4px 0; }
 .tile.cover { background: #cfe9d8; color: var(--ok); border-color: #a9d6b8; }
 .palette-tile { background: var(--surface); border-color: var(--border); flex-direction: column; align-items: flex-start; }
 .palette-tile .free { font-size: 0.7rem; color: var(--muted); }
+.palette-tile .note { font-size: 0.7rem; color: var(--text); font-weight: 600; }
 .palette-tile.full { opacity: 0.6; }
 table.role-table td.cell { text-align: left; vertical-align: top; min-width: 90px; }
 td.cell.unfilled { background: #fff8ec; }
@@ -257,6 +258,11 @@ th.role-name.over { outline: 2px dashed var(--accent); outline-offset: -3px; }
 .palette-heading { width: 100%; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 /* Employment type colours (Bec). Leave greys out every type. */
 .tile.emp-permanent:not(.on-leave) { background: #dbe9fb; color: #1d4f91; border-color: #b4cdee; }
-.tile.emp-tpt:not(.on-leave) { background: #e7dcf7; color: #5a2d91; border-color: #cdb7ec; }
+.tile.emp-twt:not(.on-leave) { background: #e7dcf7; color: #5a2d91; border-color: #cdb7ec; }
 .tile.emp-temporary:not(.on-leave) { background: #fdeccc; color: #8a4b00; border-color: #f2d29b; }
-.palette-tile.emp-permanent, .palette-tile.emp-tpt, .palette-tile.emp-temporary { border-left-width: 4px; }
+.palette-tile.emp-permanent, .palette-tile.emp-twt, .palette-tile.emp-temporary { border-left-width: 4px; }
+
+/* Staff intentions */
+.check-warning { color: var(--warn); }
+table.intentions ul { margin: 4px 0 0; padding-left: 18px; }
+table.intentions td.actions { white-space: nowrap; }

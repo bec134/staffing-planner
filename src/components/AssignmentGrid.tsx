@@ -58,6 +58,8 @@ export interface AssignmentGridProps {
   /** Words that differ between the two parts. */
   words: { row: string; cover: string; result: string; testPrefix: string; full: string; help: ReactNode };
   controls?: ReactNode;
+  /** A short note on each staff-list tile, e.g. grade preferences. */
+  tileNote?(staff: Staff): string | undefined;
 }
 
 /**
@@ -193,7 +195,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
   const paletteGroups = (): [string, Staff[]][] => {
     const people = [...offered].sort(byName);
     if (!props.byEmployment) return [['', people]];
-    return (['permanent', 'tpt', 'temporary'] as const)
+    return (['permanent', 'twt', 'temporary'] as const)
       .map((t): [string, Staff[]] => [EMPLOYMENT_TYPE_LABELS[t], people.filter((p) => p.employmentType === t)])
       .filter(([, list]) => list.length > 0);
   };
@@ -254,6 +256,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                 >
                   {s.name}
                   <span className="free">{label === 'none' ? words.full : `free ${label}`}</span>
+                  {props.tileNote?.(s) && <span className="note">{props.tileNote(s)}</span>}
                 </div>
               );
             })}
@@ -412,7 +415,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       <p className="legend small">
         {props.byEmployment ? (
           <>
-            <span className="tile emp-permanent">Permanent</span> <span className="tile emp-tpt">TPT</span>{' '}
+            <span className="tile emp-permanent">Permanent</span> <span className="tile emp-twt">TWT</span>{' '}
             <span className="tile emp-temporary">Temporary</span>{' '}
           </>
         ) : (

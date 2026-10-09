@@ -36,8 +36,12 @@ describe('sample data', () => {
     const staffIds = new Set(sample.staff.map((s) => s.id));
     const roleIds = new Set(sample.roles.map((r) => r.id));
     expect(sample.allocations.every((a) => staffIds.has(a.staffId) && roleIds.has(a.roleId))).toBe(true);
-    // Only shortfalls and vacancies; no staff problems in the sample.
-    expect(new Set(flags.map((f) => f.kind))).toEqual(new Set(['under_entitlement', 'role_unfilled', 'leave_gap']));
+    // Only shortfalls and vacancies; no staff problems in the sample. Kit's
+    // intention is left unapplied and Jules is outside their grade
+    // preferences, to show those flags.
+    expect(new Set(flags.map((f) => f.kind))).toEqual(
+      new Set(['under_entitlement', 'role_unfilled', 'leave_gap', 'intention_not_applied', 'grade_preference']),
+    );
     expect(flags.map((f) => f.message)).toContain(
       'RFF Teacher: allocated 0.7 FTE, 0.616 under the entitlement of 1.316',
     );

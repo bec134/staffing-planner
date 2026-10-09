@@ -61,11 +61,12 @@ export interface Entitlement extends Scoped {
   lines: EntitlementLine[];
 }
 
-export type EmploymentType = 'permanent' | 'tpt' | 'temporary';
+export type EmploymentType = 'permanent' | 'twt' | 'temporary';
 
 export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   permanent: 'Permanent',
-  tpt: 'TPT',
+  /** Temporary Workforce Transition (Bec). */
+  twt: 'TWT',
   temporary: 'Temporary',
 };
 
@@ -75,7 +76,7 @@ export interface Staff extends Scoped {
   workPattern: DayPattern;
   currentRole: string;
   employmentType: EmploymentType;
-  /** TODO(open item): structured intention fields to be supplied by Bec. */
+  /** Free-text notes. Structured plans for next year are a StaffIntention. */
   preferences: string;
   /** Part 1: surplus to entitlement and nominated for transfer (Bec). */
   nominatedForTransfer?: boolean;
@@ -196,4 +197,36 @@ export interface ClassRules extends Scoped {
   allowance: number;
   /** Which of the allowed composite pairs may be used, e.g. ["1/2", "3/4"]. */
   permittedComposites: string[];
+}
+
+export type WorkPreference = 'full_time' | 'part_time';
+
+export const WORK_PREFERENCE_LABELS: Record<WorkPreference, string> = {
+  full_time: 'Full time',
+  part_time: 'Part time',
+};
+
+/**
+ * A staff member's intentions for next year (Bec, Phase 6), entered by hand
+ * or imported from CSV. Saved on its own; "Apply to plan" then sets the
+ * staff member's employment type and days and their whole-year leave
+ * (Part 1). Grade preferences show during placement (Part 2).
+ */
+export interface StaffIntention extends Scoped {
+  /** As entered; matched to a staff member by name until applied. */
+  name: string;
+  /** The staff member it was applied to. */
+  staffId?: Id;
+  employmentType: EmploymentType;
+  /** Permanent or TWT only: their substantive FTE. */
+  permanentMilliFte?: number;
+  workPreference: WorkPreference;
+  /** Days they want to work next year. */
+  preferredDays: DayPattern;
+  /** Days on leave for the whole school year, if any. */
+  leaveDays: DayPattern;
+  /** Type of that whole-year leave. */
+  leaveType: LeaveType;
+  /** Up to three grades, most preferred first. */
+  gradePreferences: Grade[];
 }

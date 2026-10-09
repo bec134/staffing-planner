@@ -4,9 +4,9 @@
  * Each entitlement line becomes positions (e.g. Classroom Teacher 6.0 → six
  * Mon–Fri positions; RFF 1.316 → one Mon–Fri position and one of 3 fortnight
  * days). Staff are matched to positions on the days they work, permanent
- * first, then TPT, then temporary. Whole-year leave greys out the matched
+ * first, then TWT, then temporary. Whole-year leave greys out the matched
  * days and opens them for a backfill, which doesn't use extra entitlement.
- * Permanent or TPT staff left unmatched are candidates for a nominated
+ * Permanent or TWT staff left unmatched are candidates for a nominated
  * transfer.
  *
  * Part 2 (placing staff in classes and roles) is checked against Part 1 only
@@ -111,8 +111,8 @@ export function matchStatus(staff: Staff, matches: EntitlementMatch[]): MatchSta
   };
 }
 
-/** Matching order (Bec): permanent, then TPT, then temporary. */
-export const MATCH_ORDER: EmploymentType[] = ['permanent', 'tpt', 'temporary'];
+/** Matching order (Bec): permanent, then TWT, then temporary. */
+export const MATCH_ORDER: EmploymentType[] = ['permanent', 'twt', 'temporary'];
 
 /**
  * FTE a person has been placed in Part 2 for the whole year: their

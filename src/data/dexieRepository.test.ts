@@ -114,4 +114,20 @@ describe('Dexie schema upgrades', () => {
     });
     repo.close();
   });
+
+  it('renames TPT staff to TWT', async () => {
+    const name = `upgrade-db-${n++}`;
+    const v4 = new Dexie(name);
+    v4.version(4).stores({ planningYears: 'id, year', staff: 'id, planningYearId' });
+    await v4.table('staff').bulkPut([
+      { id: 'a', planningYearId: 'y', employmentType: 'tpt' },
+      { id: 'b', planningYearId: 'y', employmentType: 'permanent' },
+    ]);
+    v4.close();
+
+    const repo = createDexieRepository(name);
+    expect((await repo.staff.listByYear('y')).map((s) => s.employmentType).sort()).toEqual(['permanent', 'twt']);
+    expect(await repo.intentions.listByYear('y')).toEqual([]);
+    repo.close();
+  });
 });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AssignmentGrid } from '../../components/AssignmentGrid';
 import { fteOf } from '../../domain/dayPattern';
 import { roleLink } from '../../domain/flags';
+import { describeGrades, intentionForStaff } from '../../domain/intentions';
 import { isMatched } from '../../domain/matching';
 import { useRepository } from '../../data/RepositoryContext';
 import type { PlanData } from './shared';
@@ -34,6 +35,10 @@ export function RoleGrid({ data }: { data: PlanData }) {
       // A full-time teacher placed on a class fills the whole week (Bec).
       fillsWeek={(s, row) => types.get(row.positionTypeId)?.category === 'class_teacher' && fteOf(s.workPattern) === 1}
       rowLink={(row) => roleLink(row.id)}
+      tileNote={(s) => {
+        const grades = intentionForStaff(s, data.intentions)?.gradePreferences ?? [];
+        return grades.length ? `Prefers ${describeGrades(grades)}` : undefined;
+      }}
       showAsAt
       words={{
         row: 'Role',

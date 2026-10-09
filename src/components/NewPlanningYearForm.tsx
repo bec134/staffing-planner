@@ -30,6 +30,7 @@ export function NewPlanningYearForm({ onCreated }: { onCreated(id: Id): Promise<
         classRules: [],
         positions: [],
         matches: [],
+        intentions: [],
       });
       setSchoolName('');
       await onCreated(plan.planningYear.id);
