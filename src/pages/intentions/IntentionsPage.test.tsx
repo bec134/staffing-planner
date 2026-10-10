@@ -105,7 +105,7 @@ describe('Staff intentions', () => {
 
   it('shows grade preferences on Part 2 name tiles', async () => {
     await setup();
-    fireEvent.click(screen.getByRole('link', { name: 'Staff & allocation' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Roles & placement' }));
     fireEvent.click(await screen.findByRole('link', { name: 'Role grid' }));
     const palette = await screen.findByLabelText('Staff to drag');
     const tile = within(palette).getByText('Jules Fernhill').closest('.tile')!;

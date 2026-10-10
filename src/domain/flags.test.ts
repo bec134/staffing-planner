@@ -123,7 +123,7 @@ describe('staff flags', () => {
     expect(flags[0]).toMatchObject({
       kind: 'staff_not_working',
       message: "Teacher s2 is allocated to Role c1 on Wed, but doesn't work then",
-      link: '/allocation/staff/s2',
+      link: '/staff/s2',
     });
   });
 

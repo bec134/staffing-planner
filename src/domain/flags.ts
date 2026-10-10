@@ -101,7 +101,7 @@ export const flagInputFrom = (d: {
   classStructures: d.classStructures,
 });
 
-export const staffLink = (id: Id) => `/allocation/staff/${id}`;
+export const staffLink = (id: Id) => `/staff/${id}`;
 export const roleLink = (id: Id) => `/allocation/roles/${id}`;
 export const leaveLink = (id: Id) => `/leave/${id}`;
 export const MATCHING_LINK = '/matching';

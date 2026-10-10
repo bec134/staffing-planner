@@ -5,7 +5,7 @@ import { RepositoryProvider } from '../../data/RepositoryContext';
 
 let n = 0;
 
-async function setupWithSample() {
+async function setupWithSample(start: 'Staff' | 'Roles & placement' = 'Staff') {
   window.location.hash = '';
   try {
     localStorage.clear();
@@ -20,15 +20,15 @@ async function setupWithSample() {
   );
   fireEvent.click(await screen.findByRole('button', { name: /load fictional sample plan/i }));
   await screen.findByText('Morgan Pike');
-  fireEvent.click(screen.getByRole('link', { name: 'Staff & allocation' }));
-  await screen.findByRole('heading', { name: 'Staff & allocation' });
+  fireEvent.click(screen.getByRole('link', { name: start }));
+  await screen.findByRole('heading', { name: start });
   return repo;
 }
 
 const panel = () => screen.getByText(/^Warnings \(/).closest('details')!;
 
-describe('Staff & allocation', () => {
-  it('lists staff with allocations and shows entitlement warnings', async () => {
+describe('Staff (Part 1) and roles & placement (Part 2)', () => {
+  it('lists staff in Part 1, with their placements and entitlement warnings', async () => {
     const repo = await setupWithSample();
     const row = screen.getByRole('link', { name: 'Gus Penrose' }).closest('tr')!;
     expect(within(row).getByText('1/2 Blue')).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('Staff & allocation', () => {
   });
 
   it('shows Week A / Week B columns in the grid when someone works fortnightly', async () => {
-    const repo = await setupWithSample();
+    const repo = await setupWithSample('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     expect(await screen.findByText('Week A')).toBeInTheDocument();
     const row = screen.getByRole('link', { name: 'Morgan Pike' }).closest('tr')!;
@@ -94,7 +94,7 @@ describe('Staff & allocation', () => {
   });
 
   it('adds a role and shows its unfilled days', async () => {
-    const repo = await setupWithSample();
+    const repo = await setupWithSample('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'By role' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Add role' }));
     const form = screen.getByRole('form', { name: 'Add role' });
@@ -132,6 +132,31 @@ describe('Staff & allocation', () => {
     const year = (await repo.planningYears.list())[0]!;
     const quinn = (await repo.staff.listByYear(year.id)).find((s) => s.name === 'Quinn Sample');
     expect(quinn).toMatchObject({ employmentType: 'twt' });
+    repo.close();
+  });
+});
+
+describe('Finding where to add staff', () => {
+  it('links to the Staff page from Match staff and the Overview steps', async () => {
+    const repo = await setupWithSample();
+    fireEvent.click(screen.getByRole('link', { name: 'Match staff' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Add staff' }));
+    expect(await screen.findByRole('heading', { name: 'Staff' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Overview' }));
+    const steps = await screen.findByRole('region', { name: 'Steps' });
+    expect(within(steps).getByText('Add staff', { selector: 'strong' }).closest('li')).toHaveClass('done');
+    expect(within(steps).getByText(/18 staff members/)).toBeInTheDocument();
+    repo.close();
+  });
+
+  it('sends old staff and role grid addresses to their new pages', async () => {
+    const repo = await setupWithSample();
+    window.location.hash = '#/allocation/role-grid';
+    expect(await screen.findByLabelText('Staff to drag')).toBeInTheDocument();
+    window.location.hash = '#/allocation/staff/sample-2027-staff-05';
+    expect(await screen.findByRole('heading', { name: 'Eli Brookfield' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/staff/sample-2027-staff-05');
     repo.close();
   });
 });

@@ -5,7 +5,7 @@ import { RepositoryProvider } from '../../data/RepositoryContext';
 
 let n = 0;
 
-async function setup(start: 'Leave cover' | 'Staff & allocation' = 'Leave cover') {
+async function setup(start: 'Leave cover' | 'Roles & placement' = 'Leave cover') {
   window.location.hash = '';
   try {
     localStorage.clear();
@@ -134,7 +134,7 @@ describe('Leave cover', () => {
 
 describe('Weekly grid with leave', () => {
   it('shows the holder on leave with their cover, and the coverer with whose leave', async () => {
-    const repo = await setup('Staff & allocation');
+    const repo = await setup('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     const jules = (await screen.findByRole('link', { name: 'Jules Fernhill' })).closest('tr')!;
     const [mon, , , thu] = within(jules).getAllByRole('cell');
@@ -163,7 +163,7 @@ describe('Weekly grid with leave', () => {
   });
 
   it('shows whole-year part-week leave without pay, covered and uncovered', async () => {
-    const repo = await setup('Staff & allocation');
+    const repo = await setup('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     const indi = (await screen.findByRole('link', { name: 'Indi Calloway' })).closest('tr')!;
     const [iMon, , , iThu] = within(indi).getAllByRole('cell');

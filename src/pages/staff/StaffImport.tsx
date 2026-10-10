@@ -5,7 +5,7 @@ import { WEEKDAYS } from '../../domain/dayPattern';
 import { STAFF_TEMPLATES, guessMapping, parseStaffRows, type ColumnIndex, type StaffMapping } from '../../domain/staffImport';
 import { EMPLOYMENT_TYPE_LABELS, type EmploymentType, type Staff } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
-import { daysLabel, type PlanData } from './shared';
+import { daysLabel, type PlanData } from '../allocation/shared';
 
 interface Parsed {
   fileName: string;
@@ -103,7 +103,7 @@ export function StaffImport({ data }: { data: PlanData }) {
       </div>
       {imported !== null && (
         <p className="ok" role="status">
-          Imported {imported} staff member{imported === 1 ? '' : 's'}. <Link to="/allocation">View staff</Link>
+          Imported {imported} staff member{imported === 1 ? '' : 's'}. <Link to="/staff">View staff</Link>
         </p>
       )}
       <label className="field">

@@ -12,7 +12,7 @@ import {
 import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_SHORT, WORK_PREFERENCE_LABELS, type StaffIntention } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 import { daysLabel, type PlanData } from '../allocation/shared';
-import { ColumnSelect } from '../allocation/StaffImport';
+import { ColumnSelect } from '../staff/StaffImport';
 
 interface Parsed {
   fileName: string;

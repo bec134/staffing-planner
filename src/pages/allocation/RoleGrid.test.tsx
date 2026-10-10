@@ -54,7 +54,7 @@ async function setup() {
       sortOrder: 99,
     });
   });
-  fireEvent.click(screen.getByRole('link', { name: 'Staff & allocation' }));
+  fireEvent.click(screen.getByRole('link', { name: 'Roles & placement' }));
   fireEvent.click(await screen.findByRole('link', { name: 'Role grid' }));
   await screen.findByTestId('cell-K Blue-Mon');
   // The test people aren't matched in Part 1, so include everyone.

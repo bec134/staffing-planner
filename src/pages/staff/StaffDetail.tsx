@@ -9,9 +9,9 @@ import { formatFte, milliFteOf } from '../../domain/fte';
 import { describeGrades, intentionForStaff } from '../../domain/intentions';
 import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_LABELS, WORK_PREFERENCE_LABELS } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
-import { AllocationTable } from './AllocationTable';
+import { AllocationTable } from '../allocation/AllocationTable';
 import { StaffForm } from './StaffForm';
-import { daysLabel, type PlanData } from './shared';
+import { daysLabel, type PlanData } from '../allocation/shared';
 
 export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) {
   const { id } = useParams();
@@ -22,7 +22,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
   if (!staff) {
     return (
       <p>
-        Staff member not found. <Link to="/allocation">Back to staff</Link>
+        Staff member not found. <Link to="/staff">Back to staff</Link>
       </p>
     );
   }
@@ -56,13 +56,13 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
     await repo.leave.deleteMany([...leaveIds]);
     if (intention) await repo.intentions.delete(intention.id);
     await repo.staff.delete(staff.id);
-    navigate('/allocation');
+    navigate('/staff');
   };
 
   return (
     <section>
       <p>
-        <Link to="/allocation">← All staff</Link>
+        <Link to="/staff">← All staff</Link>
       </p>
       <h2>{staff.name}</h2>
       {myFlags.length > 0 && (
