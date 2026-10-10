@@ -221,4 +221,36 @@ describe('Splitting a position', () => {
     });
     expect(await within(await screen.findByTestId('match-cell-Classroom Teacher 8-Fri')).findByText('Kit Ashdown')).toBeInTheDocument();
   });
+
+  it('puts a teacher on higher duties, backfills their own position, then ends it', async () => {
+    await setup();
+    const apci = 'Assistant Principal - Curriculum & Instruction 1';
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    // Free up Wednesday in the AP C&I position.
+    fireEvent.click(screen.getByRole('button', { name: `Remove Dana Thistle from ${apci} on Wed` }));
+    await waitFor(() => expect(within(cell(apci, 'Wed')).queryByText('Dana Thistle')).not.toBeInTheDocument());
+
+    // Indi holds Classroom Teacher 3, so dropping her on AP C&I offers higher duties.
+    const dt = dataTransfer();
+    fireEvent.dragStart(within(screen.getByLabelText('Staff to drag')).getByText('Indi Calloway'), { dataTransfer: dt });
+    fireEvent.drop(cell(apci, 'Wed'), { dataTransfer: dt });
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Put them on higher duties')));
+    const hd = await waitFor(() => tileOf(cell(apci, 'Wed'), 'Indi Calloway'));
+    expect(hd).toHaveTextContent('higher duties');
+    await waitFor(() => expect(tileOf(cell('Classroom Teacher 3', 'Wed'), 'Indi Calloway')).toHaveClass('on-leave'));
+    expect(tileOf(cell('Classroom Teacher 3', 'Wed'), 'Indi Calloway')).toHaveTextContent('Higher duties');
+    expect(tileOf(cell('Classroom Teacher 3', 'Tue'), 'Indi Calloway')).toHaveClass('holder');
+
+    // Backfill her Wednesday with the surplus teacher.
+    const dt2 = dataTransfer();
+    fireEvent.dragStart(within(screen.getByLabelText('Staff to drag')).getByText('Quinn Example'), { dataTransfer: dt2 });
+    fireEvent.drop(cell('Classroom Teacher 3', 'Wed'), { dataTransfer: dt2 });
+    await waitFor(() => expect(tileOf(cell('Classroom Teacher 3', 'Wed'), 'Quinn Example')).toHaveClass('cover'));
+
+    // Ending higher duties removes the backfill too.
+    fireEvent.click(screen.getByRole('button', { name: `Remove Indi Calloway from ${apci} on Wed` }));
+    await waitFor(() => expect(tileOf(cell('Classroom Teacher 3', 'Wed'), 'Indi Calloway')).toHaveClass('holder'));
+    await waitFor(() => expect(within(cell('Classroom Teacher 3', 'Wed')).queryByText('Quinn Example')).not.toBeInTheDocument());
+    confirmSpy.mockRestore();
+  });
 });

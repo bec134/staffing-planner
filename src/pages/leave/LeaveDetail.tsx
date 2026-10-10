@@ -6,6 +6,7 @@ import { roleLink, staffLink } from '../../domain/flags';
 import { formatFte, milliFteOf } from '../../domain/fte';
 import { affectedRoles, allocationRange, coverGaps, coversFor } from '../../domain/leave';
 import { LEAVE_TYPE_LABELS } from '../../domain/types';
+import { tidyHigherDutiesIn } from '../../data/higherDutiesStore';
 import { useRepository } from '../../data/RepositoryContext';
 import { daysLabel, lookups, type PlanData } from '../allocation/shared';
 import { CoverForm } from './CoverForm';
@@ -35,12 +36,16 @@ export function LeaveDetail({ data }: { data: PlanData }) {
   const status = coverStatus(leave, data);
 
   const remove = async () => {
-    const extra = covers.length ? ` Its ${covers.length} cover allocation(s) will also be removed.` : '';
+    const extra = [
+      leave.leaveType === 'higher_duties' ? ' This ends their higher duties: the match on Match staff is removed too.' : '',
+      covers.length ? ` Its ${covers.length} cover allocation(s) will also be removed.` : '',
+    ].join('');
     if (!confirm(`Delete this leave?${extra}`)) return;
     await repo.allocations.deleteMany(covers.map((c) => c.id));
     // Part 1 backfills against this leave go too.
     await repo.matches.deleteMany(data.matches.filter((m) => m.coveringLeaveId === leave.id).map((m) => m.id));
     await repo.leave.delete(leave.id);
+    await tidyHigherDutiesIn(repo, leave.planningYearId);
     navigate('/leave');
   };
 
@@ -64,19 +69,31 @@ export function LeaveDetail({ data }: { data: PlanData }) {
             <dd>
               {daysLabel(leave.daysAffected)} ({formatFte(milliFteOf(leave.daysAffected))} FTE)
             </dd>
+            {leave.leaveType === 'higher_duties' && (
+              <>
+                <dt>Stepping up to</dt>
+                <dd>
+                  {data.positions.find((p) => p.id === leave.higherDutiesPositionId)?.name ?? 'A deleted position'} (
+                  <Link to="/matching">Match staff</Link>)
+                </dd>
+              </>
+            )}
             <dt>Cover</dt>
             <dd>
               <span className={`status ${status}`}>{COVER_STATUS_LABELS[status]}</span>
             </dd>
           </dl>
           <p className="muted small">
-            {staff?.name ?? 'They'} keep{staff ? 's' : ''} their position while on leave, so it still counts against
-            entitlement; cover does not.
+            {leave.leaveType === 'higher_duties'
+              ? `${staff?.name ?? 'They'} keep${staff ? 's' : ''} their own position, which is backfilled on these days. Change higher duties on Match staff.`
+              : `${staff?.name ?? 'They'} keep${staff ? 's' : ''} their position while on leave, so it still counts against entitlement; cover does not.`}
           </p>
           <div className="actions">
-            <button className="secondary" onClick={() => setEditing(true)}>
-              Edit leave
-            </button>
+            {leave.leaveType !== 'higher_duties' && (
+              <button className="secondary" onClick={() => setEditing(true)}>
+                Edit leave
+              </button>
+            )}
             <button className="danger" onClick={() => void remove()}>
               Delete leave
             </button>

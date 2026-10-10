@@ -1,4 +1,5 @@
 import type { ApplyPlan } from '../domain/intentions';
+import { tidyHigherDutiesIn } from './higherDutiesStore';
 import type { Repository } from './repository';
 
 /**
@@ -15,4 +16,6 @@ export async function saveStaffPlans(repo: Repository, plans: ApplyPlan[]) {
   if (all((p) => p.leaveDelete).length) await repo.leave.deleteMany(all((p) => p.leaveDelete));
   if (all((p) => p.leavePut).length) await repo.leave.putMany(all((p) => p.leavePut));
   await repo.intentions.putMany(plans.map((p) => p.intention));
+  // Fewer days worked can end someone's higher duties.
+  if (plans[0]) await tidyHigherDutiesIn(repo, plans[0].staff.planningYearId);
 }

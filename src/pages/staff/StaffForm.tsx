@@ -15,7 +15,7 @@ import {
   WORK_PREFERENCE_LABELS,
   type EmploymentType,
   type Grade,
-  type LeaveType,
+  type RecordedLeaveType,
   type Staff,
   type WorkPreference,
 } from '../../domain/types';
@@ -43,7 +43,7 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
   const [workPreference, setWorkPreference] = useState<WorkPreference>(start?.workPreference ?? 'full_time');
   const [preferredDays, setPreferredDays] = useState<DayPattern>(start?.preferredDays ?? FULL_TIME);
   const [leaveDays, setLeaveDays] = useState<DayPattern>(start?.leaveDays ?? NO_DAYS);
-  const [leaveType, setLeaveType] = useState<LeaveType>(start?.leaveType ?? 'lwop');
+  const [leaveType, setLeaveType] = useState<RecordedLeaveType>(start?.leaveType ?? 'lwop');
   const [grades, setGrades] = useState<(Grade | '')[]>(() => [0, 1, 2].map((n) => start?.gradePreferences[n] ?? ''));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -167,7 +167,7 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
         {hasLeave && (
           <label>
             Leave type{' '}
-            <select value={leaveType} onChange={(e) => setLeaveType(e.target.value as LeaveType)}>
+            <select value={leaveType} onChange={(e) => setLeaveType(e.target.value as RecordedLeaveType)}>
               {LEAVE_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {LEAVE_TYPE_LABELS[t]}

@@ -23,6 +23,20 @@ export function datesOverlap(
 /** Ordinary allocations, i.e. not leave cover. */
 const isSubstantive = (a: Allocation) => !a.coveringLeaveId;
 
+/**
+ * Days two of a person's allocations clash. Higher duties (Bec) is the one
+ * exception: on those days the person is away from their substantive role
+ * (it's backfilled), so it doesn't clash with their higher-duties one.
+ */
+export function clashDays(
+  a: Pick<Allocation, 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId'>,
+  b: Pick<Allocation, 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId'>,
+): number[] {
+  const plain = (x: typeof a) => !x.coveringLeaveId && !x.higherDutiesLeaveId;
+  if ((a.higherDutiesLeaveId && plain(b)) || (b.higherDutiesLeaveId && plain(a))) return [];
+  return dayIndices(intersect(a.days, b.days));
+}
+
 /** Days the staff member already holds through other allocations. */
 export function staffBusyDays(staffId: Id, allocations: Allocation[], excludeId?: Id): DayPattern {
   return union(allocations.filter((a) => a.staffId === staffId && a.id !== excludeId).map((a) => a.days));
@@ -52,7 +66,7 @@ export function availableDays(
 
 /** Reasons an allocation can't be saved; empty when valid. */
 export function validateAllocation(
-  candidate: Pick<Allocation, 'id' | 'staffId' | 'roleId' | 'days'>,
+  candidate: Pick<Allocation, 'id' | 'staffId' | 'roleId' | 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId'>,
   staff: Staff,
   role: Role,
   allocations: Allocation[],
@@ -69,9 +83,15 @@ export function validateAllocation(
   if (dayIndices(notRunning).length) {
     errors.push(`${role.name} doesn't run on ${describeDayIndices(dayIndices(notRunning))}`);
   }
-  const busy = intersect(days, staffBusyDays(staff.id, allocations, candidate.id));
-  if (dayIndices(busy).length) {
-    errors.push(`${staff.name} already has another role on ${describeDayIndices(dayIndices(busy))}`);
+  const busy = [
+    ...new Set(
+      allocations
+        .filter((a) => a.staffId === staff.id && a.id !== candidate.id)
+        .flatMap((a) => clashDays(candidate, a)),
+    ),
+  ].sort((x, y) => x - y);
+  if (busy.length) {
+    errors.push(`${staff.name} already has another role on ${describeDayIndices(busy)}`);
   }
   const filled = intersect(days, roleFilledDays(role.id, allocations, candidate.id));
   if (dayIndices(filled).length) {

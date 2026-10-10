@@ -261,6 +261,20 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
+        heading: 'Higher duties',
+        text: [
+          'Someone can relieve in a higher executive position for the whole year, for example a 0.6 teacher (Mon–Wed) acting as Assistant Principal - Curriculum & Instruction on Wednesdays. People can only step up: a teacher into any executive position, an Assistant Principal into Deputy Principal or Principal, a Deputy into Principal.',
+        ],
+        steps: [
+          'Match the person to their own (substantive) position as normal, on all their days.',
+          'Drag their name onto the executive position on the higher-duties day (or click **+** there: they are listed with "(higher duties)").',
+          'Click **OK** to confirm. Their tile in the executive position is marked "higher duties", and their own position turns grey ("Higher duties") on that day.',
+          'Drag another teacher onto the grey day to backfill their own position.',
+          'To end higher duties, click **×** on the "higher duties" tile. The backfill on their own position is removed too.',
+        ],
+        tip: 'Higher duties shows on the Leave cover page and the staff member\'s page. In Part 2, place them in the executive role on those days as normal, and cover their class.',
+      },
+      {
         heading: 'Staff left over: nominate for transfer',
         steps: [
           'Under **Not yet matched**, find the permanent or TWT staff member who cannot be matched.',
@@ -341,6 +355,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Drag a name onto a role and day, or click **+** and choose a name. Staff matched in Part 1 are offered; tick **Show all staff** to see everyone.',
           "A full-time teacher dropped on a class fills the whole week. Dropping a name on a role's name fills every day they are free.",
           'Click **×** to remove a day, or drag a tile to move it.',
+          'Someone on higher duties can be placed in an executive role on their higher-duties days; their own class shows grey on those days and needs cover.',
           'Name tiles show grade preferences (for example "Prefers K, 1, 2") from each person\'s staff details.',
         ],
         tip: 'Grey tiles are staff on leave. Dropping someone on a grey day assigns them as cover for that leave, for the leave dates.',
@@ -516,6 +531,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           '**Placement (Part 2)**: assigning staff to classes and roles, by day.',
           '**Whole-year leave**: leave from the start of Term 1 to the end of Term 4.',
           '**Backfill**: a teacher matched in Part 1 on days someone is on whole-year leave.',
+          '**Higher duties**: relieving in a higher executive position (Assistant Principal, Deputy or Principal) on some days for the whole year. Their own position is backfilled on those days.',
           '**Cover**: a teacher placed in Part 2 on days someone is on leave, for the leave dates.',
           '**Composite**: a class with two grades (1/2, 3/4 or 5/6).',
           '**Nominated for transfer**: a permanent or TWT staff member surplus to the entitlement.',

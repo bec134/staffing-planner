@@ -15,6 +15,7 @@ import {
   type GridData,
   type Tile,
 } from '../domain/roleGrid';
+import type { HigherDutiesPlan } from '../domain/higherDuties';
 import { schoolYear } from '../domain/matching';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -62,6 +63,16 @@ export interface AssignmentGridProps {
   onMoveGroup?(positionTypeId: string, direction: -1 | 1): void;
   /** A short note on each staff-list tile, e.g. grade preferences. */
   tileNote?(staff: Staff): string | undefined;
+  /**
+   * Part 1: when someone can't be matched to a row because they're matched
+   * elsewhere then, offer higher duties instead (see higherDuties.ts).
+   */
+  higherDuties?: {
+    plan(staffId: string, rowId: string, indices: number[]): HigherDutiesPlan | undefined;
+    save(plan: Extract<HigherDutiesPlan, { ok: true }>): Promise<void>;
+  };
+  /** Part 2: people on higher duties can be placed in executive roles on those days. */
+  placesHigherDuties?: boolean;
 }
 
 /**
@@ -92,6 +103,9 @@ export function AssignmentGrid(props: AssignmentGridProps) {
     roles: roleRows,
     allocations,
     leave,
+    higherDutiesTypeIds: props.placesHigherDuties
+      ? new Set(positionTypes.filter((t) => t.category === 'executive').map((t) => t.id))
+      : undefined,
   };
 
   const anyFortnightly = [
@@ -116,6 +130,8 @@ export function AssignmentGrid(props: AssignmentGridProps) {
   /** Whether this drop should fill the person's whole week (see `fillsWeek`). */
   const shouldFill = (payload: DragPayload, role: Role, indices: number[]) => {
     if (payload.from) return false;
+    // Someone already matched on these days is stepping up, not filling the week.
+    if (props.higherDuties?.plan(payload.staffId, role.id, indices)?.ok) return false;
     const staff = staffById.get(payload.staffId);
     return !!staff && cellView(role, indices, grid).empty && props.fillsWeek(staff, role);
   };
@@ -144,6 +160,10 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       const source = allocations.find((a) => a.id === payload.from!.allocationId);
       if (!source) return;
       if (source.roleId === role.id && payload.from.indices.join() === indices.join()) return;
+      if (source.higherDutiesLeaveId) {
+        setMessage({ ok: false, text: 'Higher duties can’t be moved. Remove it with × and drop the name again.' });
+        return;
+      }
       removal = planRemove(source, payload.from.indices);
       base = { ...grid, allocations: applyRemove(grid.allocations, removal) };
     }
@@ -160,6 +180,22 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       await props.saveStaff(updated);
       base = { ...base, staff: base.staff.map((s) => (s.id === staff.id ? updated : s)) };
       result = planAssign(base, payload.staffId, role.id, indices, () => crypto.randomUUID());
+    }
+    if (!result.ok && props.higherDuties && !payload.from) {
+      const hd = props.higherDuties.plan(payload.staffId, role.id, indices);
+      if (hd && !hd.ok) {
+        setMessage({ ok: false, text: hd.error });
+        return;
+      }
+      if (hd?.ok) {
+        if (!confirm(hd.message)) {
+          setMessage({ ok: false, text: result.errors.join('. ') });
+          return;
+        }
+        await props.higherDuties.save(hd);
+        setMessage({ ok: true, text: `${name(payload.staffId)} → ${role.name} on ${describeDayIndices(indices)} on higher duties` });
+        return;
+      }
     }
     if (!result.ok) {
       setMessage({ ok: false, text: result.errors.join('. ') });
@@ -200,6 +236,16 @@ export function AssignmentGrid(props: AssignmentGridProps) {
     return (['permanent', 'twt', 'temporary'] as const)
       .map((t): [string, Staff[]] => [EMPLOYMENT_TYPE_LABELS[t], people.filter((p) => p.employmentType === t)])
       .filter(([, list]) => list.length > 0);
+  };
+
+  /** Names to offer in a cell's picker, including people who could step up into it. */
+  const pickable = (roleId: string, indices: number[]) => {
+    const can = new Set(candidatesFor(grid, roleId, indices).map((s) => s.id));
+    return offered
+      .filter((s) => offeredIds.has(s.id))
+      .map((s) => ({ staff: s, ok: can.has(s.id), higherDuties: !can.has(s.id) && !!props.higherDuties?.plan(s.id, roleId, indices)?.ok }))
+      .filter((c) => c.ok || c.higherDuties)
+      .sort((a, b) => byName(a.staff, b.staff));
   };
 
   const tileTitle = (t: Tile) => {
@@ -380,6 +426,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                               {t.partYear && ` ${formatRange(leaveRange(t.leave))}`}
                             </span>
                           )}
+                          {t.allocation.higherDutiesLeaveId && <span className="tag">higher duties</span>}
                           {t.kind === 'cover' && (
                             <span className="tag">
                               {words.cover}
@@ -411,12 +458,10 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                             onChange={(e) => e.target.value && void assign({ staffId: e.target.value }, role, indices)}
                           >
                             <option value="">Choose…</option>
-                            {candidatesFor(grid, role.id, indices)
-                              .filter((s) => offeredIds.has(s.id))
-                              .sort(byName)
-                              .map((s) => (
+                            {pickable(role.id, indices).map(({ staff: s, higherDuties }) => (
                                 <option key={s.id} value={s.id}>
                                   {s.name}
+                                  {higherDuties ? ' (higher duties)' : ''}
                                 </option>
                               ))}
                           </select>

@@ -40,6 +40,7 @@ export function RoleGrid({ data }: { data: PlanData }) {
         return grades.length ? `Prefers ${describeGrades(grades)}` : undefined;
       }}
       showAsAt
+      placesHigherDuties
       words={{
         row: 'Role',
         cover: 'cover',
@@ -50,7 +51,8 @@ export function RoleGrid({ data }: { data: PlanData }) {
           <>
             Drag a name onto a role and day, or use <strong>+</strong> to choose one. A full-time teacher placed on a class
             fills the whole week, and dropping a name on a role's name fills every day they're free. Drag a tile to move
-            it; × removes that day. Greyed tiles are on leave; dropping someone there assigns cover for that leave.
+            it; × removes that day. Greyed tiles are on leave; dropping someone there assigns cover for that leave. Someone on higher duties
+            can be placed in an executive role on those days.
           </>
         ),
       }}

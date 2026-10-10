@@ -4,6 +4,7 @@ import { dayIndices, describeDayIndices, emptyPattern, type DayPattern } from '.
 import { formatFte, milliFteOf } from '../../domain/fte';
 import { planSplitPosition } from '../../domain/matching';
 import type { EntitlementPosition } from '../../domain/types';
+import { tidyHigherDutiesIn } from '../../data/higherDutiesStore';
 import { useRepository } from '../../data/RepositoryContext';
 import type { PlanData } from '../allocation/shared';
 
@@ -33,6 +34,7 @@ export function SplitPosition({ data, position, typeName, onDone }: {
     await repo.positions.putMany(plan.positionPut);
     if (plan.matchDelete.length) await repo.matches.deleteMany(plan.matchDelete);
     if (plan.matchPut.length) await repo.matches.putMany(plan.matchPut);
+    await tidyHigherDutiesIn(repo, data.planningYear.id);
     onDone();
   };
 

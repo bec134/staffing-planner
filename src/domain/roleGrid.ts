@@ -29,6 +29,12 @@ export interface GridData {
   roles: Role[];
   allocations: Allocation[];
   leave: Leave[];
+  /**
+   * Part 2: position types someone on higher duties can be placed in on
+   * their higher-duties days (executive types). Part 1 uses Match staff's
+   * higher-duties flow instead.
+   */
+  higherDutiesTypeIds?: Set<Id>;
 }
 
 /** A pattern holding exactly these fortnight-day indices. */
@@ -80,6 +86,7 @@ export function cellView(role: Role, indices: number[], data: GridData, asAt?: I
     const leave = data.leave.find(
       (l) =>
         l.staffId === a.staffId &&
+        l.id !== a.higherDutiesLeaveId &&
         hits(l.daysAffected, indices) &&
         indices.some((d) => a.days.days[d] && l.daysAffected.days[d]) &&
         (!asAt || containsDate(leaveRange(l), asAt)),
@@ -141,7 +148,7 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
     const leave =
       holder.staffId === staff.id
         ? undefined
-        : data.leave.find((l) => l.staffId === holder.staffId && l.daysAffected.days[d]);
+        : data.leave.find((l) => l.staffId === holder.staffId && l.id !== holder.higherDutiesLeaveId && l.daysAffected.days[d]);
     if (!leave) {
       blocked.set(holder.staffId, [...(blocked.get(holder.staffId) ?? []), d]);
       continue;
@@ -168,8 +175,29 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
     allocations = [...allocations.filter((x) => x.id !== a.id), a];
   };
 
+  // Part 2 higher duties: days someone is away from their own role to step
+  // up into this executive one become a separate higher-duties allocation.
+  const stepUp = new Map<Id, number[]>();
+  if (data.higherDutiesTypeIds?.has(role.positionTypeId)) {
+    for (const d of [...free]) {
+      const hd = data.leave.find((l) => l.staffId === staff.id && l.leaveType === 'higher_duties' && l.daysAffected.days[d]);
+      if (!hd) continue;
+      stepUp.set(hd.id, [...(stepUp.get(hd.id) ?? []), d]);
+      free.splice(free.indexOf(d), 1);
+    }
+  }
+  for (const [leaveId, days] of stepUp) {
+    const existing = allocations.find((a) => a.staffId === staff.id && a.roleId === role.id && a.higherDutiesLeaveId === leaveId);
+    const next: Allocation = existing
+      ? { ...existing, days: withMode(union([existing.days, patternOf(days)]).days) }
+      : { id: newId(), planningYearId: data.planningYearId, staffId: staff.id, roleId: role.id, days: patternOf(days), higherDutiesLeaveId: leaveId };
+    const problems = validateAllocation(next, staff, role, allocations);
+    if (problems.length) return { ok: false, errors: problems };
+    save(next);
+  }
+
   if (free.length) {
-    const existing = allocations.find((a) => a.staffId === staff.id && a.roleId === role.id && !a.coveringLeaveId);
+    const existing = allocations.find((a) => a.staffId === staff.id && a.roleId === role.id && !a.coveringLeaveId && !a.higherDutiesLeaveId);
     const next: Allocation = existing
       ? { ...existing, days: withMode(union([existing.days, patternOf(free)]).days) }
       : { id: newId(), planningYearId: data.planningYearId, staffId: staff.id, roleId: role.id, days: patternOf(free) };
@@ -211,7 +239,13 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
     save(next);
   }
 
-  const what = coverByLeave.size && !free.length ? 'as cover' : coverByLeave.size ? 'and as cover' : '';
+  const what = stepUp.size
+    ? 'on higher duties'
+    : coverByLeave.size && !free.length
+      ? 'as cover'
+      : coverByLeave.size
+        ? 'and as cover'
+        : '';
   return {
     ok: true,
     put,
