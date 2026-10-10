@@ -15,7 +15,7 @@ import {
   type GridData,
   type Tile,
 } from '../domain/roleGrid';
-import type { HigherDutiesPlan } from '../domain/higherDuties';
+import { actsUp, type HigherDutiesPlan } from '../domain/higherDuties';
 import { schoolYear } from '../domain/matching';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -426,7 +426,9 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                               {t.partYear && ` ${formatRange(leaveRange(t.leave))}`}
                             </span>
                           )}
-                          {t.allocation.higherDutiesLeaveId && <span className="tag">higher duties</span>}
+                          {(t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), type)) && (
+                            <span className="tag">higher duties</span>
+                          )}
                           {t.kind === 'cover' && (
                             <span className="tag">
                               {words.cover}

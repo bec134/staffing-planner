@@ -206,12 +206,28 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
     save(next);
   }
 
+  // Part 2 higher duties: cover in an executive role on someone's
+  // higher-duties days (e.g. relieving for an AP on whole-year leave) is
+  // kept separate and linked to their higher-duties leave.
+  const covers: { leave: Leave; days: number[]; hdId?: Id }[] = [];
   for (const { leave, days } of coverByLeave.values()) {
+    const byHd = new Map<Id | undefined, number[]>();
+    for (const d of days) {
+      const hd = data.higherDutiesTypeIds?.has(role.positionTypeId)
+        ? data.leave.find((l) => l.staffId === staff.id && l.leaveType === 'higher_duties' && l.daysAffected.days[d])
+        : undefined;
+      byHd.set(hd?.id, [...(byHd.get(hd?.id) ?? []), d]);
+    }
+    for (const [hdId, list] of byHd) covers.push({ leave, days: list, hdId });
+  }
+  for (const { leave, days, hdId } of covers) {
+    if (hdId) stepUp.set(hdId, stepUp.get(hdId) ?? []);
     const existing = allocations.find(
       (a) =>
         a.staffId === staff.id &&
         a.roleId === role.id &&
         a.coveringLeaveId === leave.id &&
+        a.higherDutiesLeaveId === hdId &&
         a.startDate === leave.startDate &&
         a.endDate === leave.endDate,
     );
@@ -226,9 +242,18 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
           startDate: leave.startDate,
           endDate: leave.endDate,
           coveringLeaveId: leave.id,
+          ...(hdId ? { higherDutiesLeaveId: hdId } : {}),
         };
     const problems = validateCover(
-      { id: next.id, staffId: staff.id, roleId: role.id, days: next.days, startDate: leave.startDate, endDate: leave.endDate },
+      {
+        id: next.id,
+        staffId: staff.id,
+        roleId: role.id,
+        days: next.days,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        higherDutiesLeaveId: hdId,
+      },
       leave,
       staff,
       role,

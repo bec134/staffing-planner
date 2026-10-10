@@ -253,4 +253,56 @@ describe('Splitting a position', () => {
     await waitFor(() => expect(within(cell('Classroom Teacher 3', 'Wed')).queryByText('Quinn Example')).not.toBeInTheDocument());
     confirmSpy.mockRestore();
   });
+
+  it('puts a full-time teacher on higher duties to backfill an AP on whole-year leave', async () => {
+    const repo = await setup();
+    const ap = 'Assistant Principal 1';
+    const bodhi = (await repo.staff.listByYear(Y)).find((s) => s.name === 'Bodhi Marsh')!;
+    await act(() =>
+      repo.leave.put({
+        id: 'bodhi-lwop',
+        planningYearId: Y,
+        staffId: bodhi.id,
+        startDate: '2027-01-28',
+        endDate: '2027-12-17',
+        daysAffected: weekdays('Wed'),
+        leaveType: 'lwop',
+      }),
+    );
+    // Reopen the page to pick up the leave added behind its back.
+    fireEvent.click(screen.getByRole('link', { name: 'Staff' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Match staff' }));
+    await waitFor(() => expect(tileOf(cell(ap, 'Wed'), 'Bodhi Marsh')).toHaveClass('on-leave'));
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    // Eli is full time in Classroom Teacher 1, so this offers higher duties as Bodhi's backfill.
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Eli Brookfield', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell(ap, 'Wed'), { dataTransfer: dt });
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("backfilling Bodhi Marsh's leave")));
+    await waitFor(() => expect(tileOf(cell(ap, 'Wed'), 'Eli Brookfield')).toHaveClass('cover'));
+    expect(tileOf(cell(ap, 'Wed'), 'Eli Brookfield')).toHaveTextContent('higher duties');
+    await waitFor(() => expect(tileOf(cell('Classroom Teacher 1', 'Wed'), 'Eli Brookfield')).toHaveClass('on-leave'));
+    expect(tileOf(cell('Classroom Teacher 1', 'Thu'), 'Eli Brookfield')).toHaveClass('holder');
+    confirmSpy.mockRestore();
+  });
+
+  it('labels a temporary teacher matched to an unfilled AP position as higher duties', async () => {
+    await setup();
+    const apci = 'Assistant Principal - Curriculum & Instruction 1';
+    fireEvent.click(screen.getByRole('button', { name: `Remove Dana Thistle from ${apci} on Fri` }));
+    await waitFor(() => expect(within(cell(apci, 'Fri')).queryByText('Dana Thistle')).not.toBeInTheDocument());
+    // Dana is an AP C&I in her own position: no label.
+    expect(tileOf(cell(apci, 'Mon'), 'Dana Thistle')).not.toHaveTextContent('higher duties');
+
+    // Morgan (temporary, substantive Teacher) isn't matched on Fridays, so this is a plain match, labelled.
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true); // add Fri to her days
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Morgan Pike', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell(apci, 'Fri'), { dataTransfer: dt });
+    const tile = await waitFor(() => tileOf(cell(apci, 'Fri'), 'Morgan Pike'));
+    expect(tile).toHaveClass('holder', 'emp-temporary');
+    expect(tile).toHaveTextContent('higher duties');
+    confirmSpy.mockRestore();
+  });
 });

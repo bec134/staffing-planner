@@ -15,7 +15,8 @@ import { formatFte, milliFteOf } from './fte';
 import { checkIntention, describeGrades, intentionForStaff, planApplyIntention, staffForIntention } from './intentions';
 import { allocationRange, coverGaps, coversFor, leaveRange } from './leave';
 import { MATCH_ORDER, isWholeYearLeave, matchStatus, schoolYear } from './matching';
-import { cellView, type GridData } from './roleGrid';
+import { actsUp } from './higherDuties';
+import { cellView, type GridData, type Tile } from './roleGrid';
 import {
   EMPLOYMENT_TYPE_LABELS,
   GRADES,
@@ -122,6 +123,7 @@ function gridTable(
   const out: ReportCell[][] = [];
 
   for (const pt of [...positionTypes].sort(bySort)) {
+    const hdTag = (t: Tile) => (t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), pt) ? ' (higher duties)' : '');
     const group = rows.filter((r) => r.positionTypeId === pt.id).sort(bySort);
     if (!group.length) continue;
     out.push(heading(pt.name));
@@ -135,7 +137,7 @@ function gridTable(
         let uncoveredLeave = false;
         for (const t of view.tiles) {
           if (t.kind === 'holder') {
-            lines.push(`${name(t.staffId)}${t.allocation.higherDutiesLeaveId ? ' (higher duties)' : ''}`);
+            lines.push(`${name(t.staffId)}${hdTag(t)}`);
             tone ??= part === 1 ? staffById.get(t.staffId)?.employmentType : 'holder';
           } else if (t.kind === 'on-leave') {
             const when = t.partYear && t.leave ? `, ${formatRange(leaveRange(t.leave))}` : '';
@@ -145,7 +147,7 @@ function gridTable(
           } else {
             const range = allocationRange(t.allocation);
             const when = data.year && (range.start > data.year.start || range.end < data.year.end) ? `, ${formatRange(range)}` : '';
-            lines.push(`${coverWord}: ${name(t.staffId)}${when}`);
+            lines.push(`${coverWord}: ${name(t.staffId)}${hdTag(t)}${when}`);
             tone ??= 'cover';
           }
         }
@@ -263,7 +265,10 @@ function placementReport(d: PlanningYearSnapshot): Report {
     const partYear = range.start > year.start || range.end < year.end;
     const leave = a.coveringLeaveId ? d.leave.find((l) => l.id === a.coveringLeaveId) : undefined;
     const cover = a.coveringLeaveId ? ` (cover for ${leave ? (staffById.get(leave.staffId)?.name ?? 'leave') : 'leave'})` : '';
-    const hd = a.higherDutiesLeaveId ? ' (higher duties)' : '';
+    const hd =
+      a.higherDutiesLeaveId || actsUp(staffById.get(a.staffId), types.get(roleById.get(a.roleId)?.positionTypeId ?? ''))
+        ? ' (higher duties)'
+        : '';
     return `${who}: ${daysText(a.days)}${cover}${hd}${partYear ? `, ${formatRange(range)}` : ''}`;
   };
   return {

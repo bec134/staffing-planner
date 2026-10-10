@@ -6,7 +6,7 @@
  * `coveringLeaveId` set, for the same role, on some or all of the leave days,
  * for some or all of the leave dates. It isn't counted against entitlement.
  */
-import { datesOverlap } from './allocation';
+import { clashDays, datesOverlap } from './allocation';
 import { containsDate, intersectRange, rangesOverlap, subtractRanges } from './dates';
 import { dayIndices, describeDayIndices, intersect, subtract, union, type DayPattern } from './dayPattern';
 import type { Allocation, DateRange, Id, IsoDate, Leave, Role, Staff } from './types';
@@ -86,6 +86,8 @@ export interface CoverCandidate {
   days: DayPattern;
   startDate: IsoDate;
   endDate: IsoDate;
+  /** Cover given while on higher duties (see higherDuties.ts). */
+  higherDutiesLeaveId?: Id;
 }
 
 /** Days the coverer could take in this role over these dates. */
@@ -147,10 +149,14 @@ export function validateCover(
   const others = allocations.filter(
     (a) => a.id !== candidate.id && datesOverlap(a, { startDate: range.start, endDate: range.end }),
   );
-  const busy = dayIndices(intersect(candidate.days, union(others.filter((a) => a.staffId === coverer.id).map((a) => a.days))));
+  const busy = [
+    ...new Set(others.filter((a) => a.staffId === coverer.id).flatMap((a) => clashDays({ ...candidate, coveringLeaveId: leave.id }, a))),
+  ].sort((x, y) => x - y);
   if (busy.length) errors.push(`${coverer.name} already has a role on ${describeDayIndices(busy)} during these dates`);
 
-  const ownLeave = leaves.filter((l) => l.staffId === coverer.id && rangesOverlap(leaveRange(l), range));
+  const ownLeave = leaves.filter(
+    (l) => l.staffId === coverer.id && l.id !== candidate.higherDutiesLeaveId && rangesOverlap(leaveRange(l), range),
+  );
   const away = dayIndices(intersect(candidate.days, union(ownLeave.map((l) => l.daysAffected))));
   if (away.length) errors.push(`${coverer.name} is on leave on ${describeDayIndices(away)} during these dates`);
 

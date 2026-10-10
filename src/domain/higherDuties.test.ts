@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { clashDays } from './allocation';
 import { FULL_TIME, dayIndices, weekdays } from './dayPattern';
 import { coverGaps } from './leave';
-import { planHigherDuties, seniority, tidyHigherDuties, type HigherDutiesInput } from './higherDuties';
+import { actsUp, planHigherDuties, seniority, substantiveRank, tidyHigherDuties, type HigherDutiesInput } from './higherDuties';
 import { cellView, planAssign, type GridData } from './roleGrid';
-import type { Allocation, EntitlementPosition, PositionType, Staff } from './types';
+import type { Allocation, EntitlementPosition, Leave, PositionType, Staff } from './types';
 
 const y = 'y1';
 const type = (id: string, name: string, category: PositionType['category']): PositionType => ({ id, planningYearId: y, name, category, sortOrder: 0 });
@@ -62,6 +62,23 @@ describe('seniority', () => {
   });
 });
 
+describe('actsUp', () => {
+  const as = (currentRole: string) => ({ currentRole });
+  it('is true when someone is placed above their substantive role', () => {
+    expect(actsUp(as('Teacher'), types[1])).toBe(true);
+    expect(actsUp(as('Assistant Principal'), types[3])).toBe(true);
+    expect(actsUp(as('Deputy Principal'), types[4])).toBe(true);
+  });
+  it('is false in their own or a lower role, or when the role is not recorded', () => {
+    expect(actsUp(as('Assistant Principal'), types[2])).toBe(false);
+    expect(actsUp(as('Assistant Principal - Curriculum & Instruction'), types[2])).toBe(false);
+    expect(actsUp(as('Principal'), types[3])).toBe(false);
+    expect(actsUp(as('Teacher'), types[0])).toBe(false);
+    expect(actsUp(as(''), types[1])).toBe(false);
+    expect(substantiveRank(as('Classroom Teacher'))).toBe(1);
+  });
+});
+
 describe('planHigherDuties', () => {
   it('steps a teacher up into an executive position for the whole year, freeing their own day', () => {
     const plan = planHigherDuties(input(), 'mira', 'apci1', WED, newId);
@@ -106,6 +123,60 @@ describe('planHigherDuties', () => {
     });
     const monOnly = positions.map((p) => (p.id === 'apci1' ? { ...p, days: weekdays('Mon') } : p));
     expect(planHigherDuties(input({ positions: monOnly }), 'mira', 'apci1', WED, newId)).toEqual({ ok: false, error: "AP C&I 1 doesn't run on Wed" });
+  });
+});
+
+describe('higher duties backfilling an executive on whole-year leave', () => {
+  const ottoHolds: Allocation = { id: 'o1', planningYearId: y, staffId: 'otto', roleId: 'apci1', days: FULL_TIME };
+  const ottoLeave: Leave = { id: 'ol', planningYearId: y, staffId: 'otto', startDate: year.start, endDate: year.end, daysAffected: weekdays('Wed'), leaveType: 'lwop' };
+
+  it('backfills their leave on higher duties', () => {
+    const plan = planHigherDuties(input({ matches: [substantive, ottoHolds], leave: [ottoLeave] }), 'mira', 'apci1', WED, newId);
+    if (!plan?.ok) throw new Error(`expected a plan: ${JSON.stringify(plan)}`);
+    expect(plan.matchPut).toEqual([
+      expect.objectContaining({ roleId: 'apci1', coveringLeaveId: 'ol', higherDutiesLeaveId: plan.leavePut[0]!.id, startDate: year.start, endDate: year.end }),
+    ]);
+    expect(plan.message).toContain("backfilling Otto Brandt's leave");
+
+    // On the grid: Otto greyed, Mira as the backfill tagged higher duties, her own Wednesday greyed.
+    const grid: GridData = { planningYearId: y, year, staff: [mira, otto], roles: positions, allocations: [substantive, ottoHolds, ...plan.matchPut], leave: [ottoLeave, ...plan.leavePut] };
+    expect(cellView(positions[1]!, WED, grid).tiles.map((t) => [t.staffId, t.kind])).toEqual([['otto', 'on-leave'], ['mira', 'cover']]);
+    expect(cellView(positions[0]!, WED, grid).tiles.map((t) => t.kind)).toEqual(['on-leave']);
+    // Removing the backfill ends higher duties.
+    expect(tidyHigherDuties([substantive, ottoHolds], [ottoLeave, ...plan.leavePut], []).leaveDelete).toEqual([plan.leavePut[0]!.id]);
+  });
+
+  it("refuses when their leave is already backfilled, or they aren't on leave then", () => {
+    const backfill: Allocation = { id: 'b', planningYearId: y, staffId: 'pia', roleId: 'apci1', days: weekdays('Wed'), coveringLeaveId: 'ol', startDate: year.start, endDate: year.end };
+    const pia = person('pia', 'Pia Lowell');
+    expect(planHigherDuties(input({ staff: [mira, otto, pia], matches: [substantive, ottoHolds, backfill], leave: [ottoLeave] }), 'mira', 'apci1', WED, newId)).toEqual({
+      ok: false,
+      error: 'AP C&I 1 is already backfilled by Pia Lowell on Wed',
+    });
+    expect(planHigherDuties(input({ matches: [substantive, ottoHolds], leave: [ottoLeave] }), 'mira', 'apci1', [1, 6], newId)).toEqual({
+      ok: false,
+      error: 'AP C&I 1 is already held by Otto Brandt on Tue',
+    });
+  });
+
+  it('Part 2: covers their leave in the executive role on higher-duties days', () => {
+    const plan = planHigherDuties(input({ matches: [substantive, ottoHolds], leave: [ottoLeave] }), 'mira', 'apci1', WED, newId);
+    if (!plan?.ok) throw new Error('expected a plan');
+    const roles = [position('r-class', 'Year 3', 't-class'), position('r-apci', 'AP C&I', 't-apci')];
+    const part2: GridData = {
+      planningYearId: y,
+      year,
+      staff: [mira, otto],
+      roles,
+      allocations: [{ ...substantive, id: 'a1', roleId: 'r-class' }, { ...ottoHolds, id: 'a2', roleId: 'r-apci' }],
+      leave: [ottoLeave, ...plan.leavePut],
+      higherDutiesTypeIds: new Set(['t-apci']),
+    };
+    expect(planAssign(part2, 'mira', 'r-apci', WED, newId)).toMatchObject({
+      ok: true,
+      put: [expect.objectContaining({ coveringLeaveId: 'ol', higherDutiesLeaveId: plan.leavePut[0]!.id })],
+    });
+    expect(planAssign({ ...part2, higherDutiesTypeIds: undefined }, 'mira', 'r-apci', WED, newId).ok).toBe(false);
   });
 });
 
