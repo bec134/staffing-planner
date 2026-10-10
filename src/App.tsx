@@ -11,15 +11,17 @@ import { OverviewPage } from './pages/OverviewPage';
 import { HelpPage } from './pages/help/HelpPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
+import { StaffPage } from './pages/staff/StaffPage';
 
-/** Modules in build-priority order (PLAN.md "Scope and build priority"). */
+/** Modules in the order they are used each year (Bec: staff are added in Part 1). */
 export const MODULES = [
   { path: '/entitlement', label: 'Entitlement', phase: 2, part: 1 },
+  { path: '/staff', label: 'Staff', phase: 3, part: 1 },
+  { path: '/intentions', label: 'Staff intentions', phase: 6, part: 1 },
   { path: '/matching', label: 'Match staff', phase: 2, part: 1 },
   { path: '/classes', label: 'Class structures', phase: 5, part: 2 },
-  { path: '/allocation', label: 'Staff & allocation', phase: 3, part: 2 },
+  { path: '/allocation', label: 'Roles & placement', phase: 3, part: 2 },
   { path: '/leave', label: 'Leave cover', phase: 4, part: 2 },
-  { path: '/intentions', label: 'Staff intentions', phase: 6, part: 0 },
   { path: '/reports', label: 'Export & reports', phase: 7, part: 0 },
 ] as const;
 
@@ -66,6 +68,7 @@ export function App() {
             <Routes>
               <Route path="/" element={<OverviewPage />} />
               <Route path="/entitlement" element={<EntitlementPage />} />
+              <Route path="/staff/*" element={<StaffPage />} />
               <Route path="/allocation/*" element={<AllocationPage />} />
               <Route path="/leave/*" element={<LeavePage />} />
               <Route path="/classes" element={<ClassStructuresPage />} />

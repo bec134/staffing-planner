@@ -50,10 +50,10 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           'On the **Overview** page, create a planning year, or restore a backup from a previous session.',
           'Enter the department entitlement on **Entitlement**.',
-          'Add your staff on **Staff & allocation** (by hand or from a CSV file).',
+          'Add your staff on **Staff** (by hand or from a CSV file).',
           "Enter each person's plans for next year on **Staff intentions**, then apply them.",
           '**Part 1:** on **Match staff**, match staff to the entitlement positions: permanent first, then TWT, then temporary.',
-          '**Part 2:** on **Class structures**, work out the classes, then place staff in classes and roles on **Staff & allocation**.',
+          '**Part 2:** on **Class structures**, work out the classes, then place staff in classes and roles on **Roles & placement**.',
           'Record leave and assign cover on **Leave cover**.',
           'Print or export reports, and save a backup, on **Export & reports**.',
         ],
@@ -61,7 +61,10 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         heading: 'Help on each page',
-        text: ['Every page has a **How to use this page** link at the top that opens its guide here.'],
+        text: [
+          'The **Steps** list on the Overview page shows each step with a tick when it is done, and a button to go straight to it.',
+          'Every page has a **How to use this page** link at the top that opens its guide here.',
+        ],
       },
     ],
   },
@@ -149,6 +152,49 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
+    id: 'staff',
+    title: 'Adding staff',
+    summary: 'Add staff one at a time or import them from a CSV file.',
+    group: 'Part 1 · Entitlement',
+    page: { path: '/staff', label: 'Staff' },
+    sections: [
+      {
+        heading: 'Add a staff member',
+        steps: [
+          'Go to **Staff** (in Part 1 of the menu), or click **Add staff** on the Overview or Match staff page.',
+          'Click **Add staff member**.',
+          'Enter the **Name**, **Employment type** (Permanent, TWT or Temporary) and **Current role**.',
+          'Tick the days they work. Choose **Week A / Week B differ** if their days change between the two weeks of the fortnight.',
+          'Click **Add staff member**. Their FTE is worked out from the days (one weekday = 0.2 FTE).',
+        ],
+        tip: 'Include days they will be on whole-year leave. For example, a permanent 1.0 teacher taking LWOP on Thu and Fri still works Mon–Fri; the leave is recorded separately (easiest through Staff intentions).',
+      },
+      {
+        heading: 'Import staff from a CSV file',
+        steps: [
+          'On the **Staff** page, open the **Import CSV** tab (or click **Import from CSV**).',
+          'Download a template, fill it in in Excel, and save it as CSV.',
+          'Click **Choose File** next to **CSV file** and pick your file.',
+          'Check the columns under **Match columns** and the **Preview**, then click **Import**.',
+        ],
+        tip: 'Staff already in the plan, and names repeated in the file, are skipped.',
+      },
+      {
+        heading: 'Change or remove a staff member',
+        steps: [
+          'On the **All staff** tab, click their name.',
+          'Click **Edit details** to change their name, employment type, role or days, then **Save changes**.',
+          'Click **Delete staff member** to remove them. Their matches, placements, leave and intentions are removed too.',
+        ],
+        text: ["Their page also shows their placements, leave and intentions, and you can **Add allocation** there."],
+      },
+      {
+        heading: 'Next',
+        text: ['Enter their plans for next year on **Staff intentions**, then match them to the entitlement on **Match staff**. A new name entered in Staff intentions is also added as a staff member when it is applied.'],
+      },
+    ],
+  },
+  {
     id: 'intentions',
     title: 'Staff intentions',
     summary: "Record each person's plans for next year and apply them to the plan.",
@@ -205,7 +251,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           'Look at the **In the plan** column. **Up to date** means the plan already matches; **Not applied** lists exactly what would change.',
           'Click **Apply** on one person, or **Apply all** at the top.',
-          'Follow up anything listed under "Then:" (for example, someone still matched on a day they will no longer work) on Match staff or Staff & allocation.',
+          'Follow up anything listed under "Then:" (for example, someone still matched on a day they will no longer work) on Match staff or Roles & placement.',
         ],
         tip: "Deleting an intention doesn't change the plan.",
       },
@@ -298,41 +344,30 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Under **Accepted class structure**, rename classes (for example "K Blue") and change student numbers.',
           'Use **Add a class** and **Add class**, or **Remove**, to change the classes.',
           'Click **Save changes**. The check below the table shows any students not placed.',
-          'Click **Create class roles**. Each class gets a class teacher role, ready for placing staff on Staff & allocation.',
+          'Click **Create class roles**. Each class gets a class teacher role, ready for placing staff on Roles & placement.',
         ],
       },
     ],
   },
   {
     id: 'allocation',
-    title: 'Part 2: Staff & allocation',
-    summary: 'Add staff and roles, then place staff in classes and roles by day.',
+    title: 'Part 2: Roles & placement',
+    summary: 'Add roles, then place staff in classes and roles by day.',
     group: 'Part 2 · Placement',
-    page: { path: '/allocation', label: 'Staff & allocation' },
+    page: { path: '/allocation', label: 'Roles & placement' },
     sections: [
       {
-        heading: 'Add staff by hand',
-        steps: [
-          'Go to **Staff & allocation**, on the **By staff** tab.',
-          'Click **Add staff member**.',
-          'Enter the **Name**, **Employment type** and **Current role**, and tick the days they work. Choose **Week A / Week B differ** if their days change between weeks.',
-          'Click **Add staff member**. FTE is worked out from the days (one weekday = 0.2 FTE).',
+        heading: 'Before you start',
+        text: [
+          'Staff are added in Part 1, on the **Staff** page. Class roles are created on Class structures. This page is for placing those staff in classes and other roles.',
         ],
-      },
-      {
-        heading: 'Import staff from a CSV file',
-        steps: [
-          'Open the **Import CSV** tab.',
-          'Download a template, fill it in in Excel, and save it as CSV.',
-          'Choose the file, check **Match columns** and the preview, then click **Import**.',
-        ],
-        tip: 'Staff already in the plan, and names repeated in the file, are skipped.',
       },
       {
         heading: 'Add roles',
         text: ['Roles are what staff are placed in: classes (created on Class structures), RFF, library, executive release and so on.'],
         steps: [
-          'Open the **By role** tab and click **Add role**.',
+          'Go to **Roles & placement** and open the **By role** tab.',
+          'Click **Add role**.',
           "Enter the role's name (for example RFF 1), choose the **Position type**, and tick the days it runs.",
           'Click **Add role**.',
         ],
@@ -340,9 +375,9 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Place staff with the role grid',
         steps: [
-          'Open the **Role grid** tab. Roles run down the side and days across the top.',
+          'Open the **Role grid** tab (the first tab). Roles run down the side and days across the top.',
           'Drag a name onto a role and day, or click **+** and choose a name. Staff matched in Part 1 are offered; tick **Show all staff** to see everyone.',
-          'A full-time teacher dropped on a class fills the whole week. Dropping a name on a role\'s name fills every day they are free.',
+          "A full-time teacher dropped on a class fills the whole week. Dropping a name on a role's name fills every day they are free.",
           'Click **×** to remove a day, or drag a tile to move it.',
           'Name tiles show grade preferences (for example "Prefers K, 1, 2") from Staff intentions.',
         ],
@@ -351,8 +386,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Other views',
         points: [
+          '**By role** lists every role with who holds it; click a role to edit it or its allocations.',
           '**Staff grid** shows each person by day, with leave and who covers it. Choose an **As at** date to see a single day.',
-          "Click a staff member's name to see their details, allocations, leave and intentions, and to **Edit details**, **Add allocation** or **Delete staff member**.",
         ],
       },
     ],

@@ -7,7 +7,7 @@ import { staffLink } from '../../domain/flags';
 import { formatFte, milliFteOf } from '../../domain/fte';
 import { EMPLOYMENT_TYPE_LABELS } from '../../domain/types';
 import { StaffForm } from './StaffForm';
-import { byName, daysLabel, lookups, type PlanData } from './shared';
+import { byName, daysLabel, lookups, type PlanData } from '../allocation/shared';
 
 export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
   const [adding, setAdding] = useState(false);
@@ -18,7 +18,7 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
     <section>
       <div className="actions">
         {!adding && <button onClick={() => setAdding(true)}>Add staff member</button>}
-        <Link to="/allocation/import" className="button-link secondary">
+        <Link to="/staff/import" className="button-link secondary">
           Import from CSV
         </Link>
       </div>

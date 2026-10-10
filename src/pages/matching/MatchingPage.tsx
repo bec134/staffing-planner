@@ -62,6 +62,11 @@ function Matching({ data }: { data: PlanData }) {
         Part 1: match permanent staff first, then TWT, then temporary, against the entitlement positions. Whole-year
         leave greys out and can be backfilled. Classes and roles are set in Part 2.
       </p>
+      <p className="panel small">
+        {data.staff.length === 0 ? <strong>No staff yet. </strong> : 'Someone missing? '}
+        <Link to="/staff">Add staff</Link> on the Staff page, or <Link to="/staff/import">import them from a CSV file</Link>.
+        New people in <Link to="/intentions">Staff intentions</Link> are added when their intentions are applied.
+      </p>
 
       {!entitlement || entitlement.totalMilliFte === 0 ? (
         <p className="warning">

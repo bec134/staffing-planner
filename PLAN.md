@@ -163,6 +163,16 @@ Checks are date- and day-aware: two part-year roles only clash if their dates ov
 
 Each report has the school, year and date at the top; grids print landscape (A4). PDFs come from the browser's print dialog (Save as PDF). Reports are built once as tables (`src/domain/reports.ts`) and rendered both on screen/print and to Excel.
 
+## Menu and steps (Bec, after Phase 7)
+
+Staff are added in Part 1, since they have to exist before they can be matched. The menu is:
+
+- **Part 1 · Entitlement:** Entitlement, Staff (add by hand or import CSV; each person's details), Staff intentions, Match staff.
+- **Part 2 · Placement:** Class structures, Roles & placement (role grid, roles, staff grid), Leave cover.
+- Export & reports, then Help.
+
+The Overview page shows the year's **steps** in order, each with a tick when done and a button to go to it (`src/domain/progress.ts`). Match staff links to the Staff page for anyone missing.
+
 ## Help (Bec, after Phase 7)
 
 A **Help** page (`/help`) with step-by-step guides for each part of the app, plus getting started, backups and restoring, warnings explained, privacy, a glossary and common questions. It's searchable, and every page has a **How to use this page** link to its guide. Guides live in `src/help/helpContent.ts`; a test checks that the buttons and fields they name exist in the app, so update the guide when a screen changes.

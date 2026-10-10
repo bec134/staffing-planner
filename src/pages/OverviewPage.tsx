@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { HelpLink } from '../components/HelpLink';
 import { describePattern, fteOf } from '../domain/dayPattern';
 import {
@@ -8,6 +9,8 @@ import {
   type Staff,
 } from '../domain/types';
 import { useRepository } from '../data/RepositoryContext';
+import { usePlanData } from '../data/usePlanData';
+import { planSteps } from '../domain/progress';
 import { buildSampleData, SAMPLE_PLANNING_YEAR_ID } from '../data/sampleData';
 import { BackupPanel, RestorePanel } from '../components/BackupPanels';
 import { NewPlanningYearForm } from '../components/NewPlanningYearForm';
@@ -19,6 +22,7 @@ export function OverviewPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [positionTypes, setPositionTypes] = useState<PositionType[]>([]);
   const [busy, setBusy] = useState(false);
+  const plan = usePlanData(current?.id);
 
   useEffect(() => {
     if (!current) {
@@ -88,6 +92,29 @@ export function OverviewPage() {
         </label>
       )}
 
+      {current && plan && (
+        <section className="panel steps" aria-label="Steps">
+          <h2>Steps for {current.year}</h2>
+          <p className="muted small">Work through these in order. Each link takes you to the page for that step.</p>
+          <ol className="step-list">
+            {planSteps(plan).map((step) => (
+              <li key={step.id} className={step.done === undefined ? '' : step.done ? 'done' : 'todo'}>
+                <span className="step-mark" aria-label={step.done === undefined ? undefined : step.done ? 'Done' : 'To do'}>
+                  {step.done === undefined ? '•' : step.done ? '✓' : '○'}
+                </span>
+                <span className="step-text">
+                  <strong>{step.title}</strong>
+                  <span className="muted small"> — {step.detail}</span>
+                </span>
+                <Link to={step.path} className="button-link secondary small">
+                  {step.action}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       <RestorePanel />
       {current && <BackupPanel planningYearId={current.id} />}
 
@@ -133,7 +160,12 @@ export function OverviewPage() {
             </tbody>
           </table>
 
-          <h3>Staff ({staff.length})</h3>
+          <h3>
+            Staff ({staff.length}){' '}
+            <Link to="/staff" className="button-link secondary small">
+              Add staff
+            </Link>
+          </h3>
           <table>
             <thead>
               <tr>
