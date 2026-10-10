@@ -85,6 +85,8 @@ export type StaffDraft = Omit<StaffIntention, 'id' | 'planningYearId' | 'staffId
   substantiveRole: string;
   /** Other substantive roles (staff form only; a CSV row leaves them as they are). */
   otherRoles?: string[];
+  /** FTE of each of `otherRoles` (staff form only). */
+  otherRoleMilliFte?: Record<string, number>;
 };
 
 export interface StaffImportRow {

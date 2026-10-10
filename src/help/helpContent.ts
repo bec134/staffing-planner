@@ -172,7 +172,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Click **Add staff member**.',
           'Enter the **Name** and choose the **Employment status** (Permanent, TWT or Temporary). For Permanent or TWT, enter their **Permanent FTE**.',
           'Choose their **Substantive role**: Principal, Deputy Principal, Assistant Principal, Assistant Principal - Curriculum & Instruction, Teacher, Teacher Librarian or School Counsellor.',
-          'If they hold two positions (for example Teacher 0.6 and AP C&I 0.2), tick the other one under **Also substantive in**, so they are not labelled "higher duties" in it.',
+          'If they hold two positions (for example Teacher 0.6 and AP C&I 0.2), tick the other one under **Also substantive in** and enter its FTE (0.2). Their substantive role has the rest of their days (0.6). The staff page shows each role\'s FTE and how much is matched.',
           'Choose the **Work preference**. Full time ticks every day that is not a leave day.',
           'Tick the **Preferred days** they will work. Choose **Week A / Week B differ** if their days change between the two weeks of the fortnight.',
           'If they are taking leave for the whole year on some days (for example LWOP two days a week), tick those under **Whole year leave days** and choose the **Leave type**.',
@@ -264,7 +264,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Two positions, and second jobs',
         text: [
-          'Someone can hold more than one position, for example a Teacher 0.6 (Mon–Wed) and AP C&I 0.2 (Thu): match them to each on its days. Tick the second one under **Also substantive in** on their staff details.',
+          'Someone can hold more than one position, for example a Teacher 0.6 (Mon–Wed) and AP C&I 0.2 (Thu): match them to each on its days. Tick the second one under **Also substantive in** on their staff details and enter its FTE.',
+          'They are matched to an executive position only up to that FTE. Anything more (for example a second AP C&I day) is matched as higher duties and labelled so; on a day they are matched as a teacher it opens up their class for a backfill, as for any higher duties.',
           'Someone on whole-year leave from their own position can work elsewhere on those days as a second job, for example an AP on LWOP all year working 0.2 as a temporary teacher.',
         ],
         steps: [

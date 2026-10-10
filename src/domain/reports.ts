@@ -124,7 +124,7 @@ function gridTable(
 
   for (const pt of [...positionTypes].sort(bySort)) {
     const hdTag = (t: Tile) =>
-      (t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), pt) ? ' (higher duties)' : '') +
+      (t.allocation.higherDutiesLeaveId || t.allocation.aboveSubstantive || actsUp(staffById.get(t.staffId), pt) ? ' (higher duties)' : '') +
       (t.allocation.secondJobLeaveId ? ' (second job)' : '');
     const group = rows.filter((r) => r.positionTypeId === pt.id).sort(bySort);
     if (!group.length) continue;

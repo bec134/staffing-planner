@@ -331,3 +331,5 @@ table.intentions td.actions { white-space: nowrap; }
 .checks label { display: inline-block; margin: 2px 12px 2px 0; }
 .checks .muted { display: block; }
 .tile .tile-select { font-size: 0.75em; padding: 0 2px; margin-left: 4px; max-width: 8em; }
+.check-with-fte { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
+.check-with-fte .fte-input { width: 4em; }

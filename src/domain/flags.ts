@@ -12,6 +12,7 @@ import { formatRange } from './dates';
 import { dayIndices, describeDayIndices, subtract } from './dayPattern';
 import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement';
 import { formatFte } from './fte';
+import { overSubstantive } from './substantive';
 import { checkIntention, describeGrades, gradePreferenceMismatches, planApplyIntention } from './intentions';
 import { coverGaps } from './leave';
 import { MATCH_ORDER, matchesOutsidePosition, matchStatus, schoolYear, unmatchedDayCount, wholeYearPlacedMilli } from './matching';
@@ -44,6 +45,7 @@ export type FlagKind =
   | 'unmatched_staff'
   | 'temporary_before_permanent'
   | 'outside_position_days'
+  | 'over_substantive_fte'
   | 'placement_mismatch'
   | 'intention_not_applied'
   | 'intention_check'
@@ -255,6 +257,18 @@ function matchingFlags(input: FlagInput): Flag[] {
       message: `${who} is matched to ${position.name} on ${describeDayIndices(days)}, but the position doesn't run then`,
       link: MATCHING_LINK,
     });
+  }
+  // Someone holding two substantive positions, matched beyond one of them in an executive position.
+  for (const staff of input.staff) {
+    for (const r of overSubstantive(staff, input.matches, input.positions, input.positionTypes)) {
+      if (['Teacher', 'Teacher Librarian', 'School Counsellor'].includes(r.role)) continue; // executive roles only
+      flags.push({
+        key: `over-substantive:${staff.id}:${r.role}`,
+        kind: 'over_substantive_fte',
+        message: `${staff.name} is matched ${formatFte(r.matchedMilli)} FTE as ${r.role}, but their substantive ${r.role} is ${formatFte(r.milliFte!)} FTE. Remove the extra days and drop them again to make them higher duties.`,
+        link: MATCHING_LINK,
+      });
+    }
   }
   const temps = statuses.filter((st) => st.staff.employmentType === 'temporary' && st.matchedMilli > 0);
   if (waiting.length && temps.length) {

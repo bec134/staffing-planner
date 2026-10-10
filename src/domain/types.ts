@@ -91,6 +91,8 @@ export interface Staff extends Scoped {
   employmentType: EmploymentType;
   /** Other substantive roles someone holds (Bec: e.g. Teacher 0.6 and AP C&I 0.2). */
   otherRoles?: string[];
+  /** FTE (milli-FTE) of each of `otherRoles`; the substantive role has the rest of their days (Bec). */
+  otherRoleMilliFte?: Record<string, number>;
   /** Free-text notes. Structured plans for next year are a StaffIntention. */
   preferences: string;
   /** Part 1: surplus to entitlement and nominated for transfer (Bec). */
@@ -179,6 +181,11 @@ export interface Allocation extends Scoped {
    * leave doesn't apply to this allocation, and the two don't clash.
    */
   secondJobLeaveId?: Id;
+  /**
+   * Part 1: days beyond the FTE of the person's substantive role in this
+   * position type (Bec: Sarah's AP C&I is 0.2; more is higher duties).
+   */
+  aboveSubstantive?: boolean;
   /** Part 1: employment for this position when it differs from the person's own (e.g. Temporary). */
   employmentType?: EmploymentType;
 }

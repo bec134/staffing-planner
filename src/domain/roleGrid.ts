@@ -41,6 +41,12 @@ export interface GridData {
    * a day makes it a second job; other leave days stay off limits.
    */
   secondJobLeaveId?(staffId: Id, day: number): Id | undefined;
+  /**
+   * Part 1: for someone holding two substantive positions, which of these
+   * days are within their FTE for this position's role and which are over
+   * it (higher duties). See substantive.ts.
+   */
+  splitBySubstantive?(staffId: Id, roleId: Id, indices: number[]): { within: number[]; over: number[] } | undefined;
 }
 
 /** A pattern holding exactly these fortnight-day indices. */
@@ -229,8 +235,24 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
     save(next);
   }
 
+  // Days beyond their substantive FTE in this role are higher duties.
+  const split = free.length ? data.splitBySubstantive?.(staff.id, role.id, free) : undefined;
+  const over = split?.over ?? [];
+  if (split) free.splice(0, free.length, ...split.within);
+  if (over.length) {
+    const existing = allocations.find((a) => a.staffId === staff.id && a.roleId === role.id && a.aboveSubstantive);
+    const next: Allocation = existing
+      ? { ...existing, days: withMode(union([existing.days, patternOf(over)]).days) }
+      : { id: newId(), planningYearId: data.planningYearId, staffId: staff.id, roleId: role.id, days: patternOf(over), aboveSubstantive: true };
+    const problems = validateAllocation(next, staff, role, allocations);
+    if (problems.length) return { ok: false, errors: problems };
+    save(next);
+  }
+
   if (free.length) {
-    const existing = allocations.find((a) => a.staffId === staff.id && a.roleId === role.id && !a.coveringLeaveId && !freedBy(a));
+    const existing = allocations.find(
+      (a) => a.staffId === staff.id && a.roleId === role.id && !a.coveringLeaveId && !freedBy(a) && !a.aboveSubstantive,
+    );
     const next: Allocation = existing
       ? { ...existing, days: withMode(union([existing.days, patternOf(free)]).days) }
       : { id: newId(), planningYearId: data.planningYearId, staffId: staff.id, roleId: role.id, days: patternOf(free) };
@@ -307,6 +329,8 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
 
   const what = stepUp.size
     ? 'on higher duties'
+    : over.length
+      ? `(${describeDayIndices(over)} on higher duties, beyond their substantive FTE)`
     : secondJob.size || covers.some((c) => c.sjId)
       ? 'as a second job'
     : coverByLeave.size && !free.length

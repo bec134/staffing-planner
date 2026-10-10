@@ -324,7 +324,7 @@ export function planSaveStaff(
   existing: { staff?: Staff; intention?: StaffIntention },
   newId: () => Id,
 ): ApplyPlan {
-  const { substantiveRole, otherRoles, ...details } = draft;
+  const { substantiveRole, otherRoles, otherRoleMilliFte, ...details } = draft;
   const intention: StaffIntention = {
     ...details,
     name: draft.name.trim(),
@@ -339,13 +339,17 @@ export function planSaveStaff(
     const others = [...new Set(otherRoles.filter((r) => r && r !== substantiveRole))];
     if (others.length) staff.otherRoles = others;
     else delete staff.otherRoles;
+    const fte = Object.fromEntries(others.flatMap((r) => (otherRoleMilliFte?.[r] !== undefined ? [[r, otherRoleMilliFte[r]!]] : [])));
+    if (Object.keys(fte).length) staff.otherRoleMilliFte = fte;
+    else delete staff.otherRoleMilliFte;
   }
   const changes = [...plan.changes];
   if (before) {
     const extra: string[] = [];
     if (before.name !== staff.name) extra.push(`Name: ${before.name} → ${staff.name}`);
     if (before.currentRole !== staff.currentRole) extra.push(`Substantive role: ${before.currentRole || 'none'} → ${staff.currentRole || 'none'}`);
-    const list = (s: Staff) => (s.otherRoles ?? []).join(', ') || 'none';
+    const list = (s: Staff) =>
+      (s.otherRoles ?? []).map((r) => `${r}${s.otherRoleMilliFte?.[r] !== undefined ? ` ${formatFte(s.otherRoleMilliFte[r]!)}` : ''}`).join(', ') || 'none';
     if (list(before) !== list(staff)) extra.push(`Also substantive in: ${list(before)} → ${list(staff)}`);
     changes.unshift(...extra);
   }

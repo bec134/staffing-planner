@@ -75,6 +75,8 @@ export interface AssignmentGridProps {
   };
   /** Part 2: people on higher duties can be placed in executive roles on those days. */
   placesHigherDuties?: boolean;
+  /** Part 1: days within / over someone's substantive FTE for a position (see substantive.ts). */
+  splitBySubstantive?: GridData['splitBySubstantive'];
   /** Part 2: the leave freeing someone for a second job on a day (from their Part 1 match). */
   secondJobLeaveId?(staffId: string, day: number): string | undefined;
   /**
@@ -132,6 +134,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       ? new Set(positionTypes.filter((t) => t.category === 'executive').map((t) => t.id))
       : undefined,
     secondJobLeaveId: props.secondJobLeaveId,
+    splitBySubstantive: props.splitBySubstantive,
   };
 
   const anyFortnightly = [
@@ -511,7 +514,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                               {t.partYear && ` ${formatRange(leaveRange(t.leave))}`}
                             </span>
                           )}
-                          {(t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), type)) && (
+                          {(t.allocation.higherDutiesLeaveId || t.allocation.aboveSubstantive || actsUp(staffById.get(t.staffId), type)) && (
                             <span className="tag">higher duties</span>
                           )}
                           {t.allocation.secondJobLeaveId && <span className="tag">second job</span>}
