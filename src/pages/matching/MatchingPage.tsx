@@ -17,6 +17,7 @@ import {
 } from '../../domain/matching';
 import { planHigherDuties } from '../../domain/higherDuties';
 import { planSecondJob } from '../../domain/secondJob';
+import { splitBySubstantive } from '../../domain/substantive';
 import { moveGroup } from '../../domain/positionTypes';
 import { EMPLOYMENT_TYPE_LABELS, type Staff } from '../../domain/types';
 import { saveHigherDuties, tidyHigherDutiesIn } from '../../data/higherDutiesStore';
@@ -120,6 +121,16 @@ function Matching({ data }: { data: PlanData }) {
                   if (puts.length) await repo.matches.putMany(puts);
                   await tidyHigherDutiesIn(repo, data.planningYear.id);
                 }}
+                splitBySubstantive={(staffId, positionId, indices) =>
+                  splitBySubstantive(
+                    data.staff.find((s) => s.id === staffId),
+                    positionId,
+                    indices,
+                    data.matches,
+                    data.positions,
+                    data.positionTypes,
+                  )
+                }
                 secondJob={{
                   plan: (staffId, positionId, indices, employmentType) =>
                     planSecondJob(planInput, staffId, positionId, indices, employmentType, () => crypto.randomUUID()),

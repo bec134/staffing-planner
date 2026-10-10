@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { DayPatternEditor } from '../../components/DayPatternEditor';
-import { FULL_TIME, NO_DAYS, subtract, type DayPattern } from '../../domain/dayPattern';
-import { formatFte, parseFte } from '../../domain/fte';
+import { FULL_TIME, NO_DAYS, subtract, union, type DayPattern } from '../../domain/dayPattern';
+import { formatFte, milliFteOf, parseFte } from '../../domain/fte';
 import { checkIntention, hasPermanentFte, intentionForStaff, intentionFromPlan, planSaveStaff } from '../../domain/intentions';
 import { schoolYear } from '../../domain/matching';
 import type { StaffDraft } from '../../domain/staffImport';
@@ -41,6 +41,9 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
   const [fteText, setFteText] = useState(start?.permanentMilliFte !== undefined ? formatFte(start.permanentMilliFte) : '');
   const [role, setRole] = useState(existing?.currentRole ?? '');
   const [otherRoles, setOtherRoles] = useState<string[]>(existing?.otherRoles ?? []);
+  const [otherFte, setOtherFte] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(existing?.otherRoleMilliFte ?? {}).map(([r, v]) => [r, formatFte(v)])),
+  );
   const [workPreference, setWorkPreference] = useState<WorkPreference>(start?.workPreference ?? 'full_time');
   const [preferredDays, setPreferredDays] = useState<DayPattern>(start?.preferredDays ?? FULL_TIME);
   const [leaveDays, setLeaveDays] = useState<DayPattern>(start?.leaveDays ?? NO_DAYS);
@@ -64,12 +67,25 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
       if (!parsed.ok) return `Permanent FTE: ${parsed.error}`;
       permanentMilliFte = parsed.value;
     }
+    const extraRoles = otherRoles.filter((r) => r !== role);
+    const otherRoleMilliFte: Record<string, number> = {};
+    for (const r of extraRoles) {
+      const parsed = parseFte(otherFte[r] ?? '');
+      if (!parsed.ok || parsed.value <= 0) return `Enter the FTE for ${r} (e.g. 0.2)`;
+      otherRoleMilliFte[r] = parsed.value;
+    }
+    const worked = milliFteOf(union([preferredDays, leaveDays]));
+    const othersTotal = Object.values(otherRoleMilliFte).reduce((a, b) => a + b, 0);
+    if (extraRoles.length && othersTotal >= worked) {
+      return `Their other roles add up to ${formatFte(othersTotal)} FTE, leaving nothing of their ${formatFte(worked)} FTE for ${role || 'their substantive role'}`;
+    }
     return {
       name: name.trim(),
       employmentType,
       permanentMilliFte,
       substantiveRole: role,
-      otherRoles: otherRoles.filter((r) => r !== role),
+      otherRoles: extraRoles,
+      otherRoleMilliFte,
       workPreference,
       preferredDays,
       leaveDays,
@@ -148,15 +164,39 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
           <legend>Also substantive in</legend>
           <span className="muted small">For someone holding two positions, e.g. Teacher 0.6 and AP C&amp;I 0.2.</span>
           {SUBSTANTIVE_ROLES.filter((r) => r !== role).map((r) => (
-            <label key={r}>
-              <input
-                type="checkbox"
-                checked={otherRoles.includes(r)}
-                onChange={(e) => setOtherRoles((list) => (e.target.checked ? [...list, r] : list.filter((x) => x !== r)))}
-              />{' '}
-              {r}
-            </label>
+            <span key={r} className="check-with-fte">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={otherRoles.includes(r)}
+                  onChange={(e) => setOtherRoles((list) => (e.target.checked ? [...list, r] : list.filter((x) => x !== r)))}
+                />{' '}
+                {r}
+              </label>
+              {otherRoles.includes(r) && (
+                <input
+                  className="fte-input"
+                  inputMode="decimal"
+                  placeholder="FTE"
+                  aria-label={`${r} FTE`}
+                  value={otherFte[r] ?? ''}
+                  onChange={(e) => setOtherFte((f) => ({ ...f, [r]: e.target.value }))}
+                />
+              )}
+            </span>
           ))}
+          {otherRoles.some((r) => r !== role) && (() => {
+            const worked = milliFteOf(union([preferredDays, leaveDays]));
+            const others = otherRoles.filter((r) => r !== role).map((r) => parseFte(otherFte[r] ?? ''));
+            if (others.some((p) => !p.ok)) return null;
+            const rest = worked - others.reduce((sum, p) => sum + (p.ok ? p.value : 0), 0);
+            return (
+              <span className="muted small" aria-label="Main role FTE">
+                {role || 'Substantive role'}: {formatFte(Math.max(0, rest))} FTE (the rest of their {formatFte(worked)} FTE). Matches
+                beyond a role's FTE in an executive position are higher duties.
+              </span>
+            );
+          })()}
         </fieldset>
         <label>
           Work preference{' '}

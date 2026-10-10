@@ -88,8 +88,13 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     const also = within(form).getByRole('group', { name: 'Also substantive in' });
     expect(within(also).queryByLabelText('Teacher')).not.toBeInTheDocument(); // her main role
     fireEvent.click(within(also).getByLabelText('Assistant Principal - Curriculum & Instruction'));
+    // The FTE is needed for each extra role; the main role has the rest.
+    fireEvent.change(within(also).getByLabelText('Assistant Principal - Curriculum & Instruction FTE'), { target: { value: '0.2' } });
+    expect(within(also).getByLabelText('Main role FTE')).toHaveTextContent('Teacher: 0.8 FTE (the rest of their 1.0 FTE)');
     fireEvent.click(within(form).getByRole('button', { name: 'Save changes' }));
-    expect(await screen.findByText('Teacher; also Assistant Principal - Curriculum & Instruction')).toBeInTheDocument();
+    expect(await screen.findByText(/Teacher 0\.8; Assistant Principal - Curriculum & Instruction 0\.2/)).toBeInTheDocument();
+    const byRole = screen.getByRole('list', { name: 'Matched by substantive role' });
+    expect(byRole).toHaveTextContent('Assistant Principal - Curriculum & Instruction: matched 0.0 of 0.2 FTE');
     expect(within(screen.getByRole('list', { name: 'Positions' })).getByText(/Classroom Teacher 5/)).toBeInTheDocument();
   });
 

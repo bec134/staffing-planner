@@ -6,6 +6,7 @@ import { leaveLink, staffLink, type Flag } from '../../domain/flags';
 import { formatRange } from '../../domain/dates';
 import { leaveRange } from '../../domain/leave';
 import { formatFte, milliFteOf } from '../../domain/fte';
+import { describeShares, matchedByRole } from '../../domain/substantive';
 import { describeGrades, intentionForStaff } from '../../domain/intentions';
 import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_LABELS, WORK_PREFERENCE_LABELS } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
@@ -29,6 +30,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
 
   const allocations = data.allocations.filter((a) => a.staffId === staff.id);
   const matches = data.matches.filter((m) => m.staffId === staff.id);
+  const byRole = matchedByRole(staff, data.matches, data.positions, data.positionTypes);
   const allocatedMilli = allocations.reduce((s, a) => s + milliFteOf(a.days), 0);
   const unallocated = subtract(staff.workPattern, staffBusyDays(staff.id, data.allocations));
   const myFlags = flags.filter((f) => f.link === staffLink(staff.id));
@@ -88,8 +90,17 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
             )}
             <dt>Substantive role</dt>
             <dd>
-              {staff.currentRole || '—'}
-              {staff.otherRoles?.length ? `; also ${staff.otherRoles.join(', ')}` : ''}
+              {describeShares(staff) || '—'}
+              {byRole.length > 0 && (
+                <ul aria-label="Matched by substantive role" className="small">
+                  {byRole.map((r) => (
+                    <li key={r.role}>
+                      {r.role}: matched {formatFte(r.matchedMilli)}
+                      {r.milliFte !== undefined ? ` of ${formatFte(r.milliFte)} FTE` : ' (FTE not entered)'}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </dd>
             {intention && (
               <>
@@ -132,7 +143,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
             const notes = [
               m.employmentType && EMPLOYMENT_TYPE_LABELS[m.employmentType],
               m.secondJobLeaveId && 'second job while on leave',
-              m.higherDutiesLeaveId && 'higher duties',
+              (m.higherDutiesLeaveId || m.aboveSubstantive) && 'higher duties',
               m.coveringLeaveId && `backfill for ${data.staff.find((s) => s.id === leaveOf(m.coveringLeaveId)?.staffId)?.name ?? 'leave'}`,
             ].filter(Boolean);
             return (

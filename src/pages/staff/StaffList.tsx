@@ -5,6 +5,7 @@ import { subtract } from '../../domain/dayPattern';
 import type { Flag } from '../../domain/flags';
 import { staffLink } from '../../domain/flags';
 import { formatFte, milliFteOf } from '../../domain/fte';
+import { describeShares } from '../../domain/substantive';
 import { describeGrades, intentionForStaff } from '../../domain/intentions';
 import { EMPLOYMENT_TYPE_LABELS } from '../../domain/types';
 import { PendingDetails } from './PendingDetails';
@@ -66,8 +67,7 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
                   </td>
                   <td>{EMPLOYMENT_TYPE_LABELS[s.employmentType]}</td>
                   <td>
-                    {s.currentRole || <span className="muted">—</span>}
-                    {s.otherRoles?.length ? `; also ${s.otherRoles.join(', ')}` : ''}
+                    {describeShares(s) || <span className="muted">—</span>}
                   </td>
                   <td>{daysLabel(s.workPattern)}</td>
                   <td className="num">{formatFte(milliFteOf(s.workPattern))}</td>
