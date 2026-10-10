@@ -1,4 +1,5 @@
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import { HelpLink } from '../../components/HelpLink';
 import { usePlanningYear } from '../../components/PlanningYearContext';
 import { usePlanData } from '../../data/usePlanData';
 import { LeaveDetail } from './LeaveDetail';
@@ -27,6 +28,7 @@ export function LeavePage() {
   return (
     <section>
       <h1>Leave cover</h1>
+      <HelpLink topic="leave" />
       <nav className="tabs" aria-label="Leave views">
         <NavLink to="/leave" end>
           Leave

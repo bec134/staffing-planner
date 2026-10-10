@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HelpLink } from '../../components/HelpLink';
 import { Link } from 'react-router-dom';
 import { AssignmentGrid } from '../../components/AssignmentGrid';
 import { usePlanningYear } from '../../components/PlanningYearContext';
@@ -56,6 +57,7 @@ function Matching({ data }: { data: PlanData }) {
   return (
     <section>
       <h1>Match staff to entitlement</h1>
+      <HelpLink topic="matching" />
       <p className="muted">
         Part 1: match permanent staff first, then TWT, then temporary, against the entitlement positions. Whole-year
         leave greys out and can be backfilled. Classes and roles are set in Part 2.

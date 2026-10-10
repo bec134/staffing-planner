@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { HelpLink } from '../../components/HelpLink';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import { usePlanningYear } from '../../components/PlanningYearContext';
 import { computeFlags, flagInputFrom } from '../../domain/flags';
@@ -38,6 +39,7 @@ export function AllocationPage() {
   return (
     <section>
       <h1>Staff &amp; allocation</h1>
+      <HelpLink topic="allocation" />
       <nav className="tabs" aria-label="Staff and allocation views">
         <NavLink to="/allocation" end>
           By staff
