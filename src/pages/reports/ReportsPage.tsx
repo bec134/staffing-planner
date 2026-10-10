@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HelpLink } from '../../components/HelpLink';
 import { Link } from 'react-router-dom';
 import { BackupPanel } from '../../components/BackupPanels';
 import { downloadFile, todayIso } from '../../components/download';
@@ -64,6 +65,7 @@ function Reports({ data }: { data: PlanData }) {
     <section>
       <div className="no-print">
         <h1>Export &amp; reports</h1>
+        <HelpLink topic="reports" />
         <p className="muted">
           Choose reports to print, save as PDF or download as an Excel workbook (one sheet per report, grids coloured as in
           the app). Exported files contain staff names, so keep them somewhere your department permits.

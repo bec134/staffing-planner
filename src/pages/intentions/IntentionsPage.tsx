@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HelpLink } from '../../components/HelpLink';
 import { Link } from 'react-router-dom';
 import { usePlanningYear } from '../../components/PlanningYearContext';
 import { staffLink } from '../../domain/flags';
@@ -88,6 +89,7 @@ function Intentions({ data }: { data: PlanData }) {
   return (
     <section>
       <h1>Staff intentions</h1>
+      <HelpLink topic="intentions" />
       <p className="muted">
         Each staff member's plans for next year. Applying them sets their employment status, days worked (preferred days
         plus whole-year leave days) and whole-year leave, which <Link to="/matching">Part 1</Link> matches against the

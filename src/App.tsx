@@ -8,6 +8,7 @@ import { IntentionsPage } from './pages/intentions/IntentionsPage';
 import { LeavePage } from './pages/leave/LeavePage';
 import { MatchingPage } from './pages/matching/MatchingPage';
 import { OverviewPage } from './pages/OverviewPage';
+import { HelpPage } from './pages/help/HelpPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
 
@@ -54,6 +55,9 @@ export function App() {
                   </li>
                 )),
               ])}
+              <li className="nav-help">
+                <NavLink to="/help">Help</NavLink>
+              </li>
             </ul>
             <p className="nav-note">Data stays in this browser. Nothing is sent to a server.</p>
           </nav>
@@ -68,6 +72,7 @@ export function App() {
               <Route path="/matching" element={<MatchingPage />} />
               <Route path="/intentions" element={<IntentionsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/help/*" element={<HelpPage />} />
               <Route path="*" element={<PlaceholderPage title="Not found" />} />
             </Routes>
           </main>

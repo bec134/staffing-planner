@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { HelpLink } from '../components/HelpLink';
 import { describePattern, fteOf } from '../domain/dayPattern';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -67,6 +68,7 @@ export function OverviewPage() {
   return (
     <section>
       <h1>Overview</h1>
+      <HelpLink topic="plans" />
 
       {years.length === 0 ? (
         <p>

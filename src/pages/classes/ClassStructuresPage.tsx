@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { HelpLink } from '../../components/HelpLink';
 import { Link } from 'react-router-dom';
 import { usePlanningYear } from '../../components/PlanningYearContext';
 import { defaultRules, nameClasses, suggestStructures, type Enrolments, type Suggestion } from '../../domain/classStructure';
@@ -62,6 +63,7 @@ export function ClassStructuresPage() {
   return (
     <section>
       <h1>Class structures</h1>
+      <HelpLink topic="classes" />
       <p className="muted">Enter the total number of classes and the students in each grade, then ask for suggestions.</p>
       <ClassInputs
         key={data.planningYear.id}

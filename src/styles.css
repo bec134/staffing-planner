@@ -305,3 +305,13 @@ table.intentions td.actions { white-space: nowrap; }
   .report-table thead { display: table-header-group; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Help */
+.help-link { margin: -8px 0 16px; font-size: 0.9rem; }
+.help { max-width: 820px; }
+.help-topics { list-style: none; padding: 0; }
+.help-topics li { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.help-steps li { margin: 6px 0; }
+.help-tip { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 4px; }
+.help-pager { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 12px; border-top: 1px solid var(--border); }
+.nav-help { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }

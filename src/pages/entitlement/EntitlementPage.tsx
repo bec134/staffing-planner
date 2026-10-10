@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { HelpLink } from '../../components/HelpLink';
 import { summariseEntitlement } from '../../domain/entitlement';
 import type { Entitlement } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
@@ -35,6 +36,7 @@ export function EntitlementPage() {
   return (
     <section>
       <h1>Entitlement</h1>
+      <HelpLink topic="entitlement" />
       <p className="muted">
         {current.schoolName} — {current.year}
       </p>
