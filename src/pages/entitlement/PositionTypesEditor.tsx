@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { movePositionType, validatePositionTypeName } from '../../domain/positionTypes';
+import { missingDefaultPositionTypes, movePositionType, validatePositionTypeName } from '../../domain/positionTypes';
 import {
   POSITION_CATEGORY_LABELS,
   type Entitlement,
@@ -45,6 +45,7 @@ export function PositionTypesEditor({ planningYearId, positionTypes, entitlement
   const [newCategory, setNewCategory] = useState<PositionCategory>('other_teaching');
   const [message, setMessage] = useState<string | null>(null);
   const newNameError = newName ? validatePositionTypeName(newName, positionTypes) : null;
+  const missing = missingDefaultPositionTypes(planningYearId, positionTypes);
 
   const update = async (pt: PositionType) => {
     await repo.positionTypes.put(pt);
@@ -156,6 +157,23 @@ export function PositionTypesEditor({ planningYearId, positionTypes, entitlement
           ))}
         </tbody>
       </table>
+
+      {missing.length > 0 && (
+        <p className="panel small">
+          This plan is missing {missing.length === 1 ? 'a standard position type' : 'some standard position types'}:{' '}
+          {missing.map((p) => p.name).join(', ')}.{' '}
+          <button
+            type="button"
+            className="secondary small"
+            onClick={() => {
+              void repo.positionTypes.putMany(missing);
+              setMessage(null);
+            }}
+          >
+            Add standard position types
+          </button>
+        </p>
+      )}
 
       <form
         className="inline-form"

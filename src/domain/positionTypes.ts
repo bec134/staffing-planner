@@ -13,6 +13,8 @@ export const DEFAULT_POSITION_TYPES: readonly { name: string; category: Position
   { name: 'QTSS Teacher', category: 'other_teaching' },
   { name: 'Learning & Support Teacher', category: 'other_teaching' },
   { name: 'EaLD Teacher', category: 'other_teaching' },
+  { name: 'Part-time Teacher', category: 'other_teaching' },
+  { name: 'School Counsellor', category: 'other_teaching' },
 ];
 
 const slug = (name: string) =>
@@ -33,6 +35,20 @@ export function defaultPositionTypes(planningYearId: Id): PositionType[] {
     category: pt.category,
     sortOrder: i,
   }));
+}
+
+/**
+ * Standard position types a plan doesn't have yet (matched by name or ID),
+ * added after its own types. Plans created before a type joined the
+ * standard list get it this way (Bec: Part-time Teacher, School Counsellor).
+ */
+export function missingDefaultPositionTypes(planningYearId: Id, existing: PositionType[]): PositionType[] {
+  const names = new Set(existing.map((p) => p.name.trim().toLowerCase()));
+  const ids = new Set(existing.map((p) => p.id));
+  let order = Math.max(-1, ...existing.map((p) => p.sortOrder));
+  return defaultPositionTypes(planningYearId)
+    .filter((p) => !names.has(p.name.toLowerCase()) && !ids.has(p.id))
+    .map((p) => ({ ...p, sortOrder: ++order }));
 }
 
 /** Move one position type up or down, renumbering sortOrder 0..n-1. */

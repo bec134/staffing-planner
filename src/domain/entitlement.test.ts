@@ -116,6 +116,6 @@ describe('summariseEntitlement', () => {
   it('lists position types in sort order', () => {
     const reversed = types.map((t) => ({ ...t, sortOrder: -t.sortOrder }));
     const s = summariseEntitlement_(entitlement, reversed, []);
-    expect(s.byPositionType[0]!.positionType.name).toBe('EaLD Teacher');
+    expect(s.byPositionType[0]!.positionType.name).toBe(types.at(-1)!.name);
   });
 });

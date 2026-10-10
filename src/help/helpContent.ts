@@ -142,10 +142,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Position types',
         text: [
-          'The standard list (Principal, Classroom Teacher, Assistant Principal and so on) is used both for the entitlement and for roles.',
+          'The standard list (Principal, Classroom Teacher, Assistant Principal, through to Part-time Teacher and School Counsellor) is used both for the entitlement and for roles.',
         ],
         steps: [
           'To add one, type a **New position type**, choose its **Category**, and click **Add**.',
+          'If your plan was created before a standard type (such as Part-time Teacher or School Counsellor) was added, click **Add standard position types**.',
           'To remove one, click **Delete**. A type can only be deleted when no roles or positions use it.',
         ],
       },
