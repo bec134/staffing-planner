@@ -170,7 +170,7 @@ export function OverviewPage() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Current role</th>
+                <th>Substantive role</th>
                 <th>Employment</th>
                 <th>Days</th>
                 <th className="num">FTE</th>

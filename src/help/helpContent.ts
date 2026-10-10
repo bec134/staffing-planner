@@ -50,8 +50,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           'On the **Overview** page, create a planning year, or restore a backup from a previous session.',
           'Enter the department entitlement on **Entitlement**.',
-          'Add your staff on **Staff** (by hand or from a CSV file).',
-          "Enter each person's plans for next year on **Staff intentions**, then apply them.",
+          'Add your staff and their plans for next year on **Staff** (by hand or from a CSV file).',
           '**Part 1:** on **Match staff**, match staff to the entitlement positions: permanent first, then TWT, then temporary.',
           '**Part 2:** on **Class structures**, work out the classes, then place staff in classes and roles on **Roles & placement**.',
           'Record leave and assign cover on **Leave cover**.',
@@ -155,91 +154,41 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     id: 'staff',
     title: 'Adding staff',
-    summary: 'Add staff one at a time or import them from a CSV file.',
+    summary: 'Add each staff member and their plans for next year, by hand or from a CSV file.',
     group: 'Part 1 · Entitlement',
     page: { path: '/staff', label: 'Staff' },
     sections: [
+      {
+        heading: 'One form for each person',
+        text: [
+          "Each staff member's details and their plans for next year are entered together, in one form. Saving updates the plan straight away.",
+          'Their days worked are their **preferred days** plus any **whole-year leave days**. That is what Part 1 matches against the entitlement, and the leave is recorded for the whole school year.',
+        ],
+      },
       {
         heading: 'Add a staff member',
         steps: [
           'Go to **Staff** (in Part 1 of the menu), or click **Add staff** on the Overview or Match staff page.',
           'Click **Add staff member**.',
-          'Enter the **Name**, **Employment type** (Permanent, TWT or Temporary) and **Current role**.',
-          'Tick the days they work. Choose **Week A / Week B differ** if their days change between the two weeks of the fortnight.',
-          'Click **Add staff member**. Their FTE is worked out from the days (one weekday = 0.2 FTE).',
+          'Enter the **Name** and choose the **Employment status** (Permanent, TWT or Temporary). For Permanent or TWT, enter their **Permanent FTE**.',
+          'Choose their **Substantive role**: Principal, Deputy Principal, Assistant Principal, Assistant Principal - Curriculum & Instruction, Teacher, Teacher Librarian or School Counsellor.',
+          'Choose the **Work preference**. Full time ticks every day that is not a leave day.',
+          'Tick the **Preferred days** they will work. Choose **Week A / Week B differ** if their days change between the two weeks of the fortnight.',
+          'If they are taking leave for the whole year on some days (for example LWOP two days a week), tick those under **Whole year leave days** and choose the **Leave type**.',
+          'Choose up to three grade preferences (**Grade preference** 1, 2 and 3), most preferred first.',
+          'Click **Add staff member**. A warning shows first if their days do not add up to their permanent FTE.',
         ],
-        tip: 'Include days they will be on whole-year leave. For example, a permanent 1.0 teacher taking LWOP on Thu and Fri still works Mon–Fri; the leave is recorded separately (easiest through Staff intentions).',
+        tip: 'Example: a permanent 1.0 teacher who wants to work Mon–Wed takes LWOP on Thu and Fri. Preferred days Mon, Tue, Wed plus leave days Thu, Fri = 1.0 FTE.',
       },
       {
         heading: 'Import staff from a CSV file',
         steps: [
           'On the **Staff** page, open the **Import CSV** tab (or click **Import from CSV**).',
-          'Download a template, fill it in in Excel, and save it as CSV.',
+          'Click **Download template**, fill it in in Excel (one row per person), and save it as CSV.',
           'Click **Choose File** next to **CSV file** and pick your file.',
-          'Check the columns under **Match columns** and the **Preview**, then click **Import**.',
-        ],
-        tip: 'Staff already in the plan, and names repeated in the file, are skipped.',
-      },
-      {
-        heading: 'Change or remove a staff member',
-        steps: [
-          'On the **All staff** tab, click their name.',
-          'Click **Edit details** to change their name, employment type, role or days, then **Save changes**.',
-          'Click **Delete staff member** to remove them. Their matches, placements, leave and intentions are removed too.',
-        ],
-        text: ["Their page also shows their placements, leave and intentions, and you can **Add allocation** there."],
-      },
-      {
-        heading: 'Next',
-        text: ['Enter their plans for next year on **Staff intentions**, then match them to the entitlement on **Match staff**. A new name entered in Staff intentions is also added as a staff member when it is applied.'],
-      },
-    ],
-  },
-  {
-    id: 'intentions',
-    title: 'Staff intentions',
-    summary: "Record each person's plans for next year and apply them to the plan.",
-    group: 'Part 1 · Entitlement',
-    page: { path: '/intentions', label: 'Staff intentions' },
-    sections: [
-      {
-        heading: 'What intentions do',
-        text: [
-          "Intentions record each staff member's employment status, permanent FTE, work preference, preferred days, any whole-year leave, and up to three grade preferences.",
-          "Saving an intention changes nothing else. When you **Apply** it, the person's employment status and days are updated, and their whole-year leave is added or changed. Their days worked become their preferred days plus their whole-year leave days, which is what Part 1 matches.",
-          'Grade preferences show on name tiles in the Part 2 role grid.',
-        ],
-      },
-      {
-        heading: 'Start from the current plan',
-        steps: [
-          'Go to **Staff intentions**.',
-          'Click **Start from current plan**. Everyone without intentions gets them filled in from their current days and leave.',
-          'Click **Edit** on anyone whose plans change.',
-        ],
-      },
-      {
-        heading: 'Add or edit intentions by hand',
-        steps: [
-          'Click **Add intentions** (or **Edit** on a row).',
-          'Type or choose the **Name**. It is matched to a staff member by name; a new name adds a new person when applied.',
-          'Choose the **Employment status**. For Permanent or TWT, enter their **Permanent FTE**.',
-          'Choose the **Work preference**. Full time ticks every day that is not a leave day.',
-          'Tick the **Preferred days**. Tick **Whole year leave days** if they are taking leave for the whole year (for example LWOP two days a week), and choose the **Leave type**.',
-          'Choose up to three grade preferences (**Grade preference** 1, 2 and 3), most preferred first.',
-          'Click **Save intentions**. A warning appears if the days do not add up to their permanent FTE.',
-        ],
-        tip: 'Example: a permanent 1.0 teacher who wants to work Mon–Wed takes LWOP on Thu and Fri. Preferred days Mon, Tue, Wed plus leave days Thu, Fri = 1.0 FTE.',
-      },
-      {
-        heading: 'Import intentions from a CSV file',
-        steps: [
-          'Under **Import intentions from CSV**, click **Download template** and open it in Excel.',
-          'Replace the example rows with your staff and save it as CSV.',
-          'Click **Choose File** next to **CSV file** and pick your file.',
-          'Check the columns are matched correctly under **Match columns**; change any that are wrong.',
-          'Check the **Preview**. Rows with problems say why and are not imported.',
-          'Click **Import**. Someone who already has intentions has them replaced.',
+          'Check the columns under **Match columns**.',
+          'Check the **Preview**: the last column says what each row will add or change. Rows with problems say why and are not imported.',
+          'Click **Import**. Someone already in the plan (same name) is updated; a blank substantive role keeps the one they have.',
         ],
         points: [
           'Days can be written like "Mon-Fri" or "Mon Tue Wed".',
@@ -248,13 +197,23 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
-        heading: 'Apply intentions to the plan',
+        heading: 'Change or remove a staff member',
         steps: [
-          'Look at the **In the plan** column. **Up to date** means the plan already matches; **Not applied** lists exactly what would change.',
-          'Click **Apply** on one person, or **Apply all** at the top.',
-          'Follow up anything listed under "Then:" (for example, someone still matched on a day they will no longer work) on Match staff or Roles & placement.',
+          'On the **All staff** tab, click their name.',
+          'Click **Edit details**, make the changes, then click **Save changes**. If a change removes leave that has cover, you are asked first.',
+          'Click **Delete staff member** to remove them. Their matches, placements, leave and details are removed too.',
         ],
-        tip: "Deleting an intention doesn't change the plan.",
+        text: ['Their page also shows their placements and leave, and you can **Add allocation** there.'],
+      },
+      {
+        heading: 'Details not yet applied',
+        text: [
+          'If details were saved before this form existed and never applied, they are listed at the top of the Staff page. Click **Apply** to update the plan, or **Discard** to keep the plan as it is.',
+        ],
+      },
+      {
+        heading: 'Next',
+        text: ['Match staff to the entitlement on **Match staff**.'],
       },
     ],
   },
@@ -380,7 +339,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Drag a name onto a role and day, or click **+** and choose a name. Staff matched in Part 1 are offered; tick **Show all staff** to see everyone.',
           "A full-time teacher dropped on a class fills the whole week. Dropping a name on a role's name fills every day they are free.",
           'Click **×** to remove a day, or drag a tile to move it.',
-          'Name tiles show grade preferences (for example "Prefers K, 1, 2") from Staff intentions.',
+          'Name tiles show grade preferences (for example "Prefers K, 1, 2") from each person\'s staff details.',
         ],
         tip: 'Grey tiles are staff on leave. Dropping someone on a grey day assigns them as cover for that leave, for the leave dates.',
       },
@@ -415,7 +374,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Enter the **First day** and **Last day**, and tick the days of the week they are on leave.',
           'Click **Add leave**.',
         ],
-        tip: 'The person on leave keeps their position. Whole-year leave for part of the week (for example LWOP on Thu and Fri) is easiest to enter through Staff intentions.',
+        tip: 'The person on leave keeps their position. Whole-year leave for part of the week (for example LWOP on Thu and Fri) is easiest to enter in the staff form, under Whole year leave days.',
       },
       {
         heading: 'Assign cover',
@@ -451,7 +410,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           '**Part 2 · Placement**: roles by day, and placements by staff member and by role.',
           '**Leave cover summary**: each leave with its cover and any gaps.',
           '**Class structure summary**: classes, students and teachers.',
-          '**Staff and intentions**: everyone with their intentions.',
+          '**Staff**: everyone with their substantive role and plans for next year.',
         ],
       },
       {
@@ -506,9 +465,9 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
-        heading: 'Staff intentions',
+        heading: 'Staff',
         points: [
-          "**Intentions aren't applied to the plan yet**: review and click Apply on Staff intentions.",
+          "**Details for next year aren't applied yet**: click Apply (or Discard) at the top of the Staff page.",
           "**Days don't add up to the permanent FTE**: check the preferred days, leave days and permanent FTE.",
         ],
       },

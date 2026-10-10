@@ -65,7 +65,6 @@ function Matching({ data }: { data: PlanData }) {
       <p className="panel small">
         {data.staff.length === 0 ? <strong>No staff yet. </strong> : 'Someone missing? '}
         <Link to="/staff">Add staff</Link> on the Staff page, or <Link to="/staff/import">import them from a CSV file</Link>.
-        New people in <Link to="/intentions">Staff intentions</Link> are added when their intentions are applied.
       </p>
 
       {!entitlement || entitlement.totalMilliFte === 0 ? (

@@ -1,10 +1,15 @@
 /**
- * Staff intentions for next year (Bec, Phase 6).
+ * Staff details for next year (Bec, Phase 6; one staff form since).
  *
- * An intention is saved on its own (entered by hand or imported from CSV)
- * and changes nothing until it's applied. Applying it sets the person's
- * employment type and days worked, and their whole-year leave, which is
- * what Part 1 matches against the entitlement:
+ * Each staff member's plans for next year (employment status, permanent
+ * FTE, work preference, the days they'll work, whole-year leave and grade
+ * preferences) are kept as a StaffIntention linked to them. The Staff page
+ * saves these together with the staff record (`planSaveStaff`), so they
+ * are always applied. Intentions imported before that change may still be
+ * waiting to be applied, and are shown on the Staff page.
+ *
+ * Applying details sets the person's employment type and days worked, and
+ * their whole-year leave, which is what Part 1 matches against the entitlement:
  *
  *   days worked = preferred days + whole-year leave days
  *
@@ -32,6 +37,7 @@ import {
   type Staff,
   type StaffIntention,
 } from './types';
+import type { StaffDraft } from './staffImport';
 
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -302,4 +308,38 @@ export function gradePreferenceMismatches(
     }
   }
   return out;
+}
+
+/**
+ * Plan saving a staff member and their details for next year in one go,
+ * from the staff form or a CSV row: the staff record (name, employment,
+ * substantive role, days worked), their whole-year leave, and the details
+ * themselves. `existing` is who is being edited, if anyone; a CSV row
+ * matches someone in the plan by name.
+ */
+export function planSaveStaff(
+  draft: StaffDraft,
+  ctx: PlanContext,
+  existing: { staff?: Staff; intention?: StaffIntention },
+  newId: () => Id,
+): ApplyPlan {
+  const { substantiveRole, ...details } = draft;
+  const intention: StaffIntention = {
+    ...details,
+    name: draft.name.trim(),
+    id: existing.intention?.id ?? newId(),
+    planningYearId: ctx.planningYearId,
+    staffId: existing.staff?.id,
+  };
+  const plan = planApplyIntention(intention, ctx, newId);
+  const before = plan.isNew ? undefined : staffForIntention(intention, ctx.staff);
+  const staff: Staff = { ...plan.staff, name: intention.name, currentRole: substantiveRole };
+  const changes = [...plan.changes];
+  if (before) {
+    const extra: string[] = [];
+    if (before.name !== staff.name) extra.push(`Name: ${before.name} → ${staff.name}`);
+    if (before.currentRole !== staff.currentRole) extra.push(`Substantive role: ${before.currentRole || 'none'} → ${staff.currentRole || 'none'}`);
+    changes.unshift(...extra);
+  }
+  return { ...plan, staff, changes };
 }

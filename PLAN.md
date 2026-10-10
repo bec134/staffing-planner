@@ -57,7 +57,7 @@ Twelve core records, all scoped to a planning year so a school can keep more tha
 | PlanningYear | year, school name, Term 1–4 dates (entered by the school; quick picks for cover), created/updated dates |
 | Entitlement | planning year, total FTE, list of {position type, FTE} — exact decimal FTE as supplied by the department (up to 3 decimals), stored as thousandths |
 | PositionType | name (list supplied by Bec), category (class teacher / executive / other teaching) |
-| Staff | name, FTE, fortnight days worked, current role, employment type (permanent / TWT = Temporary Workforce Transition / temporary), preferences for next year, nominated for transfer (with notes) |
+| Staff | name, FTE, fortnight days worked, substantive role (fixed list), employment type (permanent / TWT = Temporary Workforce Transition / temporary), preferences for next year, nominated for transfer (with notes) |
 | Leave | staff member, start date, end date, FTE affected, leave type (Long Service Leave, Leave without pay, Maternity Leave, Paternity Leave), fortnight days on leave |
 | Role | name (e.g. "3/4B", "RFF 1"), position type, fortnight days it runs — added with Bec in Phase 3 so staff are allocated to named roles and unfilled role days can be found |
 | Allocation | staff member, role, fortnight days, start date, end date (optional; omitted = whole year), covering-for (optional link to a Leave record) |
@@ -116,12 +116,13 @@ Each module is a screen in the app, reachable from a persistent side or top navi
 - Rules from Bec: the user enters the **total number of classes** and students per grade. Guide (average) sizes: Kindergarten 20, Year 1 22, Year 2 24, Years 3–6 30. Composites only as 1/2, 3/4 or 5/6; a composite uses the lower of its two guides (so 1/2 uses 22). A class may go 1 or 2 over its guide rather than creating a composite where possible.
 - The user accepts a suggestion or asks for another, then can edit the accepted structure by hand (rename, move students, add or remove classes). "Create class roles" makes a Classroom Teacher role per class; renaming a class renames its role.
 
-### 5. Staff intentions
+### 5. Staff intentions (now part of the staff form)
 
-- Fields (Bec): Name; Employment Status (Permanent, TWT, Temporary); Permanent FTE (Permanent or TWT only); Work Preference (Full or Part time); Preferred days; Whole year leave days (if applicable) and their leave type (LWOP if blank); Grade Preference 1–3.
-- Entered by hand or imported from CSV (column mapping, preview, downloadable template built in code). No external form.
-- Intentions are saved on their own and **applied on confirm**: applying sets the person's employment status and days worked (preferred days + whole-year leave days) and their whole-year leave for the school year, adding new staff where needed. That feeds **Part 1**. Cover and backfills for days no longer on leave are removed. Permanent/TWT staff whose days don't add up to their permanent FTE are flagged.
+- Bec (after Phase 7): adding staff and their intentions collected the same information, so they are **one form** on the Staff page (Part 1), and one CSV import.
+- Fields: Name; Employment Status (Permanent, TWT, Temporary); Permanent FTE (Permanent or TWT only); **Substantive role** (drop-down: Principal, Deputy Principal, Assistant Principal, Assistant Principal - Curriculum & Instruction, Teacher, Teacher Librarian, School Counsellor); Work Preference (Full or part time); Preferred days; Whole year leave days (if applicable) and their leave type (LWOP if blank); Grade Preference 1–3.
+- Saving (or importing) updates the plan straight away: days worked = preferred days + whole-year leave days, and the whole-year leave is set for the school year (removing leave that has cover asks first). The CSV preview shows what each row will add or change; someone already in the plan (same name) is updated, and a blank role keeps theirs. Permanent/TWT staff whose days don't add up to their permanent FTE are flagged.
 - Grade preferences feed **Part 2**: shown on staff name tiles in the role grid, and flagged when someone is placed on a class with none of their preferred grades.
+- Details saved under the old separate Staff intentions page and never applied are listed on the Staff page to apply or discard.
 
 ## Automatic flags
 
@@ -167,7 +168,7 @@ Each report has the school, year and date at the top; grids print landscape (A4)
 
 Staff are added in Part 1, since they have to exist before they can be matched. The menu is:
 
-- **Part 1 · Entitlement:** Entitlement, Staff (add by hand or import CSV; each person's details), Staff intentions, Match staff.
+- **Part 1 · Entitlement:** Entitlement, Staff (one form per person with their plans for next year; CSV import; each person's details), Match staff.
 - **Part 2 · Placement:** Class structures, Roles & placement (role grid, roles, staff grid), Leave cover.
 - Export & reports, then Help.
 

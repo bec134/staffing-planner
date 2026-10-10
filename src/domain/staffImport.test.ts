@@ -1,5 +1,17 @@
 import { describePattern } from './dayPattern';
-import { STAFF_TEMPLATES, guessMapping, parseDaysText, parseEmploymentType, parseStaffRows, type StaffMapping } from './staffImport';
+import {
+  STAFF_TEMPLATE,
+  guessStaffImportMapping,
+  parseGrade,
+  parseStaffRows,
+  parseLeaveType,
+  parseSubstantiveRole,
+  parseDaysText,
+  parseEmploymentType,
+  parseWorkPreference,
+  type StaffImportMapping,
+} from './staffImport';
+
 
 describe('parseDaysText', () => {
   it.each([
@@ -38,102 +50,123 @@ describe('parseEmploymentType', () => {
   });
 });
 
-describe('guessMapping', () => {
-  it('finds a days text column', () => {
-    expect(guessMapping(['Staff name', 'Employment type', 'Current role', 'Days worked'])).toEqual({
+const HEADERS = STAFF_TEMPLATE.csv.split('\r\n')[0]!.split(',');
+const mapping = guessStaffImportMapping(HEADERS);
+const row = (cells: Partial<Record<keyof StaffImportMapping, string>>) => {
+  const out = Array<string>(HEADERS.length).fill('');
+  for (const [field, value] of Object.entries(cells)) out[mapping[field as keyof StaffImportMapping]!] = value!;
+  return out;
+};
+
+describe('staff CSV parsing', () => {
+  it('guesses every column of the template', () => {
+    expect(mapping).toEqual({
       name: 0,
       employmentType: 1,
-      currentRole: 2,
-      days: { kind: 'text', column: 3 },
-      defaultEmploymentType: 'permanent',
+      permanentFte: 2,
+      substantiveRole: 3,
+      workPreference: 4,
+      preferredDays: 5,
+      leaveDays: 6,
+      leaveType: 7,
+      grade1: 8,
+      grade2: 9,
+      grade3: 10,
     });
   });
-  it('prefers per-weekday columns when all five exist', () => {
-    const m = guessMapping(['Name', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
-    expect(m.days).toEqual({ kind: 'columns', columns: [1, 2, 3, 4, 5] });
-    expect(m.employmentType).toBeNull();
-  });
-  it('leaves days unmapped when nothing matches', () => {
-    expect(guessMapping(['Name']).days).toEqual({ kind: 'none' });
-  });
-});
 
-describe('parseStaffRows', () => {
-  const mapping: StaffMapping = {
-    name: 0,
-    employmentType: 1,
-    currentRole: 2,
-    days: { kind: 'text', column: 3 },
-    defaultEmploymentType: 'temporary',
-  };
-
-  it('parses valid rows and applies the default employment type to blanks', () => {
-    const rows = parseStaffRows(
-      [
-        ['Sample One', 'Permanent', 'Classroom Teacher', 'Mon-Fri'],
-        ['Sample Two', '', 'RFF Teacher', 'Wed Thu'],
-      ],
-      mapping,
-      [],
-    );
-    expect(rows[0]).toMatchObject({ line: 2, errors: [], draft: { name: 'Sample One', employmentType: 'permanent' } });
-    expect(rows[1]!.draft!.employmentType).toBe('temporary');
-    expect(describePattern(rows[1]!.draft!.workPattern)).toBe('Wed, Thu');
-  });
-
-  it('reports every problem in a row', () => {
-    const [row] = parseStaffRows([['', 'casual', '', 'someday']], mapping, []);
-    expect(row!.draft).toBeUndefined();
-    expect(row!.errors).toEqual(['Name is blank', 'Unknown employment type "casual"', `Couldn't read days worked "someday"`]);
-  });
-
-  it('skips names already in the plan or repeated in the file', () => {
-    const rows = parseStaffRows(
-      [
-        ['Existing Person', '', '', 'Mon'],
-        ['New Person', '', '', 'Mon'],
-        ['new person', '', '', 'Tue'],
-      ],
-      mapping,
-      ['existing person'],
-    );
-    expect(rows.map((r) => r.skipReason)).toEqual(['Already in this plan', undefined, 'Repeated in this file']);
-  });
-
-  it('reads per-weekday yes/no columns', () => {
-    const rows = parseStaffRows(
-      [
-        ['A Person', 'Y', 'y', '', 'x', 'N'],
-        ['B Person', 'maybe', '', '', '', ''],
-        ['C Person', '', '', '', '', ''],
-      ],
-      { ...mapping, employmentType: null, currentRole: null, days: { kind: 'columns', columns: [1, 2, 3, 4, 5] } },
-      [],
-    );
-    expect(describePattern(rows[0]!.draft!.workPattern)).toBe('Mon, Tue, Thu');
-    expect(rows[1]!.errors).toEqual([`Couldn't read "maybe" for Mon`]);
-    expect(rows[2]!.errors).toEqual(['No days worked']);
-  });
-
-  it('defaults to full time when days are not mapped', () => {
-    const [row] = parseStaffRows([['A Person']], { ...mapping, days: { kind: 'none' } }, []);
-    expect(describePattern(row!.draft!.workPattern)).toBe('Mon, Tue, Wed, Thu, Fri');
-  });
-});
-
-describe('staff templates', () => {
-  it.each(STAFF_TEMPLATES.map((t) => [t.file, t.csv] as const))('%s maps and parses with no errors', (_file, csv) => {
-    const [headers, ...rows] = csv.split('\r\n').map((line) => line.split(','));
-    const mapping = guessMapping(headers!);
-    expect(mapping.name).toBe(0);
-    expect(mapping.employmentType).toBe(1);
-    expect(mapping.currentRole).toBe(2);
-    const parsed = parseStaffRows(rows, mapping, []);
-    expect(parsed.every((r) => r.errors.length === 0 && r.draft && !r.skipReason)).toBe(true);
-    expect(parsed.map((r) => [r.draft!.employmentType, describePattern(r.draft!.workPattern)])).toEqual([
-      ['permanent', 'Mon, Tue, Wed, Thu, Fri'],
-      ['twt', 'Mon, Tue, Wed'],
-      ['temporary', 'Thu, Fri'],
+  it('reads the template rows with no errors', () => {
+    const [, ...lines] = STAFF_TEMPLATE.csv.split('\r\n');
+    const rows = parseStaffRows(lines.map((l) => l.split(',')), mapping, []);
+    expect(rows.every((r) => r.errors.length === 0 && r.draft)).toBe(true);
+    expect(
+      rows.map((r) => [
+        r.draft!.employmentType,
+        r.draft!.permanentMilliFte,
+        r.draft!.workPreference,
+        describePattern(r.draft!.preferredDays),
+        describePattern(r.draft!.leaveDays),
+        r.draft!.gradePreferences.join(''),
+        r.draft!.substantiveRole,
+      ]),
+    ).toEqual([
+      ['permanent', 1000, 'full_time', 'Mon, Tue, Wed, Thu, Fri', 'none', 'K12', 'Teacher'],
+      ['permanent', 1000, 'part_time', 'Mon, Tue, Wed', 'Thu, Fri', '34', 'Teacher'],
+      ['twt', 600, 'part_time', 'Mon, Tue, Wed', 'none', '', 'Teacher Librarian'],
+      ['temporary', undefined, 'part_time', 'Thu, Fri', 'none', '21K', 'Teacher'],
     ]);
+  });
+
+  it('understands common spellings', () => {
+    expect(['Full time', 'full-time', 'FT', 'Part time', 'PT'].map(parseWorkPreference)).toEqual([
+      'full_time',
+      'full_time',
+      'full_time',
+      'part_time',
+      'part_time',
+    ]);
+    expect(['LSL', 'Leave without pay', 'maternity leave', 'Paternity', 'holiday'].map(parseLeaveType)).toEqual([
+      'lsl',
+      'lwop',
+      'maternity',
+      'paternity',
+      null,
+    ]);
+    expect(['K', 'Kindergarten', 'Year 1', 'Yr 2', 'Y3', '6', '7'].map(parseGrade)).toEqual(['K', 'K', '1', '2', '3', '6', null]);
+  });
+
+  it('reads substantive roles, with common short forms', () => {
+    expect(
+      ['Principal', 'DP', 'AP', 'AP C&I', 'assistant principal - curriculum & instruction', 'Classroom Teacher', 'teacher', 'TL', 'School Counselor', 'Cleaner'].map(
+        parseSubstantiveRole,
+      ),
+    ).toEqual([
+      'Principal',
+      'Deputy Principal',
+      'Assistant Principal',
+      'Assistant Principal - Curriculum & Instruction',
+      'Assistant Principal - Curriculum & Instruction',
+      'Teacher',
+      'Teacher',
+      'Teacher Librarian',
+      'School Counsellor',
+      null,
+    ]);
+  });
+
+  it('fills a blank full-time row with every day not on leave, and infers a blank preference', () => {
+    const [full, inferred] = parseStaffRows(
+      [
+        row({ name: 'A', employmentType: 'Permanent', workPreference: 'Full time', leaveDays: 'Fri' }),
+        row({ name: 'B', employmentType: 'Temporary', preferredDays: 'Mon-Fri' }),
+      ],
+      mapping,
+      [],
+    );
+    expect(describePattern(full!.draft!.preferredDays)).toBe('Mon, Tue, Wed, Thu');
+    expect(inferred!.draft!.workPreference).toBe('full_time');
+  });
+
+  it('reports errors, ignores permanent FTE for temporaries, and marks replacements and repeats', () => {
+    const rows = parseStaffRows(
+      [
+        row({ name: '', employmentType: 'Casual', substantiveRole: 'Janitor', preferredDays: 'Funday', grade1: 'Year 9', leaveType: 'Holiday' }),
+        row({ name: 'Kit Ashdown', employmentType: 'Temporary', permanentFte: '1.0', preferredDays: 'Mon' }),
+        row({ name: 'kit ashdown', employmentType: 'Temporary', preferredDays: 'Tue' }),
+      ],
+      mapping,
+      ['Kit Ashdown'],
+    );
+    expect(rows[0]!.errors).toEqual([
+      'Name is blank',
+      'Unknown employment status "Casual"',
+      'Unknown substantive role "Janitor"',
+      'Unknown leave type "Holiday"',
+      'Couldn\'t read preferred days "Funday"',
+      'Unknown grade "Year 9" (use K or 1–6)',
+    ]);
+    expect(rows[1]).toMatchObject({ existing: true, notes: ['Permanent FTE ignored for temporary staff'] });
+    expect(rows[1]!.draft!.permanentMilliFte).toBeUndefined();
+    expect(rows[2]!.skipReason).toBe('Repeated in this file');
   });
 });

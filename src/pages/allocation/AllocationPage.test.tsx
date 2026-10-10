@@ -41,9 +41,12 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add staff member' }));
     const form = screen.getByRole('form', { name: 'Add staff member' });
     fireEvent.change(within(form).getByLabelText('Name'), { target: { value: 'Pat Example' } });
-    fireEvent.click(within(form).getByLabelText('Thu'));
-    fireEvent.click(within(form).getByLabelText('Fri'));
-    expect(within(form).getByText(/= 0.6 FTE/)).toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText(/^Substantive role/), { target: { value: 'Teacher' } });
+    fireEvent.change(within(form).getByLabelText(/^Work preference/), { target: { value: 'part_time' } });
+    const preferred = within(form).getByRole('group', { name: 'Preferred days' });
+    fireEvent.click(within(preferred).getByLabelText('Thu'));
+    fireEvent.click(within(preferred).getByLabelText('Fri'));
+    expect(within(preferred).getByText(/= 0.6 FTE/)).toBeInTheDocument();
     fireEvent.click(within(form).getByRole('button', { name: 'Add staff member' }));
 
     fireEvent.click(await screen.findByRole('link', { name: 'Pat Example' }));
@@ -69,7 +72,7 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Noor Haddon' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Edit details' }));
     const form = screen.getByRole('form', { name: 'Edit Noor Haddon' });
-    fireEvent.click(within(form).getByLabelText('Fri'));
+    fireEvent.click(within(within(form).getByRole('group', { name: 'Preferred days' })).getByLabelText('Fri'));
     fireEvent.click(within(form).getByRole('button', { name: 'Save changes' }));
 
     const message = 'Noor Haddon is allocated to Learning & Support on Fri, but doesn\'t work then';
@@ -106,27 +109,32 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     expect(within(row).getAllByText('Mon, Tue')).toHaveLength(2); // runs, and unfilled
   });
 
-  it('imports staff from a CSV after mapping and preview', async () => {
+  it('imports staff and their details from one CSV, previewing what changes', async () => {
     const repo = await setupWithSample();
     fireEvent.click(screen.getByRole('link', { name: 'Import CSV' }));
     const csv = [
-      'Staff name,Type,Days worked',
-      'Quinn Sample,TWT,Mon-Wed',
-      'Avery Quill,Permanent,Mon-Fri',
-      'Rory Sample,casual,Mon',
+      'Name,Employment Status,Permanent FTE,Substantive Role,Work Preference,Preferred days,Whole year leave days,Leave type,Grade Preference 1',
+      'Quinn Sample,TWT,0.6,Teacher,Part time,Mon-Wed,,,2',
+      'Kit Ashdown,Permanent,1.0,,Part time,Mon-Wed,Thu Fri,LWOP,5',
+      'Rory Sample,casual,,Teacher,,Mon,,,',
     ].join('\n');
     const file = new File([csv], 'staff.csv', { type: 'text/csv' });
     fireEvent.change(screen.getByLabelText('CSV file'), { target: { files: [file] } });
 
-    expect(await screen.findByText('1 of 3 rows will be imported.')).toBeInTheDocument();
-    expect(screen.getByText('Already in this plan')).toBeInTheDocument();
-    expect(screen.getByText('Unknown employment type "casual"')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Import 1 staff' }));
+    expect(await screen.findByText('2 of 3 rows will be imported.')).toBeInTheDocument();
+    expect(screen.getByText(/^Add as a new staff member \(TWT, Mon, Tue, Wed\)/)).toBeInTheDocument();
+    expect(screen.getByText('Add whole-year Leave without pay (Thu, Fri) for the school year')).toBeInTheDocument();
+    expect(screen.getByText('Unknown employment status "casual"')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Import 2 staff' }));
 
-    expect(await screen.findByText(/Imported 1 staff member/)).toBeInTheDocument();
+    expect(await screen.findByText(/Imported 2 staff members/)).toBeInTheDocument();
     const year = (await repo.planningYears.list())[0]!;
-    const quinn = (await repo.staff.listByYear(year.id)).find((s) => s.name === 'Quinn Sample');
-    expect(quinn).toMatchObject({ employmentType: 'twt' });
+    const staff = await repo.staff.listByYear(year.id);
+    expect(staff.find((s) => s.name === 'Quinn Sample')).toMatchObject({ employmentType: 'twt', currentRole: 'Teacher' });
+    // A blank role keeps Kit's existing one; their LWOP is added.
+    const kit = staff.find((s) => s.name === 'Kit Ashdown')!;
+    expect(kit.currentRole).toBe('Teacher');
+    expect((await repo.leave.listByYear(year.id)).some((l) => l.staffId === kit.id && l.leaveType === 'lwop')).toBe(true);
   });
 });
 
@@ -139,7 +147,7 @@ describe('Finding where to add staff', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Overview' }));
     const steps = await screen.findByRole('region', { name: 'Steps' });
-    expect(within(steps).getByText('Add staff', { selector: 'strong' }).closest('li')).toHaveClass('done');
+    expect(within(steps).getByText('Add staff and their plans for next year', { selector: 'strong' }).closest('li')).toHaveClass('done');
     expect(within(steps).getByText(/18 staff members/)).toBeInTheDocument();
   });
 

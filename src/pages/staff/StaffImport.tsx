@@ -1,10 +1,20 @@
 import Papa from 'papaparse';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { WEEKDAYS } from '../../domain/dayPattern';
-import { STAFF_TEMPLATES, guessMapping, parseStaffRows, type ColumnIndex, type StaffMapping } from '../../domain/staffImport';
-import { EMPLOYMENT_TYPE_LABELS, type EmploymentType, type Staff } from '../../domain/types';
+import { formatFte } from '../../domain/fte';
+import { checkIntention, describeGrades, intentionForStaff, planSaveStaff, staffForIntention } from '../../domain/intentions';
+import { schoolYear } from '../../domain/matching';
+import {
+  STAFF_IMPORT_FIELDS,
+  STAFF_TEMPLATE,
+  guessStaffImportMapping,
+  parseStaffRows,
+  type ColumnIndex,
+  type StaffImportMapping,
+} from '../../domain/staffImport';
+import { EMPLOYMENT_TYPE_LABELS, LEAVE_TYPE_SHORT, WORK_PREFERENCE_LABELS } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
+import { saveStaffPlans } from '../../data/saveStaffPlans';
 import { daysLabel, type PlanData } from '../allocation/shared';
 
 interface Parsed {
@@ -34,19 +44,45 @@ export function ColumnSelect({ label, value, headers, onChange }: {
   );
 }
 
-/** CSV import: choose a file, map columns, preview, then import. */
+/**
+ * Staff CSV import (Bec): one file with everyone's details for next year.
+ * Choose a file, match columns, preview what each row will add or change,
+ * then import. Someone already in the plan (same name) is updated.
+ */
 export function StaffImport({ data }: { data: PlanData }) {
   const repo = useRepository();
   const [parsed, setParsed] = useState<Parsed | null>(null);
-  const [mapping, setMapping] = useState<StaffMapping | null>(null);
+  const [mapping, setMapping] = useState<StaffImportMapping | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [imported, setImported] = useState<number | null>(null);
 
-  const preview = useMemo(
-    () => (parsed && mapping ? parseStaffRows(parsed.rows, mapping, data.staff.map((s) => s.name)) : []),
-    [parsed, mapping, data.staff],
-  );
-  const ready = preview.filter((r) => r.draft && !r.skipReason && r.errors.length === 0);
+  const preview = useMemo(() => {
+    if (!parsed || !mapping) return [];
+    const ctx = {
+      planningYearId: data.planningYear.id,
+      year: schoolYear(data.planningYear),
+      staff: data.staff,
+      leave: data.leave,
+      allocations: data.allocations,
+      matches: data.matches,
+    };
+    return parseStaffRows(parsed.rows, mapping, data.staff.map((s) => s.name)).map((row) => {
+      if (!row.draft || row.skipReason || row.errors.length) return { row };
+      const staff = staffForIntention({ ...row.draft, id: '', planningYearId: '' }, data.staff);
+      // A blank role keeps the role someone already has.
+      const draft = { ...row.draft, substantiveRole: row.draft.substantiveRole || staff?.currentRole || '' };
+      const check = checkIntention({ ...draft, id: '', planningYearId: '' });
+      if (check.errors.length) return { row: { ...row, errors: check.errors } };
+      const plan = planSaveStaff(
+        draft,
+        ctx,
+        { staff, intention: staff ? intentionForStaff(staff, data.intentions) : undefined },
+        () => crypto.randomUUID(),
+      );
+      return { row, plan, warnings: check.warnings };
+    });
+  }, [parsed, mapping, data]);
+  const ready = preview.filter((p) => p.plan);
 
   const readFile = async (file: File) => {
     setImported(null);
@@ -59,24 +95,18 @@ export function StaffImport({ data }: { data: PlanData }) {
       return;
     }
     setParsed({ fileName: file.name, headers, rows });
-    setMapping(guessMapping(headers));
+    setMapping(guessStaffImportMapping(headers));
   };
 
   const doImport = async () => {
-    const staff: Staff[] = ready.map((r) => ({
-      ...r.draft!,
-      id: crypto.randomUUID(),
-      planningYearId: data.planningYear.id,
-      preferences: '',
-    }));
-    await repo.staff.putMany(staff);
-    setImported(staff.length);
+    await saveStaffPlans(
+      repo,
+      ready.map((p) => p.plan!),
+    );
+    setImported(ready.length);
     setParsed(null);
     setMapping(null);
   };
-
-  const set = <K extends keyof StaffMapping>(key: K) => (value: StaffMapping[K]) =>
-    setMapping((m) => (m ? { ...m, [key]: value } : m));
 
   return (
     <section>
@@ -85,20 +115,20 @@ export function StaffImport({ data }: { data: PlanData }) {
         The file is read in this browser only; nothing is uploaded. Save a spreadsheet as CSV with a header row first.
       </p>
       <div className="templates">
-        <strong>Templates:</strong>{' '}
-        {STAFF_TEMPLATES.map((t) => (
-          <a
-            key={t.file}
-            className="button-link secondary small"
-            href={`data:text/csv;charset=utf-8,${encodeURIComponent(t.csv)}`}
-            download={t.file}
-          >
-            {t.label}
-          </a>
-        ))}
+        <a
+          className="button-link secondary small"
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(STAFF_TEMPLATE.csv)}`}
+          download={STAFF_TEMPLATE.file}
+        >
+          Download template
+        </a>
         <p className="muted small">
-          Fill in a template in Excel or Google Sheets, replacing the example rows, and save it as CSV. Employment type
-          is Permanent, TWT or Temporary. Days can be written like "Mon-Fri" or "Mon Tue Wed".
+          One row per person. Employment status is Permanent, TWT or Temporary; permanent FTE is only for Permanent and
+          TWT. Substantive role is Principal, Deputy Principal, Assistant Principal, Assistant Principal - Curriculum &amp;
+          Instruction, Teacher, Teacher Librarian or School Counsellor. Work preference is Full time or Part time. Days are
+          written like "Mon-Fri" or "Mon Tue Wed" (set Week A/B patterns by hand afterwards); leave days can be blank.
+          Leave type is LSL, LWOP, Maternity or Paternity, and LWOP if blank. Grades are K or 1–6. Someone already in the
+          plan is updated.
         </p>
       </div>
       {imported !== null && (
@@ -124,86 +154,16 @@ export function StaffImport({ data }: { data: PlanData }) {
         <>
           <h3>Match columns ({parsed.fileName})</h3>
           <div className="form-grid">
-            <ColumnSelect label="Name" value={mapping.name} headers={parsed.headers} onChange={set('name')} />
-            <ColumnSelect
-              label="Employment type"
-              value={mapping.employmentType}
-              headers={parsed.headers}
-              onChange={set('employmentType')}
-            />
-            <ColumnSelect label="Current role" value={mapping.currentRole} headers={parsed.headers} onChange={set('currentRole')} />
-            <label>
-              When employment type is blank or missing{' '}
-              <select
-                value={mapping.defaultEmploymentType}
-                onChange={(e) => set('defaultEmploymentType')(e.target.value as EmploymentType)}
-              >
-                {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <fieldset>
-            <legend>Days worked</legend>
-            <div className="mode-switch">
-              {(
-                [
-                  ['text', 'One column, e.g. "Mon Tue Wed"'],
-                  ['columns', 'A yes/no column for each weekday'],
-                  ['none', 'Not in file (everyone full time; adjust afterwards)'],
-                ] as const
-              ).map(([kind, label]) => (
-                <label key={kind}>
-                  <input
-                    type="radio"
-                    name="days-kind"
-                    checked={mapping.days.kind === kind}
-                    onChange={() =>
-                      set('days')(
-                        kind === 'text'
-                          ? { kind, column: null }
-                          : kind === 'columns'
-                            ? { kind, columns: [null, null, null, null, null] }
-                            : { kind },
-                      )
-                    }
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            {mapping.days.kind === 'text' && (
+            {STAFF_IMPORT_FIELDS.map(([field, label]) => (
               <ColumnSelect
-                label="Days column"
-                value={mapping.days.column}
+                key={field}
+                label={label}
+                value={mapping[field]}
                 headers={parsed.headers}
-                onChange={(column) => set('days')({ kind: 'text', column })}
+                onChange={(v) => setMapping((m) => (m ? { ...m, [field]: v } : m))}
               />
-            )}
-            {mapping.days.kind === 'columns' && (
-              <div className="form-grid">
-                {WEEKDAYS.map((d, i) => (
-                  <ColumnSelect
-                    key={d}
-                    label={d}
-                    value={mapping.days.kind === 'columns' ? (mapping.days.columns[i] ?? null) : null}
-                    headers={parsed.headers}
-                    onChange={(c) => {
-                      if (mapping.days.kind !== 'columns') return;
-                      const columns = [...mapping.days.columns];
-                      columns[i] = c;
-                      set('days')({ kind: 'columns', columns });
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-            <p className="muted small">Fortnightly (Week A/B) patterns can be set on each staff member after import.</p>
-          </fieldset>
+            ))}
+          </div>
 
           <h3>Preview</h3>
           <p>
@@ -215,22 +175,44 @@ export function StaffImport({ data }: { data: PlanData }) {
                 <th className="num">Line</th>
                 <th>Name</th>
                 <th>Employment</th>
-                <th>Current role</th>
-                <th>Days</th>
-                <th>Status</th>
+                <th className="num">Permanent FTE</th>
+                <th>Substantive role</th>
+                <th>Preference</th>
+                <th>Preferred days</th>
+                <th>Whole year leave</th>
+                <th>Grades</th>
+                <th>What happens</th>
               </tr>
             </thead>
             <tbody>
-              {preview.map((r) => (
-                <tr key={r.line} className={r.errors.length ? 'row-error' : r.skipReason ? 'row-skip' : ''}>
-                  <td className="num">{r.line}</td>
-                  <td>{r.draft?.name ?? ''}</td>
-                  <td>{r.draft ? EMPLOYMENT_TYPE_LABELS[r.draft.employmentType] : ''}</td>
-                  <td>{r.draft?.currentRole ?? ''}</td>
-                  <td>{r.draft ? daysLabel(r.draft.workPattern) : ''}</td>
-                  <td>{r.errors.length ? r.errors.join('; ') : (r.skipReason ?? 'Ready')}</td>
-                </tr>
-              ))}
+              {preview.map(({ row: r, plan, warnings }) => {
+                const d = r.draft;
+                const status = r.errors.length
+                  ? r.errors.join('; ')
+                  : r.skipReason
+                    ? r.skipReason
+                    : [
+                        plan!.changes.length ? plan!.changes.join('; ') : 'No change',
+                        ...r.notes,
+                        ...(warnings ?? []),
+                      ].join('; ');
+                return (
+                  <tr key={r.line} className={r.errors.length ? 'row-error' : r.skipReason ? 'row-skip' : ''}>
+                    <td className="num">{r.line}</td>
+                    <td>{d?.name ?? ''}</td>
+                    <td>{d ? EMPLOYMENT_TYPE_LABELS[d.employmentType] : ''}</td>
+                    <td className="num">{d?.permanentMilliFte !== undefined ? formatFte(d.permanentMilliFte) : ''}</td>
+                    <td>{plan?.staff.currentRole ?? d?.substantiveRole ?? ''}</td>
+                    <td>{d ? WORK_PREFERENCE_LABELS[d.workPreference] : ''}</td>
+                    <td>{d ? daysLabel(d.preferredDays) : ''}</td>
+                    <td>
+                      {d && d.leaveDays.days.some(Boolean) ? `${daysLabel(d.leaveDays)} (${LEAVE_TYPE_SHORT[d.leaveType]})` : ''}
+                    </td>
+                    <td>{d ? describeGrades(d.gradePreferences) : ''}</td>
+                    <td>{status}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <div className="actions">
