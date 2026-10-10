@@ -268,6 +268,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           'Match the person to their own (substantive) position as normal, on all their days.',
           'Drag their name onto the executive position on the higher-duties day (or click **+** there: they are listed with "(higher duties)").',
+          "If the executive position's holder is on whole-year leave that day (a grey tile), drop the name on that grey day instead: they backfill the leave on higher duties.",
           'Click **OK** to confirm. Their tile in the executive position is marked "higher duties", and their own position turns grey ("Higher duties") on that day.',
           'Drag another teacher onto the grey day to backfill their own position.',
           'To end higher duties, click **×** on the "higher duties" tile. The backfill on their own position is removed too.',

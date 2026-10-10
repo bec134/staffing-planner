@@ -31,6 +31,7 @@ const withMode = (days: readonly boolean[]): DayPattern => {
   return { mode: repeatsWeekly(p) ? 'weekly' : 'fortnightly', days };
 };
 const patternOf = (indices: number[]) => withMode(Array.from({ length: 10 }, (_, i) => indices.includes(i)));
+const isWholeYear = (l: Leave, year: DateRange) => l.startDate <= year.start && l.endDate >= year.end;
 const sameDays = (a: DayPattern, b: DayPattern) => a.days.every((d, i) => d === b.days[i]);
 
 export interface HigherDutiesInput {
@@ -86,12 +87,30 @@ export function planHigherDuties(
   }
   const notRunning = dayIndices(subtract(days, target.days));
   if (notRunning.length) return { ok: false, error: `${target.name} doesn't run on ${describeDayIndices(notRunning)}` };
-  const held = input.matches.filter(
-    (m) => m.roleId === positionId && m.staffId !== staffId && !m.coveringLeaveId && indices.some((d) => m.days.days[d]),
-  );
-  if (held.length) {
-    const who = input.staff.find((s) => s.id === held[0]!.staffId)?.name ?? 'someone else';
-    return { ok: false, error: `${target.name} is already held by ${who} on ${dayText}` };
+  // Each day is either free, or held by someone on whole-year leave (Bec:
+  // the AP is on leave, so the person on higher duties backfills them).
+  const nameOf = (id: Id) => input.staff.find((s) => s.id === id)?.name ?? 'someone else';
+  const free: number[] = [];
+  const backfill = new Map<Id, { leave: Leave; days: number[] }>();
+  const takenBy = new Map<Id, number[]>();
+  for (const d of indices) {
+    const holder = input.matches.find((m) => m.roleId === positionId && m.staffId !== staffId && !m.coveringLeaveId && m.days.days[d]);
+    if (!holder) {
+      free.push(d);
+      continue;
+    }
+    const away = input.leave.find(
+      (l) => l.staffId === holder.staffId && l.id !== holder.higherDutiesLeaveId && isWholeYear(l, input.year) && l.daysAffected.days[d],
+    );
+    if (!away) return { ok: false, error: `${target.name} is already held by ${nameOf(holder.staffId)} on ${dayText}` };
+    const taken = input.matches.find((m) => m.roleId === positionId && m.coveringLeaveId === away.id && m.staffId !== staffId && m.days.days[d]);
+    if (taken) {
+      takenBy.set(taken.staffId, [...(takenBy.get(taken.staffId) ?? []), d]);
+      continue;
+    }
+    const entry = backfill.get(away.id) ?? { leave: away, days: [] };
+    entry.days.push(d);
+    backfill.set(away.id, entry);
   }
 
   const existingLeave = input.leave.find((l) => isHigherDuties(l) && l.staffId === staffId && l.higherDutiesPositionId === positionId);
@@ -107,16 +126,41 @@ export function planHigherDuties(
         leaveType: 'higher_duties',
         higherDutiesPositionId: positionId,
       };
-  const existingMatch = input.matches.find((m) => m.staffId === staffId && m.higherDutiesLeaveId === leave.id);
-  const match: EntitlementMatch = existingMatch
-    ? { ...existingMatch, days: withMode(union([existingMatch.days, days]).days) }
-    : { id: newId(), planningYearId: input.planningYearId, staffId, roleId: positionId, days, higherDutiesLeaveId: leave.id };
+  if (takenBy.size) {
+    const [who, dayList] = [...takenBy][0]!;
+    return { ok: false, error: `${target.name} is already backfilled by ${nameOf(who)} on ${describeDayIndices(dayList)}` };
+  }
+
+  // One match for the free days, and one backfill per leave they cover.
+  const matchPut: EntitlementMatch[] = [];
+  const addMatch = (dayList: number[], covering?: Leave) => {
+    if (!dayList.length) return;
+    const existing = input.matches.find(
+      (m) => m.staffId === staffId && m.higherDutiesLeaveId === leave.id && m.coveringLeaveId === covering?.id,
+    );
+    matchPut.push(
+      existing
+        ? { ...existing, days: withMode(union([existing.days, patternOf(dayList)]).days) }
+        : {
+            id: newId(),
+            planningYearId: input.planningYearId,
+            staffId,
+            roleId: positionId,
+            days: patternOf(dayList),
+            higherDutiesLeaveId: leave.id,
+            ...(covering ? { coveringLeaveId: covering.id, startDate: covering.startDate, endDate: covering.endDate } : {}),
+          },
+    );
+  };
+  addMatch(free);
+  for (const { leave: away, days: dayList } of backfill.values()) addMatch(dayList, away);
+  const backfilling = [...backfill.values()].map(({ leave: away }) => nameOf(away.staffId));
   const from = [...new Set(fromPositions.map((p) => p?.name ?? 'their position'))].join(' and ');
   return {
     ok: true,
     leavePut: [leave],
-    matchPut: [match],
-    message: `${person.name} is matched to ${from} on ${dayText}. Put them on higher duties as ${target.name} on ${dayText} for the whole year? Their ${dayText} in ${from} will open up for a backfill.`,
+    matchPut,
+    message: `${person.name} is matched to ${from} on ${dayText}. Put them on higher duties as ${target.name} on ${dayText} for the whole year${backfilling.length ? `, backfilling ${backfilling.join(' and ')}'s leave` : ''}? Their ${dayText} in ${from} will open up for a backfill.`,
   };
 }
 
