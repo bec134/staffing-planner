@@ -29,9 +29,14 @@ export function seniority(type: PositionType | undefined): number {
   return executiveRank(type.name);
 }
 
-/** How senior someone's substantive role is; undefined when it isn't recorded. */
-export function substantiveRank(staff: Pick<Staff, 'currentRole'>): number | undefined {
-  const n = staff.currentRole.trim().toLowerCase();
+/** How senior someone's most senior substantive role is; undefined when none is recorded. */
+export function substantiveRank(staff: Pick<Staff, 'currentRole' | 'otherRoles'>): number | undefined {
+  const ranks = [staff.currentRole, ...(staff.otherRoles ?? [])].map(roleRank).filter((r): r is number => r !== undefined);
+  return ranks.length ? Math.max(...ranks) : undefined;
+}
+
+function roleRank(role: string): number | undefined {
+  const n = role.trim().toLowerCase();
   if (!n) return undefined;
   if (n === 'principal' || n.startsWith('deputy') || n === 'dp' || n.startsWith('assistant principal') || /^ap\b/.test(n)) {
     return executiveRank(n);
@@ -44,7 +49,7 @@ export function substantiveRank(staff: Pick<Staff, 'currentRole'>): number | und
  * substantive role (Bec: e.g. a temporary teacher matched to an unfilled AP
  * position), so their tile says "higher duties".
  */
-export function actsUp(staff: Pick<Staff, 'currentRole'> | undefined, type: PositionType | undefined): boolean {
+export function actsUp(staff: Pick<Staff, 'currentRole' | 'otherRoles'> | undefined, type: PositionType | undefined): boolean {
   const rank = staff && substantiveRank(staff);
   return rank !== undefined && seniority(type) > rank;
 }
@@ -241,6 +246,18 @@ export function tidyHigherDuties(matches: EntitlementMatch[], leave: Leave[], al
     if (!left || !dayIndices(left).length) out.allocationDelete.push(a.id);
     else if (!sameDays(left, a.days)) out.allocationPut.push({ ...a, days: withMode(left.days) });
   }
+  // Second jobs stay within the leave days that free them (and go with the leave).
+  const leaveDays = new Map(leave.map((l) => [l.id, l.daysAffected]));
+  const keep = <T extends Allocation>(list: T[], put: T[], del: Id[]) => {
+    for (const a of list.filter((x) => x.secondJobLeaveId && !del.includes(x.id))) {
+      const days = leaveDays.get(a.secondJobLeaveId!);
+      const left = days ? intersect(a.days, days) : undefined;
+      if (!left || !dayIndices(left).length) del.push(a.id);
+      else if (!sameDays(left, a.days)) put.push({ ...a, days: withMode(left.days) });
+    }
+  };
+  keep(matches, out.matchPut, out.matchDelete);
+  keep(allocations, out.allocationPut, out.allocationDelete);
   return out;
 }
 

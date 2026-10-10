@@ -83,6 +83,8 @@ export type StaffImportMapping = Record<StaffImportField, ColumnIndex>;
 export type StaffDraft = Omit<StaffIntention, 'id' | 'planningYearId' | 'staffId'> & {
   /** One of SUBSTANTIVE_ROLES, or blank. */
   substantiveRole: string;
+  /** Other substantive roles (staff form only; a CSV row leaves them as they are). */
+  otherRoles?: string[];
 };
 
 export interface StaffImportRow {

@@ -328,3 +328,6 @@ table.intentions td.actions { white-space: nowrap; }
 .group-row .group-move { margin-left: 8px; font-weight: normal; }
 .group-row .group-move button { padding: 0 6px; }
 
+.checks label { display: inline-block; margin: 2px 12px 2px 0; }
+.checks .muted { display: block; }
+.tile .tile-select { font-size: 0.75em; padding: 0 2px; margin-left: 4px; max-width: 8em; }

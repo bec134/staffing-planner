@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DayPatternEditor } from '../../components/DayPatternEditor';
 import { validateLeave } from '../../domain/leave';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, type Leave, type LeaveType } from '../../domain/types';
+import { tidyHigherDutiesIn } from '../../data/higherDutiesStore';
 import { useRepository } from '../../data/RepositoryContext';
 import { byName, type PlanData } from '../allocation/shared';
 
@@ -30,6 +31,8 @@ export function LeaveForm({ data, existing, onDone }: { data: PlanData; existing
       daysAffected,
     };
     await repo.leave.put(leave);
+    // A second job only lasts while its leave does.
+    await tidyHigherDutiesIn(repo, leave.planningYearId);
     onDone(leave);
   };
 

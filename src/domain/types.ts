@@ -89,6 +89,8 @@ export interface Staff extends Scoped {
   /** Substantive role: one of SUBSTANTIVE_ROLES (older plans may hold free text). */
   currentRole: string;
   employmentType: EmploymentType;
+  /** Other substantive roles someone holds (Bec: e.g. Teacher 0.6 and AP C&I 0.2). */
+  otherRoles?: string[];
   /** Free-text notes. Structured plans for next year are a StaffIntention. */
   preferences: string;
   /** Part 1: surplus to entitlement and nominated for transfer (Bec). */
@@ -171,7 +173,18 @@ export interface Allocation extends Scoped {
   coveringLeaveId?: Id;
   /** Part 1: a higher-duties match, linked to the higher-duties "leave" from the substantive position. */
   higherDutiesLeaveId?: Id;
+  /**
+   * A second job on days the person is on whole-year leave from their own
+   * position (Bec: an AP on LWOP working 0.2 as a temporary teacher). That
+   * leave doesn't apply to this allocation, and the two don't clash.
+   */
+  secondJobLeaveId?: Id;
+  /** Part 1: employment for this position when it differs from the person's own (e.g. Temporary). */
+  employmentType?: EmploymentType;
 }
+
+/** The leave that frees this allocation from the person's other positions, if any. */
+export const freedBy = (a: Pick<Allocation, 'higherDutiesLeaveId' | 'secondJobLeaveId'>) => a.higherDutiesLeaveId ?? a.secondJobLeaveId;
 
 export const GRADES = ['K', '1', '2', '3', '4', '5', '6'] as const;
 export type Grade = (typeof GRADES)[number];

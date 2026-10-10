@@ -172,6 +172,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Click **Add staff member**.',
           'Enter the **Name** and choose the **Employment status** (Permanent, TWT or Temporary). For Permanent or TWT, enter their **Permanent FTE**.',
           'Choose their **Substantive role**: Principal, Deputy Principal, Assistant Principal, Assistant Principal - Curriculum & Instruction, Teacher, Teacher Librarian or School Counsellor.',
+          'If they hold two positions (for example Teacher 0.6 and AP C&I 0.2), tick the other one under **Also substantive in**, so they are not labelled "higher duties" in it.',
           'Choose the **Work preference**. Full time ticks every day that is not a leave day.',
           'Tick the **Preferred days** they will work. Choose **Week A / Week B differ** if their days change between the two weeks of the fortnight.',
           'If they are taking leave for the whole year on some days (for example LWOP two days a week), tick those under **Whole year leave days** and choose the **Leave type**.',
@@ -258,6 +259,20 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           'Match the person on leave to their position as normal; their leave days turn grey.',
           'Drag another teacher onto the grey days to backfill them. A backfill does not use extra entitlement.',
+        ],
+      },
+      {
+        heading: 'Two positions, and second jobs',
+        text: [
+          'Someone can hold more than one position, for example a Teacher 0.6 (Mon–Wed) and AP C&I 0.2 (Thu): match them to each on its days. Tick the second one under **Also substantive in** on their staff details.',
+          'Someone on whole-year leave from their own position can work elsewhere on those days as a second job, for example an AP on LWOP all year working 0.2 as a temporary teacher.',
+        ],
+        steps: [
+          'Match them to their own position as normal; their leave days turn grey.',
+          "Drag their name onto another position on a leave day (or click **+**: they are listed with \"(second job)\").",
+          'Choose the **Employment in this position** (Temporary to start with) and click **Match as second job**. The tile is coloured by that employment type and marked "second job".',
+          "To change the employment type later, use the menu on the tile. It appears for anyone holding more than one position.",
+          'In Part 2 they can be placed in a role on their second-job days; other leave days stay off limits.',
         ],
       },
       {
@@ -534,6 +549,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           '**Whole-year leave**: leave from the start of Term 1 to the end of Term 4.',
           '**Backfill**: a teacher matched in Part 1 on days someone is on whole-year leave.',
           '**Higher duties**: relieving in a higher executive position (Assistant Principal, Deputy or Principal) on some days for the whole year. Their own position is backfilled on those days.',
+          '**Second job**: work in another position on days someone is on whole-year leave from their own, with its own employment type.',
           '**Cover**: a teacher placed in Part 2 on days someone is on leave, for the leave dates.',
           '**Composite**: a class with two grades (1/2, 3/4 or 5/6).',
           '**Nominated for transfer**: a permanent or TWT staff member surplus to the entitlement.',

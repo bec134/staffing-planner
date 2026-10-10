@@ -28,6 +28,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
   }
 
   const allocations = data.allocations.filter((a) => a.staffId === staff.id);
+  const matches = data.matches.filter((m) => m.staffId === staff.id);
   const allocatedMilli = allocations.reduce((s, a) => s + milliFteOf(a.days), 0);
   const unallocated = subtract(staff.workPattern, staffBusyDays(staff.id, data.allocations));
   const myFlags = flags.filter((f) => f.link === staffLink(staff.id));
@@ -86,7 +87,10 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
               </>
             )}
             <dt>Substantive role</dt>
-            <dd>{staff.currentRole || '—'}</dd>
+            <dd>
+              {staff.currentRole || '—'}
+              {staff.otherRoles?.length ? `; also ${staff.otherRoles.join(', ')}` : ''}
+            </dd>
             {intention && (
               <>
                 <dt>Work preference</dt>
@@ -115,6 +119,30 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
             </button>
           </div>
         </>
+      )}
+      <h2>Positions (Part 1)</h2>
+      {matches.length === 0 ? (
+        <p className="muted">
+          Not matched yet. <Link to="/matching">Match staff</Link>
+        </p>
+      ) : (
+        <ul aria-label="Positions">
+          {matches.map((m) => {
+            const leaveOf = (id?: string) => data.leave.find((l) => l.id === id);
+            const notes = [
+              m.employmentType && EMPLOYMENT_TYPE_LABELS[m.employmentType],
+              m.secondJobLeaveId && 'second job while on leave',
+              m.higherDutiesLeaveId && 'higher duties',
+              m.coveringLeaveId && `backfill for ${data.staff.find((s) => s.id === leaveOf(m.coveringLeaveId)?.staffId)?.name ?? 'leave'}`,
+            ].filter(Boolean);
+            return (
+              <li key={m.id}>
+                {data.positions.find((p) => p.id === m.roleId)?.name ?? 'A deleted position'}, {daysLabel(m.days)}
+                {notes.length ? ` (${notes.join('; ')})` : ''}
+              </li>
+            );
+          })}
+        </ul>
       )}
       <AllocationTable data={data} show="role" allocations={allocations} fixed={{ staffId: staff.id }} />
       <h2>Leave</h2>

@@ -305,4 +305,45 @@ describe('Splitting a position', () => {
     expect(tile).toHaveTextContent('higher duties');
     confirmSpy.mockRestore();
   });
+
+  it('matches someone on whole-year leave to a second job, with its own employment type', async () => {
+    const repo = await setup();
+    const casey = (await repo.staff.listByYear(Y)).find((s) => s.name === 'Casey Wren')!;
+    await act(() =>
+      repo.leave.put({
+        id: 'casey-lwop',
+        planningYearId: Y,
+        staffId: casey.id,
+        startDate: '2027-01-28',
+        endDate: '2027-12-17',
+        daysAffected: FULL_TIME,
+        leaveType: 'lwop',
+      }),
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Staff' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Match staff' }));
+    await waitFor(() => expect(tileOf(cell('Assistant Principal 2', 'Thu'), 'Casey Wren')).toHaveClass('on-leave'));
+    // Free up Thursday in a class.
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Kit Ashdown from Classroom Teacher 5 on Thu' }));
+    await waitFor(() => expect(within(cell('Classroom Teacher 5', 'Thu')).queryByText('Kit Ashdown')).not.toBeInTheDocument());
+
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Casey Wren', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell('Classroom Teacher 5', 'Thu'), { dataTransfer: dt });
+    const dialog = await screen.findByRole('dialog', { name: 'Second job' });
+    expect(dialog).toHaveTextContent('Casey Wren is on leave from Assistant Principal 2 on Thu');
+    expect(within(dialog).getByLabelText('Employment in this position')).toHaveValue('temporary');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Match as second job' }));
+
+    const tile = await waitFor(() => tileOf(cell('Classroom Teacher 5', 'Thu'), 'Casey Wren'));
+    expect(tile).toHaveClass('holder', 'emp-temporary');
+    expect(tile).toHaveTextContent('second job');
+    // Still on leave (greyed) in her own position, coloured as before.
+    expect(tileOf(cell('Assistant Principal 2', 'Thu'), 'Casey Wren')).toHaveClass('on-leave');
+
+    // The employment type can be changed on the tile.
+    fireEvent.change(screen.getByLabelText('Employment for Casey Wren in Classroom Teacher 5'), { target: { value: 'permanent' } });
+    await waitFor(() => expect(tileOf(cell('Classroom Teacher 5', 'Thu'), 'Casey Wren')).toHaveClass('emp-permanent'));
+    await waitFor(() => expect(within(panel()).queryByText(/Casey Wren is allocated to both/)).not.toBeInTheDocument());
+  });
 });

@@ -123,7 +123,9 @@ function gridTable(
   const out: ReportCell[][] = [];
 
   for (const pt of [...positionTypes].sort(bySort)) {
-    const hdTag = (t: Tile) => (t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), pt) ? ' (higher duties)' : '');
+    const hdTag = (t: Tile) =>
+      (t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), pt) ? ' (higher duties)' : '') +
+      (t.allocation.secondJobLeaveId ? ' (second job)' : '');
     const group = rows.filter((r) => r.positionTypeId === pt.id).sort(bySort);
     if (!group.length) continue;
     out.push(heading(pt.name));
@@ -138,7 +140,7 @@ function gridTable(
         for (const t of view.tiles) {
           if (t.kind === 'holder') {
             lines.push(`${name(t.staffId)}${hdTag(t)}`);
-            tone ??= part === 1 ? staffById.get(t.staffId)?.employmentType : 'holder';
+            tone ??= part === 1 ? (t.allocation.employmentType ?? staffById.get(t.staffId)?.employmentType) : 'holder';
           } else if (t.kind === 'on-leave') {
             const when = t.partYear && t.leave ? `, ${formatRange(leaveRange(t.leave))}` : '';
             lines.push(`${name(t.staffId)} (${t.leave ? LEAVE_TYPE_SHORT[t.leave.leaveType] : 'leave'}${when})`);
@@ -266,9 +268,10 @@ function placementReport(d: PlanningYearSnapshot): Report {
     const leave = a.coveringLeaveId ? d.leave.find((l) => l.id === a.coveringLeaveId) : undefined;
     const cover = a.coveringLeaveId ? ` (cover for ${leave ? (staffById.get(leave.staffId)?.name ?? 'leave') : 'leave'})` : '';
     const hd =
-      a.higherDutiesLeaveId || actsUp(staffById.get(a.staffId), types.get(roleById.get(a.roleId)?.positionTypeId ?? ''))
+      (a.secondJobLeaveId ? ' (second job)' : '') +
+      (a.higherDutiesLeaveId || actsUp(staffById.get(a.staffId), types.get(roleById.get(a.roleId)?.positionTypeId ?? ''))
         ? ' (higher duties)'
-        : '';
+        : '');
     return `${who}: ${daysText(a.days)}${cover}${hd}${partYear ? `, ${formatRange(range)}` : ''}`;
   };
   return {
