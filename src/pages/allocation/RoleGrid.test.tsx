@@ -79,7 +79,7 @@ function dataTransfer() {
 
 describe('Role grid', () => {
   it('greys the holder on leave and shows cover in colour', async () => {
-    const repo = await setup();
+    await setup();
     const thu = cell('1/2 Green', 'Thu');
     expect(within(thu).getByText('Indi Calloway').closest('.tile')).toHaveClass('on-leave');
     expect(within(thu).getByText('LWOP')).toBeInTheDocument();
@@ -90,7 +90,6 @@ describe('Role grid', () => {
     const jules = within(cell('3/4 Red', 'Mon')).getByText('Jules Fernhill').closest('.tile')!;
     expect(jules).toHaveClass('part-year');
     expect(jules).toHaveTextContent('LSL 27 Apr – 2 Jul 2027');
-    repo.close();
   });
 
   it('assigns by choosing a name, updating the allocation, and removes with ×', async () => {
@@ -108,7 +107,6 @@ describe('Role grid', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove Fern Example from Executive release on Mon' }));
     await waitFor(() => expect(within(cell('Executive release', 'Mon')).queryByText('Fern Example')).not.toBeInTheDocument());
     expect((await repo.allocations.listByYear(Y)).some((a) => a.staffId === 'free')).toBe(false);
-    repo.close();
   });
 
   it('assigns cover when choosing someone for a day the holder is on leave', async () => {
@@ -120,11 +118,10 @@ describe('Role grid', () => {
     expect(result()).toHaveTextContent('Fern Example → K Blue on Mon as cover');
     const cover = (await repo.allocations.listByYear(Y)).find((a) => a.staffId === 'free')!;
     expect(cover).toMatchObject({ coveringLeaveId: `${Y}-leave-04`, startDate: '2027-01-28', endDate: '2027-12-17' });
-    repo.close();
   });
 
   it('allocates by dragging a name from the staff list, and moves a tile by dragging it', async () => {
-    const repo = await setup();
+    await setup();
     const dt = dataTransfer();
     const source = screen.getByText('Fern Example', { selector: '.palette-tile' });
     fireEvent.dragStart(source, { dataTransfer: dt });
@@ -138,16 +135,14 @@ describe('Role grid', () => {
     expect(await within(cell('Executive release', 'Mon')).findByText('Fern Example')).toBeInTheDocument();
     await waitFor(() => expect(within(cell('Executive release', 'Tue')).queryByText('Fern Example')).not.toBeInTheDocument());
     expect(result()).toHaveTextContent('Moved: Fern Example → Executive release on Mon');
-    repo.close();
   });
 
   it('explains why a drop is refused', async () => {
-    const repo = await setup();
+    await setup();
     const dt = dataTransfer();
     fireEvent.dragStart(screen.getByText('Fern Example', { selector: '.palette-tile' }), { dataTransfer: dt });
     fireEvent.drop(cell('K Gold', 'Mon'), { dataTransfer: dt });
     expect(await screen.findByText('K Gold is already held by Harper Vale on Mon')).toBeInTheDocument();
-    repo.close();
   });
 
   it('offers to add a day to someone’s days worked', async () => {
@@ -161,7 +156,6 @@ describe('Role grid', () => {
     const noor = await repo.staff.get(`${Y}-staff-14`);
     expect(noor!.workPattern.days.slice(0, 5)).toEqual([false, false, true, true, true]);
     confirm.mockRestore();
-    repo.close();
   });
 
   it('fills the whole week when a full-time teacher is dropped on a class, and × removes single days', async () => {
@@ -178,37 +172,33 @@ describe('Role grid', () => {
     await waitFor(() => expect(within(cell('K Green', 'Fri')).queryByText('Fern Example')).not.toBeInTheDocument());
     const [alloc] = (await repo.allocations.listByYear(Y)).filter((a) => a.staffId === 'free');
     expect(alloc!.days.days.slice(0, 5)).toEqual([true, true, true, true, false]);
-    repo.close();
   });
 
   it('fills every free day when a name is dropped on the role name', async () => {
-    const repo = await setup();
+    await setup();
     const dt = dataTransfer();
     fireEvent.dragStart(screen.getByText('Fern Example', { selector: '.palette-tile' }), { dataTransfer: dt });
     fireEvent.drop(screen.getByTestId('role-Executive release'), { dataTransfer: dt });
     expect(await within(cell('Executive release', 'Mon')).findByText('Fern Example')).toBeInTheDocument();
     expect(within(cell('Executive release', 'Tue')).getByText('Fern Example')).toBeInTheDocument();
-    repo.close();
   });
 
   it('places a part-timer on just the day dropped, even on a class', async () => {
-    const repo = await setup();
+    await setup();
     const dt = dataTransfer();
     fireEvent.dragStart(screen.getByText('Pip Example', { selector: '.palette-tile' }), { dataTransfer: dt });
     fireEvent.drop(cell('K Green', 'Tue'), { dataTransfer: dt });
     expect(await within(cell('K Green', 'Tue')).findByText('Pip Example')).toBeInTheDocument();
     expect(within(cell('K Green', 'Mon')).queryByText('Pip Example')).not.toBeInTheDocument();
-    repo.close();
   });
 
   it('offers only staff matched in Part 1 unless asked to show everyone', async () => {
-    const repo = await setup();
+    await setup();
     const palette = () => screen.getByLabelText('Staff to drag');
     expect(within(palette()).getByText('Fern Example')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText(/Show all staff/));
     expect(within(palette()).queryByText('Fern Example')).not.toBeInTheDocument();
     expect(within(palette()).queryByText('Sam Ridley')).not.toBeInTheDocument(); // part-year cover only, not matched
     expect(within(palette()).getByText('Tara Quinlan')).toBeInTheDocument(); // matched as a backfill
-    repo.close();
   });
 });

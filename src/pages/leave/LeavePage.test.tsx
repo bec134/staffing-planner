@@ -30,7 +30,7 @@ const GAP = "3/4 Red: no cover for Jules Fernhill's Long Service Leave on Thu, F
 
 describe('Leave cover', () => {
   it('lists leave with cover status, and the uncovered view shows the gap', async () => {
-    const repo = await setup();
+    await setup();
     const lsl = screen.getByRole('link', { name: 'Jules Fernhill — Long Service Leave' }).closest('tr')!;
     expect(within(lsl).getByText('Partly covered')).toBeInTheDocument();
     const pat = screen.getByRole('link', { name: 'Kit Ashdown — Paternity Leave' }).closest('tr')!;
@@ -41,11 +41,10 @@ describe('Leave cover', () => {
     const row = (await screen.findByText('Thu, Fri')).closest('tr')!;
     expect(within(row).getByText('27 Apr – 2 Jul 2027')).toBeInTheDocument();
     expect(within(row).getByText('Jules Fernhill (Long Service Leave)')).toBeInTheDocument();
-    repo.close();
   });
 
   it('assigns cover for the remaining days and clears the gap', async () => {
-    const repo = await setup();
+    await setup();
     fireEvent.click(screen.getByRole('link', { name: 'Jules Fernhill — Long Service Leave' }));
     await screen.findByText('Not yet covered');
     fireEvent.click(screen.getByRole('button', { name: 'Add cover' }));
@@ -61,11 +60,10 @@ describe('Leave cover', () => {
     await waitFor(() => expect(screen.queryByText('Not yet covered')).not.toBeInTheDocument());
     expect(screen.getByText('Fully covered')).toBeInTheDocument();
     expect(within(panel()).queryByText(GAP)).not.toBeInTheDocument();
-    repo.close();
   });
 
   it('rejects cover outside the leave dates', async () => {
-    const repo = await setup();
+    await setup();
     fireEvent.click(screen.getByRole('link', { name: 'Jules Fernhill — Long Service Leave' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Add cover' }));
     const form = screen.getByRole('form', { name: 'Add cover' });
@@ -73,21 +71,19 @@ describe('Leave cover', () => {
     fireEvent.change(within(form).getByLabelText('To'), { target: { value: '2027-07-20' } });
     expect(within(form).getByText('Cover must fall within the leave dates')).toBeInTheDocument();
     expect(within(form).getByRole('button', { name: /Assign cover/ })).toBeDisabled();
-    repo.close();
   });
 
   it('offers term quick picks for cover', async () => {
-    const repo = await setup();
+    await setup();
     fireEvent.click(screen.getByRole('link', { name: 'Jules Fernhill — Long Service Leave' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Add cover' }));
     const form = screen.getByRole('form', { name: 'Add cover' });
     fireEvent.click(within(form).getByRole('button', { name: 'Term 2 (27 Apr – 2 Jul 2027)' }));
     expect(within(form).getByLabelText('From')).toHaveValue('2027-04-27');
-    repo.close();
   });
 
   it('records new leave, defaulting to the days the person works', async () => {
-    const repo = await setup();
+    await setup();
     fireEvent.click(screen.getByRole('button', { name: 'Add leave' }));
     const form = screen.getByRole('form', { name: 'Add leave' });
     fireEvent.change(within(form).getByLabelText('Staff member'), { target: { value: 'sample-2027-staff-06' } });
@@ -105,18 +101,16 @@ describe('Leave cover', () => {
         "1/2 Blue: no cover for Frankie Lowe's Maternity Leave on Mon, Tue, Wed, 20 Jul – 17 Dec 2027",
       ),
     ).toBeInTheDocument();
-    repo.close();
   });
 
   it('shows the timeline of a position with leave, cover and gaps', async () => {
-    const repo = await setup();
+    await setup();
     fireEvent.click(screen.getByRole('link', { name: 'Timeline' }));
     const row = (await screen.findByRole('link', { name: '3/4 Red' })).closest('[role="row"]') as HTMLElement;
     expect(within(row).getByText('Jules Fernhill (Mon, Tue, Wed, Thu, Fri)')).toBeInTheDocument();
     expect(within(row).getByText('Long Service Leave (Mon, Tue, Wed, Thu, Fri)')).toBeInTheDocument();
     expect(within(row).getByText('Cover: Sam Ridley (Mon, Tue, Wed)')).toBeInTheDocument();
     expect(within(row).getByText('No cover: Thu, Fri')).toBeInTheDocument();
-    repo.close();
   });
 
   it('saves term dates', async () => {
@@ -128,13 +122,12 @@ describe('Leave cover', () => {
     expect(await screen.findByText('Term dates saved.')).toBeInTheDocument();
     const year = (await repo.planningYears.list())[0]!;
     expect(year.terms?.[3]).toEqual({ start: '2027-10-12', end: '2027-12-10' });
-    repo.close();
   });
 });
 
 describe('Weekly grid with leave', () => {
   it('shows the holder on leave with their cover, and the coverer with whose leave', async () => {
-    const repo = await setup('Roles & placement');
+    await setup('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     const jules = (await screen.findByRole('link', { name: 'Jules Fernhill' })).closest('tr')!;
     const [mon, , , thu] = within(jules).getAllByRole('cell');
@@ -159,11 +152,10 @@ describe('Weekly grid with leave', () => {
     fireEvent.change(screen.getByLabelText('As at date'), { target: { value: '2027-05-03' } });
     expect(within(jules).getAllByRole('cell')[0]).toHaveTextContent('3/4 RedOn LSLCover: Sam Ridley');
     expect(within(sam).getAllByRole('cell')[0]).toHaveTextContent('3/4 Redcover for Jules Fernhill');
-    repo.close();
   });
 
   it('shows whole-year part-week leave without pay, covered and uncovered', async () => {
-    const repo = await setup('Roles & placement');
+    await setup('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     const indi = (await screen.findByRole('link', { name: 'Indi Calloway' })).closest('tr')!;
     const [iMon, , , iThu] = within(indi).getAllByRole('cell');
@@ -182,6 +174,5 @@ describe('Weekly grid with leave', () => {
         "K Blue: no cover for Eli Brookfield's Leave without pay on Mon, Tue, 28 Jan – 17 Dec 2027",
       ),
     ).toBeInTheDocument();
-    repo.close();
   });
 });

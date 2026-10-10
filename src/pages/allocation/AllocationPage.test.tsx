@@ -29,16 +29,15 @@ const panel = () => screen.getByText(/^Warnings \(/).closest('details')!;
 
 describe('Staff (Part 1) and roles & placement (Part 2)', () => {
   it('lists staff in Part 1, with their placements and entitlement warnings', async () => {
-    const repo = await setupWithSample();
+    await setupWithSample();
     const row = screen.getByRole('link', { name: 'Gus Penrose' }).closest('tr')!;
     expect(within(row).getByText('1/2 Blue')).toBeInTheDocument();
     expect(within(row).getByText('RFF 2')).toBeInTheDocument();
     expect(within(panel()).getByText('RFF Teacher: allocated 0.7 FTE, 0.616 under the entitlement of 1.316')).toBeInTheDocument();
-    repo.close();
   });
 
   it('adds a staff member and allocates them only on free days', async () => {
-    const repo = await setupWithSample();
+    await setupWithSample();
     fireEvent.click(screen.getByRole('button', { name: 'Add staff member' }));
     const form = screen.getByRole('form', { name: 'Add staff member' });
     fireEvent.change(within(form).getByLabelText('Name'), { target: { value: 'Pat Example' } });
@@ -63,11 +62,10 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     await waitFor(() => expect(screen.queryByRole('form', { name: 'Add allocation' })).not.toBeInTheDocument());
     const table = screen.getByRole('heading', { name: 'Allocations' }).parentElement!;
     expect(await within(table).findByText('Wed (B)')).toBeInTheDocument();
-    repo.close();
   });
 
   it('flags allocations left on days a person no longer works', async () => {
-    const repo = await setupWithSample();
+    await setupWithSample();
     fireEvent.click(screen.getByRole('link', { name: 'Noor Haddon' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Edit details' }));
     const form = screen.getByRole('form', { name: 'Edit Noor Haddon' });
@@ -77,11 +75,10 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     const message = 'Noor Haddon is allocated to Learning & Support on Fri, but doesn\'t work then';
     expect(await within(panel()).findByText(message)).toBeInTheDocument();
     expect(screen.getAllByText(message)).toHaveLength(2); // panel and the staff page
-    repo.close();
   });
 
   it('shows Week A / Week B columns in the grid when someone works fortnightly', async () => {
-    const repo = await setupWithSample('Roles & placement');
+    await setupWithSample('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
     expect(await screen.findByText('Week A')).toBeInTheDocument();
     const row = screen.getByRole('link', { name: 'Morgan Pike' }).closest('tr')!;
@@ -90,11 +87,10 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
       'RFF 1', 'RFF 1', 'RFF 1', '—', '—',
       'RFF 1', 'RFF 1', '—', '—', '—',
     ]);
-    repo.close();
   });
 
   it('adds a role and shows its unfilled days', async () => {
-    const repo = await setupWithSample('Roles & placement');
+    await setupWithSample('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'By role' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Add role' }));
     const form = screen.getByRole('form', { name: 'Add role' });
@@ -108,7 +104,6 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     fireEvent.click(within(form).getByRole('button', { name: 'Add role' }));
     const row = (await screen.findByRole('link', { name: 'QTSS 1' })).closest('tr')!;
     expect(within(row).getAllByText('Mon, Tue')).toHaveLength(2); // runs, and unfilled
-    repo.close();
   });
 
   it('imports staff from a CSV after mapping and preview', async () => {
@@ -132,13 +127,12 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     const year = (await repo.planningYears.list())[0]!;
     const quinn = (await repo.staff.listByYear(year.id)).find((s) => s.name === 'Quinn Sample');
     expect(quinn).toMatchObject({ employmentType: 'twt' });
-    repo.close();
   });
 });
 
 describe('Finding where to add staff', () => {
   it('links to the Staff page from Match staff and the Overview steps', async () => {
-    const repo = await setupWithSample();
+    await setupWithSample();
     fireEvent.click(screen.getByRole('link', { name: 'Match staff' }));
     fireEvent.click(await screen.findByRole('link', { name: 'Add staff' }));
     expect(await screen.findByRole('heading', { name: 'Staff' })).toBeInTheDocument();
@@ -147,16 +141,14 @@ describe('Finding where to add staff', () => {
     const steps = await screen.findByRole('region', { name: 'Steps' });
     expect(within(steps).getByText('Add staff', { selector: 'strong' }).closest('li')).toHaveClass('done');
     expect(within(steps).getByText(/18 staff members/)).toBeInTheDocument();
-    repo.close();
   });
 
   it('sends old staff and role grid addresses to their new pages', async () => {
-    const repo = await setupWithSample();
+    await setupWithSample();
     window.location.hash = '#/allocation/role-grid';
     expect(await screen.findByLabelText('Staff to drag')).toBeInTheDocument();
     window.location.hash = '#/allocation/staff/sample-2027-staff-05';
     expect(await screen.findByRole('heading', { name: 'Eli Brookfield' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#/staff/sample-2027-staff-05');
-    repo.close();
   });
 });

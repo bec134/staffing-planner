@@ -67,15 +67,13 @@ describe('Class structures', () => {
     const year = (await repo.planningYears.list())[0]!;
     const roles = await repo.roles.listByYear(year.id);
     expect(roles.map((r) => r.name).sort()).toEqual(['1A', '2A', '3A', '4A', '5A', '6A', 'KA']);
-    repo.close();
   });
 
   it("explains when there aren't enough classes", async () => {
-    const repo = await setup(false);
+    await setup(false);
     enter('3', ['20', '22', '24', '30', '30', '30', '30']);
     fireEvent.click(screen.getByRole('button', { name: 'Suggest class structures' }));
     expect(await screen.findByText('At least 4 classes are needed so that every grade has a class.')).toBeInTheDocument();
-    repo.close();
   });
 
   it('lets the accepted structure be edited, checks placement and renames the linked role', async () => {
@@ -97,25 +95,22 @@ describe('Class structures', () => {
     await waitFor(async () =>
       expect((await repo.roles.get('sample-2027-role-k-blue'))?.name).toBe('K Teal'),
     );
-    repo.close();
   });
 
   it('adds and removes classes by hand', async () => {
-    const repo = await setup(true);
+    await setup(true);
     const accepted = (await screen.findByRole('heading', { name: 'Accepted class structure' })).closest('section')!;
     fireEvent.change(within(accepted).getByLabelText('Add a class'), { target: { value: '3/4' } });
     fireEvent.click(within(accepted).getByRole('button', { name: 'Add class' }));
     expect(within(accepted).getByLabelText('Name of class 3/4A')).toBeInTheDocument();
     expect(within(accepted).getByLabelText('Year 3 students in 3/4A')).toHaveValue('0');
-    repo.close();
   });
 
   it('offers suggestions for the sample enrolments', async () => {
-    const repo = await setup(true);
+    await setup(true);
     expect(screen.getByLabelText('Total number of classes')).toHaveValue('6');
     fireEvent.click(screen.getByRole('button', { name: 'Suggest class structures' }));
     const panel = (await screen.findByRole('heading', { name: /Option 1 of/ })).closest('section')!;
     expect(within(panel).getByText(/6 classes/)).toBeInTheDocument();
-    repo.close();
   });
 });

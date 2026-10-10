@@ -56,7 +56,7 @@ function dataTransfer() {
 
 describe('Part 1: Match staff', () => {
   it('colours tiles by employment type and greys out whole-year leave for everyone', async () => {
-    const repo = await setup();
+    await setup();
     expect(tileOf(cell('Classroom Teacher 2', 'Mon'), 'Harper Vale')).toHaveClass('emp-temporary');
     expect(tileOf(cell('Classroom Teacher 3', 'Mon'), 'Indi Calloway')).toHaveClass('emp-permanent', 'holder');
     // Indi's whole-year LWOP (Thu–Fri) greyed, with Tara (TWT) as the backfill.
@@ -66,20 +66,18 @@ describe('Part 1: Match staff', () => {
     expect(tara).toHaveTextContent('backfill');
     // Term 2 LSL is part-year, so it isn't shown in Part 1.
     expect(tileOf(cell('Classroom Teacher 4', 'Mon'), 'Jules Fernhill')).toHaveClass('holder');
-    repo.close();
   });
 
   it('groups the staff list permanent, TWT, then temporary', async () => {
-    const repo = await setup();
+    await setup();
     const headings = within(screen.getByLabelText('Staff to drag'))
       .getAllByText(/^(Permanent|TWT|Temporary)$/)
       .map((h) => h.textContent);
     expect(headings).toEqual(['Permanent', 'TWT', 'Temporary']);
-    repo.close();
   });
 
   it('backfills whole-year leave with a surplus teacher, then nominates the rest for transfer', async () => {
-    const repo = await setup();
+    await setup();
     const unmatched = screen.getByRole('heading', { name: 'Not yet matched' }).closest('section')!;
     expect(within(unmatched).getByText('Quinn Example').closest('tr')).toHaveTextContent('1.0 FTE');
 
@@ -106,7 +104,6 @@ describe('Part 1: Match staff', () => {
     // Nominating removes their matches, so the backfill days are open again.
     expect(within(cell('Classroom Teacher 1', 'Mon')).queryByText('Quinn Example')).not.toBeInTheDocument();
     vi_confirm.mockRestore();
-    repo.close();
   });
 
   it('creates positions from the entitlement for a new plan', async () => {
@@ -134,6 +131,5 @@ describe('Part 1: Match staff', () => {
     expect(await screen.findByTestId('match-cell-Classroom Teacher 2-Fri')).toBeInTheDocument();
     expect(screen.getByTestId('match-cell-RFF Teacher 1-Tue')).toBeInTheDocument();
     expect(screen.getByTestId('match-cell-RFF Teacher 1-Wed')).toHaveClass('off');
-    repo.close();
   });
 });

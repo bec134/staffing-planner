@@ -23,6 +23,5 @@ describe('App shell', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Export & reports' }));
     expect(await screen.findByRole('article', { name: 'Staffing summary' })).toBeInTheDocument();
-    repo.close();
   });
 });
