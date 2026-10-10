@@ -17,9 +17,11 @@ import {
 } from '../domain/roleGrid';
 import { actsUp, type HigherDutiesPlan } from '../domain/higherDuties';
 import { schoolYear } from '../domain/matching';
+import type { SecondJobPlan } from '../domain/secondJob';
 import {
   EMPLOYMENT_TYPE_LABELS,
   LEAVE_TYPE_SHORT,
+  type EmploymentType,
   type Allocation,
   type Leave,
   type PlanningYear,
@@ -73,6 +75,16 @@ export interface AssignmentGridProps {
   };
   /** Part 2: people on higher duties can be placed in executive roles on those days. */
   placesHigherDuties?: boolean;
+  /** Part 2: the leave freeing someone for a second job on a day (from their Part 1 match). */
+  secondJobLeaveId?(staffId: string, day: number): string | undefined;
+  /**
+   * Part 1: someone on whole-year leave from their own position can be
+   * matched elsewhere on those days as a second job (see secondJob.ts),
+   * after choosing its employment type.
+   */
+  secondJob?: {
+    plan(staffId: string, rowId: string, indices: number[], employmentType: EmploymentType): SecondJobPlan | undefined;
+  };
 }
 
 /**
@@ -88,13 +100,26 @@ export function AssignmentGrid(props: AssignmentGridProps) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  // A second job waiting for its employment type to be chosen.
+  const [secondJob, setSecondJob] = useState<{ staffId: string; role: Role; indices: number[]; type: EmploymentType } | null>(null);
   const staffById = new Map(allStaff.map((s) => [s.id, s]));
   const positionTypeById = new Map(positionTypes.map((p) => [p.id, p]));
   const offeredIds = new Set(offered.map((s) => s.id));
   const name = (id: string) => staffById.get(id)?.name ?? 'Deleted staff member';
-  const empClass = (id: string) => {
+  const empClass = (id: string, allocation?: Allocation) => {
     const s = staffById.get(id);
-    return props.byEmployment && s ? ` emp-${s.employmentType}` : '';
+    const type = allocation?.employmentType ?? s?.employmentType;
+    return props.byEmployment && type ? ` emp-${type}` : '';
+  };
+  /** Part 1: people holding more than one position can have a different employment type in each. */
+  const holdsSeveral = (staffId: string) =>
+    new Set(allocations.filter((a) => a.staffId === staffId && (!a.coveringLeaveId || a.secondJobLeaveId)).map((a) => a.roleId)).size > 1;
+  const setEmployment = async (allocation: Allocation, type: EmploymentType) => {
+    const next: Allocation = { ...allocation };
+    if (type === staffById.get(allocation.staffId)?.employmentType) delete next.employmentType;
+    else next.employmentType = type;
+    await write([next], []);
+    setMessage({ ok: true, text: `${name(allocation.staffId)} is ${EMPLOYMENT_TYPE_LABELS[type]} in ${roleRows.find((r) => r.id === allocation.roleId)?.name}` });
   };
   const grid: GridData = {
     planningYearId: props.planningYear.id,
@@ -106,6 +131,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
     higherDutiesTypeIds: props.placesHigherDuties
       ? new Set(positionTypes.filter((t) => t.category === 'executive').map((t) => t.id))
       : undefined,
+    secondJobLeaveId: props.secondJobLeaveId,
   };
 
   const anyFortnightly = [
@@ -130,8 +156,9 @@ export function AssignmentGrid(props: AssignmentGridProps) {
   /** Whether this drop should fill the person's whole week (see `fillsWeek`). */
   const shouldFill = (payload: DragPayload, role: Role, indices: number[]) => {
     if (payload.from) return false;
-    // Someone already matched on these days is stepping up, not filling the week.
+    // Someone already matched on these days is stepping up or taking a second job, not filling the week.
     if (props.higherDuties?.plan(payload.staffId, role.id, indices)?.ok) return false;
+    if (props.secondJob?.plan(payload.staffId, role.id, indices, 'temporary')?.ok) return false;
     const staff = staffById.get(payload.staffId);
     return !!staff && cellView(role, indices, grid).empty && props.fillsWeek(staff, role);
   };
@@ -160,8 +187,9 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       const source = allocations.find((a) => a.id === payload.from!.allocationId);
       if (!source) return;
       if (source.roleId === role.id && payload.from.indices.join() === indices.join()) return;
-      if (source.higherDutiesLeaveId) {
-        setMessage({ ok: false, text: 'Higher duties can’t be moved. Remove it with × and drop the name again.' });
+      if (source.higherDutiesLeaveId || source.secondJobLeaveId) {
+        const what = source.higherDutiesLeaveId ? 'Higher duties' : 'A second job';
+        setMessage({ ok: false, text: `${what} can’t be moved. Remove it with × and drop the name again.` });
         return;
       }
       removal = planRemove(source, payload.from.indices);
@@ -180,6 +208,18 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       await props.saveStaff(updated);
       base = { ...base, staff: base.staff.map((s) => (s.id === staff.id ? updated : s)) };
       result = planAssign(base, payload.staffId, role.id, indices, () => crypto.randomUUID());
+    }
+    if (!result.ok && props.secondJob && !payload.from) {
+      const sj = props.secondJob.plan(payload.staffId, role.id, indices, 'temporary');
+      if (sj && !sj.ok) {
+        setMessage({ ok: false, text: sj.error });
+        return;
+      }
+      if (sj?.ok) {
+        setMessage(null);
+        setSecondJob({ staffId: payload.staffId, role, indices, type: 'temporary' });
+        return;
+      }
     }
     if (!result.ok && props.higherDuties && !payload.from) {
       const hd = props.higherDuties.plan(payload.staffId, role.id, indices);
@@ -203,6 +243,21 @@ export function AssignmentGrid(props: AssignmentGridProps) {
     }
     await write([...(removal.put ? [removal.put] : []), ...result.put], removal.deleteId ? [removal.deleteId] : []);
     setMessage({ ok: true, text: payload.from ? `Moved: ${result.message}` : result.message });
+  };
+
+  const confirmSecondJob = async () => {
+    if (!secondJob || !props.secondJob) return;
+    const plan = props.secondJob.plan(secondJob.staffId, secondJob.role.id, secondJob.indices, secondJob.type);
+    setSecondJob(null);
+    if (!plan?.ok) {
+      setMessage({ ok: false, text: plan?.error ?? 'That can no longer be matched' });
+      return;
+    }
+    await write(plan.matchPut, []);
+    setMessage({
+      ok: true,
+      text: `${name(secondJob.staffId)} → ${secondJob.role.name} on ${describeDayIndices(secondJob.indices)} as a second job (${EMPLOYMENT_TYPE_LABELS[secondJob.type]})`,
+    });
   };
 
   const remove = async (tile: Tile, indices: number[]) => {
@@ -243,8 +298,13 @@ export function AssignmentGrid(props: AssignmentGridProps) {
     const can = new Set(candidatesFor(grid, roleId, indices).map((s) => s.id));
     return offered
       .filter((s) => offeredIds.has(s.id))
-      .map((s) => ({ staff: s, ok: can.has(s.id), higherDuties: !can.has(s.id) && !!props.higherDuties?.plan(s.id, roleId, indices)?.ok }))
-      .filter((c) => c.ok || c.higherDuties)
+      .map((s) => ({
+        staff: s,
+        ok: can.has(s.id),
+        secondJob: !can.has(s.id) && !!props.secondJob?.plan(s.id, roleId, indices, 'temporary')?.ok,
+        higherDuties: !can.has(s.id) && !!props.higherDuties?.plan(s.id, roleId, indices)?.ok,
+      }))
+      .filter((c) => c.ok || c.secondJob || c.higherDuties)
       .sort((a, b) => byName(a.staff, b.staff));
   };
 
@@ -286,6 +346,31 @@ export function AssignmentGrid(props: AssignmentGridProps) {
           {message.text}
         </p>
       )}
+
+      {secondJob && (() => {
+        const plan = props.secondJob?.plan(secondJob.staffId, secondJob.role.id, secondJob.indices, secondJob.type);
+        return (
+          <div className="panel" role="dialog" aria-label="Second job">
+            <p>{plan?.ok ? plan.message : plan?.error}</p>
+            <label>
+              Employment in this position{' '}
+              <select value={secondJob.type} onChange={(e) => setSecondJob({ ...secondJob, type: e.target.value as EmploymentType })}>
+                {(['permanent', 'twt', 'temporary'] as const).map((t) => (
+                  <option key={t} value={t}>
+                    {EMPLOYMENT_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+            </label>{' '}
+            <button type="button" onClick={() => void confirmSecondJob()}>
+              Match as second job
+            </button>{' '}
+            <button type="button" className="secondary" onClick={() => setSecondJob(null)}>
+              Cancel
+            </button>
+          </div>
+        );
+      })()}
 
       <div className="palette" aria-label="Staff to drag">
         {paletteGroups().map(([group, people]) => (
@@ -414,7 +499,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                       {cell.tiles.map((t) => (
                         <div
                           key={t.allocation.id}
-                          className={`tile ${t.kind}${t.partYear ? ' part-year' : ''}${empClass(t.staffId)}`}
+                          className={`tile ${t.kind}${t.partYear ? ' part-year' : ''}${empClass(t.staffId, t.allocation)}`}
                           draggable
                           onDragStart={(e) => startDrag(e, { staffId: t.staffId, from: { allocationId: t.allocation.id, indices } })}
                           title={tileTitle(t)}
@@ -428,6 +513,21 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                           )}
                           {(t.allocation.higherDutiesLeaveId || actsUp(staffById.get(t.staffId), type)) && (
                             <span className="tag">higher duties</span>
+                          )}
+                          {t.allocation.secondJobLeaveId && <span className="tag">second job</span>}
+                          {props.byEmployment && t.kind !== 'on-leave' && (t.allocation.employmentType || holdsSeveral(t.staffId)) && (
+                            <select
+                              className="tile-select"
+                              aria-label={`Employment for ${name(t.staffId)} in ${role.name}`}
+                              value={t.allocation.employmentType ?? staffById.get(t.staffId)?.employmentType}
+                              onChange={(e) => void setEmployment(t.allocation, e.target.value as EmploymentType)}
+                            >
+                              {(['permanent', 'twt', 'temporary'] as const).map((et) => (
+                                <option key={et} value={et}>
+                                  {EMPLOYMENT_TYPE_LABELS[et]}
+                                </option>
+                              ))}
+                            </select>
                           )}
                           {t.kind === 'cover' && (
                             <span className="tag">
@@ -460,10 +560,10 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                             onChange={(e) => e.target.value && void assign({ staffId: e.target.value }, role, indices)}
                           >
                             <option value="">Choose…</option>
-                            {pickable(role.id, indices).map(({ staff: s, higherDuties }) => (
+                            {pickable(role.id, indices).map(({ staff: s, secondJob: second, higherDuties }) => (
                                 <option key={s.id} value={s.id}>
                                   {s.name}
-                                  {higherDuties ? ' (higher duties)' : ''}
+                                  {second ? ' (second job)' : higherDuties ? ' (higher duties)' : ''}
                                 </option>
                               ))}
                           </select>

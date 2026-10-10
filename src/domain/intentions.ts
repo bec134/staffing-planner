@@ -324,7 +324,7 @@ export function planSaveStaff(
   existing: { staff?: Staff; intention?: StaffIntention },
   newId: () => Id,
 ): ApplyPlan {
-  const { substantiveRole, ...details } = draft;
+  const { substantiveRole, otherRoles, ...details } = draft;
   const intention: StaffIntention = {
     ...details,
     name: draft.name.trim(),
@@ -335,11 +335,18 @@ export function planSaveStaff(
   const plan = planApplyIntention(intention, ctx, newId);
   const before = plan.isNew ? undefined : staffForIntention(intention, ctx.staff);
   const staff: Staff = { ...plan.staff, name: intention.name, currentRole: substantiveRole };
+  if (otherRoles) {
+    const others = [...new Set(otherRoles.filter((r) => r && r !== substantiveRole))];
+    if (others.length) staff.otherRoles = others;
+    else delete staff.otherRoles;
+  }
   const changes = [...plan.changes];
   if (before) {
     const extra: string[] = [];
     if (before.name !== staff.name) extra.push(`Name: ${before.name} → ${staff.name}`);
     if (before.currentRole !== staff.currentRole) extra.push(`Substantive role: ${before.currentRole || 'none'} → ${staff.currentRole || 'none'}`);
+    const list = (s: Staff) => (s.otherRoles ?? []).join(', ') || 'none';
+    if (list(before) !== list(staff)) extra.push(`Also substantive in: ${list(before)} → ${list(staff)}`);
     changes.unshift(...extra);
   }
   return { ...plan, staff, changes };

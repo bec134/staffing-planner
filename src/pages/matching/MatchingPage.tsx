@@ -16,6 +16,7 @@ import {
   unmatchedDayCount,
 } from '../../domain/matching';
 import { planHigherDuties } from '../../domain/higherDuties';
+import { planSecondJob } from '../../domain/secondJob';
 import { moveGroup } from '../../domain/positionTypes';
 import { EMPLOYMENT_TYPE_LABELS, type Staff } from '../../domain/types';
 import { saveHigherDuties, tidyHigherDutiesIn } from '../../data/higherDutiesStore';
@@ -58,6 +59,15 @@ function Matching({ data }: { data: PlanData }) {
   const summary = summariseEntitlement(entitlement, positionTypes, data.positions, data.matches);
   const missing = positionsToCreate(entitlement, positionTypes, data.positions, data.planningYear.id, () => crypto.randomUUID());
   const wholeYearLeave = data.leave.filter((l) => isWholeYearLeave(l, year));
+  const planInput = {
+    planningYearId: data.planningYear.id,
+    year,
+    staff: data.staff,
+    positions: data.positions,
+    positionTypes: data.positionTypes,
+    matches: data.matches,
+    leave: data.leave,
+  };
 
   return (
     <section>
@@ -110,23 +120,13 @@ function Matching({ data }: { data: PlanData }) {
                   if (puts.length) await repo.matches.putMany(puts);
                   await tidyHigherDutiesIn(repo, data.planningYear.id);
                 }}
+                secondJob={{
+                  plan: (staffId, positionId, indices, employmentType) =>
+                    planSecondJob(planInput, staffId, positionId, indices, employmentType, () => crypto.randomUUID()),
+                }}
                 higherDuties={{
                   plan: (staffId, positionId, indices) =>
-                    planHigherDuties(
-                      {
-                        planningYearId: data.planningYear.id,
-                        year,
-                        staff: data.staff,
-                        positions: data.positions,
-                        positionTypes: data.positionTypes,
-                        matches: data.matches,
-                        leave: data.leave,
-                      },
-                      staffId,
-                      positionId,
-                      indices,
-                      () => crypto.randomUUID(),
-                    ),
+                    planHigherDuties(planInput, staffId, positionId, indices, () => crypto.randomUUID()),
                   save: (plan) => saveHigherDuties(repo, plan),
                 }}
                 saveStaff={(s) => repo.staff.put(s)}
@@ -144,7 +144,8 @@ function Matching({ data }: { data: PlanData }) {
                       week; dropping a name on a position's name fills every day they're free. × removes a day. Greyed
                       tiles are on whole-year leave: drop another teacher there to backfill. Use ↑ and ↓ beside a
                       heading to move that group of positions. To put someone on higher duties, drop them on an executive
-                      position on days they're already matched: their own position opens up for a backfill.
+                      position on days they're already matched: their own position opens up for a backfill. Someone on whole-year leave can be dropped on another position on
+                      their leave days as a second job (e.g. Temporary).
                     </>
                   ),
                 }}

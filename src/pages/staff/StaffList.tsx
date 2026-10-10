@@ -65,7 +65,10 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
                     )}
                   </td>
                   <td>{EMPLOYMENT_TYPE_LABELS[s.employmentType]}</td>
-                  <td>{s.currentRole || <span className="muted">—</span>}</td>
+                  <td>
+                    {s.currentRole || <span className="muted">—</span>}
+                    {s.otherRoles?.length ? `; also ${s.otherRoles.join(', ')}` : ''}
+                  </td>
                   <td>{daysLabel(s.workPattern)}</td>
                   <td className="num">{formatFte(milliFteOf(s.workPattern))}</td>
                   <td>{describeGrades(intentionForStaff(s, data.intentions)?.gradePreferences ?? []) || <span className="muted">—</span>}</td>

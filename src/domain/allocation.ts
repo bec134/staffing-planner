@@ -6,7 +6,7 @@
  * and a role day is held by one person (leave cover aside).
  */
 import { describeDayIndices, dayIndices, intersect, subtract, union, type DayPattern } from './dayPattern';
-import type { Allocation, Id, IsoDate, Role, Staff } from './types';
+import { freedBy, type Allocation, type Id, type IsoDate, type Role, type Staff } from './types';
 
 /** Date ranges overlap; a missing date means open-ended (whole year). */
 export function datesOverlap(
@@ -29,11 +29,12 @@ const isSubstantive = (a: Allocation) => !a.coveringLeaveId;
  * (it's backfilled), so it doesn't clash with their higher-duties one.
  */
 export function clashDays(
-  a: Pick<Allocation, 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId'>,
-  b: Pick<Allocation, 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId'>,
+  a: Pick<Allocation, 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId' | 'secondJobLeaveId'>,
+  b: Pick<Allocation, 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId' | 'secondJobLeaveId'>,
 ): number[] {
-  const plain = (x: typeof a) => !x.coveringLeaveId && !x.higherDutiesLeaveId;
-  if ((a.higherDutiesLeaveId && plain(b)) || (b.higherDutiesLeaveId && plain(a))) return [];
+  // A second job on leave days doesn't clash with the position they're on leave from either.
+  const plain = (x: typeof a) => !x.coveringLeaveId && !freedBy(x);
+  if ((freedBy(a) && plain(b)) || (freedBy(b) && plain(a))) return [];
   return dayIndices(intersect(a.days, b.days));
 }
 
@@ -66,7 +67,7 @@ export function availableDays(
 
 /** Reasons an allocation can't be saved; empty when valid. */
 export function validateAllocation(
-  candidate: Pick<Allocation, 'id' | 'staffId' | 'roleId' | 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId'>,
+  candidate: Pick<Allocation, 'id' | 'staffId' | 'roleId' | 'days' | 'coveringLeaveId' | 'higherDutiesLeaveId' | 'secondJobLeaveId'>,
   staff: Staff,
   role: Role,
   allocations: Allocation[],

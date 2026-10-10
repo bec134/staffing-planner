@@ -41,6 +41,9 @@ export function RoleGrid({ data }: { data: PlanData }) {
       }}
       showAsAt
       placesHigherDuties
+      secondJobLeaveId={(staffId, day) =>
+        data.matches.find((m) => m.staffId === staffId && m.secondJobLeaveId && m.days.days[day])?.secondJobLeaveId
+      }
       words={{
         row: 'Role',
         cover: 'cover',

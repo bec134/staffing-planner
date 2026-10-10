@@ -9,7 +9,7 @@
 import { clashDays, datesOverlap } from './allocation';
 import { containsDate, intersectRange, rangesOverlap, subtractRanges } from './dates';
 import { dayIndices, describeDayIndices, intersect, subtract, union, type DayPattern } from './dayPattern';
-import type { Allocation, DateRange, Id, IsoDate, Leave, Role, Staff } from './types';
+import { freedBy, type Allocation, type DateRange, type Id, type IsoDate, type Leave, type Role, type Staff } from './types';
 
 const WHOLE_YEAR: DateRange = { start: '0000-01-01', end: '9999-12-31' };
 
@@ -36,7 +36,7 @@ export interface AffectedRole {
 export function affectedRoles(leave: Leave, allocations: Allocation[]): AffectedRole[] {
   return allocations.flatMap((a) => {
     // Higher duties: the higher-duties role itself isn't left vacant.
-    if (a.staffId !== leave.staffId || a.coveringLeaveId || a.higherDutiesLeaveId === leave.id) return [];
+    if (a.staffId !== leave.staffId || a.coveringLeaveId || freedBy(a) === leave.id) return [];
     const range = intersectRange(allocationRange(a), leaveRange(leave));
     const days = intersect(a.days, leave.daysAffected);
     return range && dayIndices(days).length ? [{ allocation: a, roleId: a.roleId, days, range }] : [];
@@ -88,6 +88,8 @@ export interface CoverCandidate {
   endDate: IsoDate;
   /** Cover given while on higher duties (see higherDuties.ts). */
   higherDutiesLeaveId?: Id;
+  /** Cover given as a second job on the coverer's own leave days (see secondJob.ts). */
+  secondJobLeaveId?: Id;
 }
 
 /** Days the coverer could take in this role over these dates. */
@@ -155,7 +157,7 @@ export function validateCover(
   if (busy.length) errors.push(`${coverer.name} already has a role on ${describeDayIndices(busy)} during these dates`);
 
   const ownLeave = leaves.filter(
-    (l) => l.staffId === coverer.id && l.id !== candidate.higherDutiesLeaveId && rangesOverlap(leaveRange(l), range),
+    (l) => l.staffId === coverer.id && l.id !== candidate.higherDutiesLeaveId && l.id !== candidate.secondJobLeaveId && rangesOverlap(leaveRange(l), range),
   );
   const away = dayIndices(intersect(candidate.days, union(ownLeave.map((l) => l.daysAffected))));
   if (away.length) errors.push(`${coverer.name} is on leave on ${describeDayIndices(away)} during these dates`);

@@ -40,6 +40,7 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
   const [employmentType, setEmploymentType] = useState<EmploymentType>(existing?.employmentType ?? 'permanent');
   const [fteText, setFteText] = useState(start?.permanentMilliFte !== undefined ? formatFte(start.permanentMilliFte) : '');
   const [role, setRole] = useState(existing?.currentRole ?? '');
+  const [otherRoles, setOtherRoles] = useState<string[]>(existing?.otherRoles ?? []);
   const [workPreference, setWorkPreference] = useState<WorkPreference>(start?.workPreference ?? 'full_time');
   const [preferredDays, setPreferredDays] = useState<DayPattern>(start?.preferredDays ?? FULL_TIME);
   const [leaveDays, setLeaveDays] = useState<DayPattern>(start?.leaveDays ?? NO_DAYS);
@@ -68,6 +69,7 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
       employmentType,
       permanentMilliFte,
       substantiveRole: role,
+      otherRoles: otherRoles.filter((r) => r !== role),
       workPreference,
       preferredDays,
       leaveDays,
@@ -142,6 +144,20 @@ export function StaffForm({ data, existing, onDone }: { data: PlanData; existing
             {oldRole && <option value={role}>{role} (not in the list)</option>}
           </select>
         </label>
+        <fieldset className="checks">
+          <legend>Also substantive in</legend>
+          <span className="muted small">For someone holding two positions, e.g. Teacher 0.6 and AP C&amp;I 0.2.</span>
+          {SUBSTANTIVE_ROLES.filter((r) => r !== role).map((r) => (
+            <label key={r}>
+              <input
+                type="checkbox"
+                checked={otherRoles.includes(r)}
+                onChange={(e) => setOtherRoles((list) => (e.target.checked ? [...list, r] : list.filter((x) => x !== r)))}
+              />{' '}
+              {r}
+            </label>
+          ))}
+        </fieldset>
         <label>
           Work preference{' '}
           <select

@@ -80,6 +80,19 @@ describe('Staff (Part 1) and roles & placement (Part 2)', () => {
     expect(screen.getAllByText(message)).toHaveLength(2); // panel and the staff page
   });
 
+  it('records a second substantive role, listed on the staff page', async () => {
+    await setupWithSample();
+    fireEvent.click(screen.getByRole('link', { name: 'Kit Ashdown' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit details' }));
+    const form = screen.getByRole('form', { name: 'Edit Kit Ashdown' });
+    const also = within(form).getByRole('group', { name: 'Also substantive in' });
+    expect(within(also).queryByLabelText('Teacher')).not.toBeInTheDocument(); // her main role
+    fireEvent.click(within(also).getByLabelText('Assistant Principal - Curriculum & Instruction'));
+    fireEvent.click(within(form).getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Teacher; also Assistant Principal - Curriculum & Instruction')).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Positions' })).getByText(/Classroom Teacher 5/)).toBeInTheDocument();
+  });
+
   it('shows Week A / Week B columns in the grid when someone works fortnightly', async () => {
     await setupWithSample('Roles & placement');
     fireEvent.click(screen.getByRole('link', { name: 'Staff grid' }));
