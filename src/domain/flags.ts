@@ -7,9 +7,9 @@
  * Part 2 (placement): staff over their FTE, unfilled roles, leave gaps, and
  * placements that don't add up to what each person was matched for.
  */
-import { datesOverlap, unfilledDays } from './allocation';
+import { clashDays, datesOverlap, unfilledDays } from './allocation';
 import { formatRange } from './dates';
-import { dayIndices, describeDayIndices, intersect, subtract } from './dayPattern';
+import { dayIndices, describeDayIndices, subtract } from './dayPattern';
 import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement';
 import { formatFte } from './fte';
 import { checkIntention, describeGrades, gradePreferenceMismatches, planApplyIntention } from './intentions';
@@ -183,7 +183,7 @@ function staffFlags(input: FlagInput): Flag[] {
         const a = allocations[i]!;
         const b = allocations[j]!;
         if (!datesOverlap(a, b)) continue;
-        const clash = dayIndices(intersect(a.days, b.days));
+        const clash = clashDays(a, b);
         if (clash.length) {
           flags.push({
             key: `double:${[a.id, b.id].sort().join('+')}`,

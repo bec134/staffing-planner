@@ -135,7 +135,7 @@ function gridTable(
         let uncoveredLeave = false;
         for (const t of view.tiles) {
           if (t.kind === 'holder') {
-            lines.push(name(t.staffId));
+            lines.push(`${name(t.staffId)}${t.allocation.higherDutiesLeaveId ? ' (higher duties)' : ''}`);
             tone ??= part === 1 ? staffById.get(t.staffId)?.employmentType : 'holder';
           } else if (t.kind === 'on-leave') {
             const when = t.partYear && t.leave ? `, ${formatRange(leaveRange(t.leave))}` : '';
@@ -263,7 +263,8 @@ function placementReport(d: PlanningYearSnapshot): Report {
     const partYear = range.start > year.start || range.end < year.end;
     const leave = a.coveringLeaveId ? d.leave.find((l) => l.id === a.coveringLeaveId) : undefined;
     const cover = a.coveringLeaveId ? ` (cover for ${leave ? (staffById.get(leave.staffId)?.name ?? 'leave') : 'leave'})` : '';
-    return `${who}: ${daysText(a.days)}${cover}${partYear ? `, ${formatRange(range)}` : ''}`;
+    const hd = a.higherDutiesLeaveId ? ' (higher duties)' : '';
+    return `${who}: ${daysText(a.days)}${cover}${hd}${partYear ? `, ${formatRange(range)}` : ''}`;
   };
   return {
     id: 'placement',

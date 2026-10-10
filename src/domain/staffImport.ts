@@ -12,7 +12,7 @@
 import { FULL_TIME, NO_DAYS, subtract, weeklyPattern, type DayPattern } from './dayPattern';
 import { parseFte } from './fte';
 import { hasPermanentFte } from './intentions';
-import { SUBSTANTIVE_ROLES, type EmploymentType, type Grade, type LeaveType, type StaffIntention, type SubstantiveRole, type WorkPreference } from './types';
+import { SUBSTANTIVE_ROLES, type EmploymentType, type Grade, type RecordedLeaveType, type StaffIntention, type SubstantiveRole, type WorkPreference } from './types';
 
 export type ColumnIndex = number | null;
 
@@ -105,7 +105,7 @@ export function parseWorkPreference(text: string): WorkPreference | null {
   return null;
 }
 
-export function parseLeaveType(text: string): LeaveType | null {
+export function parseLeaveType(text: string): RecordedLeaveType | null {
   const t = norm(text).replace(/[-_]/g, ' ');
   if (['lsl', 'long service leave', 'long service'].includes(t)) return 'lsl';
   if (['lwop', 'leave without pay', 'without pay'].includes(t)) return 'lwop';
@@ -190,7 +190,7 @@ export function parseStaffRows(rows: string[][], mapping: StaffImportMapping, ex
     if (leave === null) errors.push(`Couldn't read whole year leave days "${cell('leaveDays')}"`);
     const leaveDays = leave === null || leave === 'blank' ? NO_DAYS : leave;
 
-    let leaveType: LeaveType = 'lwop';
+    let leaveType: RecordedLeaveType = 'lwop';
     if (cell('leaveType')) {
       const parsed = parseLeaveType(cell('leaveType'));
       if (parsed) leaveType = parsed;

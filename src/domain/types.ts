@@ -103,11 +103,19 @@ export interface Leave extends Scoped {
   /** Days on leave; FTE affected is derived from this. */
   daysAffected: DayPattern;
   leaveType: LeaveType;
+  /** Higher duties only: the executive position (Part 1) the person steps up into. */
+  higherDutiesPositionId?: Id;
 }
 
-/** Leave types supplied by Bec. */
+/** Leave types supplied by Bec, which can be recorded as leave. */
 export const LEAVE_TYPES = ['lsl', 'lwop', 'maternity', 'paternity'] as const;
-export type LeaveType = (typeof LEAVE_TYPES)[number];
+/**
+ * Plus higher duties (Bec): someone relieving in a higher executive role for
+ * the whole year is away from their substantive position on those days,
+ * like leave, so it can be backfilled. Only created from Match staff.
+ */
+export type LeaveType = RecordedLeaveType | 'higher_duties';
+export type RecordedLeaveType = (typeof LEAVE_TYPES)[number];
 
 /** Short labels for tight spaces such as grid cells. */
 export const LEAVE_TYPE_SHORT: Record<LeaveType, string> = {
@@ -115,6 +123,7 @@ export const LEAVE_TYPE_SHORT: Record<LeaveType, string> = {
   lwop: 'LWOP',
   maternity: 'Maternity leave',
   paternity: 'Paternity leave',
+  higher_duties: 'Higher duties',
 };
 
 export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
@@ -122,6 +131,7 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   lwop: 'Leave without pay',
   maternity: 'Maternity Leave',
   paternity: 'Paternity Leave',
+  higher_duties: 'Higher duties',
 };
 
 /**
@@ -159,6 +169,8 @@ export interface Allocation extends Scoped {
   endDate?: IsoDate;
   /** Set when this allocation covers someone's leave. */
   coveringLeaveId?: Id;
+  /** Part 1: a higher-duties match, linked to the higher-duties "leave" from the substantive position. */
+  higherDutiesLeaveId?: Id;
 }
 
 export const GRADES = ['K', '1', '2', '3', '4', '5', '6'] as const;
@@ -239,7 +251,7 @@ export interface StaffIntention extends Scoped {
   /** Days on leave for the whole school year, if any. */
   leaveDays: DayPattern;
   /** Type of that whole-year leave. */
-  leaveType: LeaveType;
+  leaveType: RecordedLeaveType;
   /** Up to three grades, most preferred first. */
   gradePreferences: Grade[];
 }

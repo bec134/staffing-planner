@@ -35,7 +35,8 @@ export interface AffectedRole {
 /** The leave-taker's own (non-cover) allocations that the leave takes them away from. */
 export function affectedRoles(leave: Leave, allocations: Allocation[]): AffectedRole[] {
   return allocations.flatMap((a) => {
-    if (a.staffId !== leave.staffId || a.coveringLeaveId) return [];
+    // Higher duties: the higher-duties role itself isn't left vacant.
+    if (a.staffId !== leave.staffId || a.coveringLeaveId || a.higherDutiesLeaveId === leave.id) return [];
     const range = intersectRange(allocationRange(a), leaveRange(leave));
     const days = intersect(a.days, leave.daysAffected);
     return range && dayIndices(days).length ? [{ allocation: a, roleId: a.roleId, days, range }] : [];

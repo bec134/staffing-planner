@@ -21,6 +21,7 @@
 import { classGrades } from './classStructure';
 import { FORTNIGHT_DAYS, FULL_TIME, dayIndices, describeDayIndices, intersect, repeatsWeekly, subtract, union, type DayPattern } from './dayPattern';
 import { formatFte, milliFteOf } from './fte';
+import { isHigherDuties } from './higherDuties';
 import { isWholeYearLeave } from './matching';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -77,7 +78,7 @@ export const describeGrades = (grades: Grade[]) => grades.join(', ');
  * days and whole-year leave, so manual entry only needs the changes.
  */
 export function intentionFromPlan(staff: Staff, leave: Leave[], year: DateRange, newId: () => Id): StaffIntention {
-  const wholeYear = leave.filter((l) => l.staffId === staff.id && isWholeYearLeave(l, year));
+  const wholeYear = leave.filter((l) => l.staffId === staff.id && !isHigherDuties(l) && isWholeYearLeave(l, year));
   const leaveDays = withMode(union(wholeYear.map((l) => l.daysAffected)));
   const preferredDays = withMode(subtract(staff.workPattern, leaveDays));
   return {
@@ -90,7 +91,7 @@ export function intentionFromPlan(staff: Staff, leave: Leave[], year: DateRange,
     workPreference: isEmpty(leaveDays) && sameDays(staff.workPattern, FULL_TIME) ? 'full_time' : 'part_time',
     preferredDays,
     leaveDays,
-    leaveType: wholeYear[0]?.leaveType ?? 'lwop',
+    leaveType: wholeYear.map((l) => l.leaveType).find((t) => t !== 'higher_duties') ?? 'lwop',
     gradePreferences: [],
   };
 }
@@ -211,7 +212,7 @@ export function planApplyIntention(intention: StaffIntention, ctx: PlanContext, 
   const matchDelete: Id[] = [];
 
   const wholeYear = existing
-    ? ctx.leave.filter((l) => l.staffId === existing.id && isWholeYearLeave(l, ctx.year)).sort((a, b) => a.id.localeCompare(b.id))
+    ? ctx.leave.filter((l) => l.staffId === existing.id && !isHigherDuties(l) && isWholeYearLeave(l, ctx.year)).sort((a, b) => a.id.localeCompare(b.id))
     : [];
   const wanted = isEmpty(intention.leaveDays) ? undefined : withMode(intention.leaveDays);
   const [keep, ...extra] = wholeYear;

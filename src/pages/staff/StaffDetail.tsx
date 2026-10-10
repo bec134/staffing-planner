@@ -126,8 +126,10 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
         <ul>
           {leave.map((l) => (
             <li key={l.id}>
-              <Link to={leaveLink(l.id)}>{LEAVE_TYPE_LABELS[l.leaveType]}</Link>, {formatRange(leaveRange(l))} (
-              {daysLabel(l.daysAffected)})
+              <Link to={leaveLink(l.id)}>{LEAVE_TYPE_LABELS[l.leaveType]}</Link>
+              {l.leaveType === 'higher_duties' &&
+                ` as ${data.positions.find((p) => p.id === l.higherDutiesPositionId)?.name ?? 'a deleted position'}`}
+              , {formatRange(leaveRange(l))} ({daysLabel(l.daysAffected)})
             </li>
           ))}
         </ul>

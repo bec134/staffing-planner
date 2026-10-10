@@ -15,8 +15,10 @@ import {
   schoolYear,
   unmatchedDayCount,
 } from '../../domain/matching';
+import { planHigherDuties } from '../../domain/higherDuties';
 import { moveGroup } from '../../domain/positionTypes';
 import { EMPLOYMENT_TYPE_LABELS, type Staff } from '../../domain/types';
+import { saveHigherDuties, tidyHigherDutiesIn } from '../../data/higherDutiesStore';
 import { useRepository } from '../../data/RepositoryContext';
 import { usePlanData } from '../../data/usePlanData';
 import { bySortOrder, daysLabel, type PlanData } from '../allocation/shared';
@@ -106,6 +108,26 @@ function Matching({ data }: { data: PlanData }) {
                 write={async (puts, deletes) => {
                   if (deletes.length) await repo.matches.deleteMany(deletes);
                   if (puts.length) await repo.matches.putMany(puts);
+                  await tidyHigherDutiesIn(repo, data.planningYear.id);
+                }}
+                higherDuties={{
+                  plan: (staffId, positionId, indices) =>
+                    planHigherDuties(
+                      {
+                        planningYearId: data.planningYear.id,
+                        year,
+                        staff: data.staff,
+                        positions: data.positions,
+                        positionTypes: data.positionTypes,
+                        matches: data.matches,
+                        leave: data.leave,
+                      },
+                      staffId,
+                      positionId,
+                      indices,
+                      () => crypto.randomUUID(),
+                    ),
+                  save: (plan) => saveHigherDuties(repo, plan),
                 }}
                 saveStaff={(s) => repo.staff.put(s)}
                 fillsWeek={(s) => fteOf(s.workPattern) === 1}
@@ -121,7 +143,8 @@ function Matching({ data }: { data: PlanData }) {
                       Drag a name onto a position and day, or use <strong>+</strong>. A full-time teacher fills the whole
                       week; dropping a name on a position's name fills every day they're free. × removes a day. Greyed
                       tiles are on whole-year leave: drop another teacher there to backfill. Use ↑ and ↓ beside a
-                      heading to move that group of positions.
+                      heading to move that group of positions. To put someone on higher duties, drop them on an executive
+                      position on days they're already matched: their own position opens up for a backfill.
                     </>
                   ),
                 }}
@@ -154,6 +177,7 @@ function Positions({ data }: { data: PlanData }) {
     await repo.positions.put(p);
     if (change?.matchDelete.length) await repo.matches.deleteMany(change.matchDelete);
     if (change?.matchPut.length) await repo.matches.putMany(change.matchPut);
+    await tidyHigherDutiesIn(repo, data.planningYear.id);
   };
 
   return (
@@ -223,7 +247,10 @@ function Positions({ data }: { data: PlanData }) {
                     onClick={() => {
                       const matched = data.matches.filter((m) => m.roleId === p.id);
                       if (!confirm(`Delete ${p.name}?${matched.length ? ` Its ${matched.length} match(es) will be removed.` : ''}`)) return;
-                      void repo.matches.deleteMany(matched.map((m) => m.id)).then(() => repo.positions.delete(p.id));
+                      void repo.matches
+                        .deleteMany(matched.map((m) => m.id))
+                        .then(() => repo.positions.delete(p.id))
+                        .then(() => tidyHigherDutiesIn(repo, data.planningYear.id));
                     }}
                   >
                     Delete
@@ -270,6 +297,7 @@ function Unmatched({ data }: { data: PlanData }) {
     if (matched.length && !confirm(`${s.name} has ${matched.length} match(es); they will be removed.`)) return;
     await repo.matches.deleteMany(matched.map((m) => m.id));
     await repo.staff.put({ ...s, nominatedForTransfer: true, transferNotes: notes.trim() });
+    await tidyHigherDutiesIn(repo, data.planningYear.id);
     setNominating(null);
     setNotes('');
   };
