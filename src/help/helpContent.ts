@@ -233,6 +233,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Go to **Match staff**.',
           'Click **Create positions from entitlement**. If the entitlement grows later, click **Add missing positions**.',
           'To change which days a part position runs (for example a 0.2 position from Monday to Thursday), open **Positions** below the grid, click **Edit**, change the days and click **Save changes**. Anyone matched moves with it; if someone can\'t (for example they don\'t work the new day), you\'re told before anything changes. **Add position** adds one by hand.',
+          'To split a position (for example a 1.0 Classroom Teacher into 0.4 + 0.4 + 0.2), open **Positions**, click **Split**, use **Add a part** until there are enough parts, choose which part each day goes to, and click **Split position**. Part 1 keeps the name; the others become new positions, and anyone matched moves with their days.',
           'To change the order of the grid (for example Deputy Principal above Classroom Teacher), use the ↑ and ↓ beside a group heading. The same order is used on the Entitlement page and in Part 2.',
         ],
       },

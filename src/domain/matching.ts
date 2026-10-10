@@ -239,3 +239,74 @@ export function matchesOutsidePosition(positions: EntitlementPosition[], matches
     return position && off.length ? [{ match: m, position, days: off }] : [];
   });
 }
+
+export interface PositionSplit {
+  /** The original position (now part 1's days) and the new positions. */
+  positionPut: EntitlementPosition[];
+  matchPut: EntitlementMatch[];
+  messages: string[];
+}
+
+/**
+ * Split a position into parts (Bec: e.g. a 1.0 position into 0.4 + 0.4 +
+ * 0.2). Every day of the position goes to exactly one part. Part 1 stays as
+ * the original position; the others become new positions of the same type,
+ * named after the type. Matches follow their days to the part that now has
+ * them, so nobody loses a day. Returns an error message if the parts don't
+ * divide the position's days.
+ */
+export function planSplitPosition(
+  position: EntitlementPosition,
+  parts: DayPattern[],
+  positions: EntitlementPosition[],
+  matches: EntitlementMatch[],
+  staff: Staff[],
+  typeName: string,
+  newId: () => Id,
+): PositionSplit | string {
+  const own = dayIndices(position.days);
+  const partDays = parts.map((p) => dayIndices(p));
+  if (parts.length < 2 || partDays.some((d) => d.length === 0)) return 'Give each part at least one day';
+  const all = partDays.flat();
+  if (all.length !== new Set(all).size) return 'A day can only be in one part';
+  if (all.length !== own.length || all.some((d) => !position.days.days[d])) return "Every day of the position must go to one part";
+
+  const sameType = positions.filter((p) => p.positionTypeId === position.positionTypeId);
+  const taken = new Set(positions.map((p) => p.name.trim().toLowerCase()));
+  let number = sameType.length;
+  const nextName = () => {
+    let candidate: string;
+    do candidate = `${typeName} ${++number}`;
+    while (taken.has(candidate.toLowerCase()));
+    taken.add(candidate.toLowerCase());
+    return candidate;
+  };
+  let order = Math.max(...positions.map((p) => p.sortOrder));
+  const created = parts.slice(1).map((days) => ({
+    ...position,
+    id: newId(),
+    name: nextName(),
+    days: withMode([...days.days]),
+    sortOrder: ++order,
+  }));
+  const out: PositionSplit = {
+    positionPut: [{ ...position, days: withMode([...parts[0]!.days]) }, ...created],
+    matchPut: [],
+    messages: [],
+  };
+  const name = (id: Id) => staff.find((s) => s.id === id)?.name ?? 'A deleted staff member';
+  const targets = [position, ...created];
+  for (const m of matches.filter((x) => x.roleId === position.id)) {
+    targets.forEach((target, i) => {
+      const days = m.days.days.map((d, n) => d && parts[i]!.days[n] === true);
+      if (!days.some(Boolean)) return;
+      if (i === 0) {
+        if (days.some((d, n) => d !== m.days.days[n])) out.matchPut.push({ ...m, days: withMode(days) });
+      } else {
+        out.matchPut.push({ ...m, id: newId(), roleId: target.id, days: withMode(days) });
+        out.messages.push(`${name(m.staffId)}: ${describeDayIndices(dayIndices(withMode(days)))} moves to ${target.name}`);
+      }
+    });
+  }
+  return out;
+}

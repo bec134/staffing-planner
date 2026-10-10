@@ -192,3 +192,30 @@ describe('Changing the days a position runs', () => {
     expect(await within(cell('Executive Release Teacher 1', 'Thu')).findByText('Pat Example')).toBeInTheDocument();
   });
 });
+
+describe('Splitting a position', () => {
+  it('splits a 1.0 position into 0.4 + 0.4 + 0.2, with the matched person following their days', async () => {
+    const repo = await setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(screen.getByText(/^Positions \(/));
+    const row = screen.getByText('Classroom Teacher 5', { selector: 'td' }).closest('tr')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Split' }));
+    const form = screen.getByRole('group', { name: 'Split Classroom Teacher 5' });
+    fireEvent.click(within(form).getByRole('button', { name: 'Add a part' }));
+    for (const [day, part] of [['Wed', 2], ['Thu', 2], ['Fri', 3]] as const) {
+      fireEvent.click(within(form).getByLabelText(`${day} in part ${part}`));
+    }
+    fireEvent.click(within(form).getByRole('button', { name: 'Split position' }));
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Kit Ashdown: Fri moves to Classroom Teacher 8')));
+    await waitFor(async () => {
+      const positions = (await repo.positions.listByYear(Y)).filter((p) => /^Classroom Teacher [578]$/.test(p.name));
+      expect(positions.map((p) => [p.name, describePattern(p.days)]).sort()).toEqual([
+        ['Classroom Teacher 5', 'Mon, Tue'],
+        ['Classroom Teacher 7', 'Wed, Thu'],
+        ['Classroom Teacher 8', 'Fri'],
+      ]);
+    });
+    expect(await within(await screen.findByTestId('match-cell-Classroom Teacher 8-Fri')).findByText('Kit Ashdown')).toBeInTheDocument();
+  });
+});

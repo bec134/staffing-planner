@@ -327,3 +327,6 @@ table.intentions td.actions { white-space: nowrap; }
 
 .group-row .group-move { margin-left: 8px; font-weight: normal; }
 .group-row .group-move button { padding: 0 6px; }
+
+.split-table { width: auto; }
+.split-table td, .split-table th { text-align: center; padding: 4px 12px; }

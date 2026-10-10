@@ -22,6 +22,7 @@ import { usePlanData } from '../../data/usePlanData';
 import { bySortOrder, daysLabel, type PlanData } from '../allocation/shared';
 import { RoleForm } from '../allocation/RoleForm';
 import { EntitlementDashboard } from '../entitlement/EntitlementDashboard';
+import { SplitPosition } from './SplitPosition';
 
 /**
  * Part 1 (Bec): match staff against the entitlement by day — permanent,
@@ -140,6 +141,7 @@ function Matching({ data }: { data: PlanData }) {
 function Positions({ data }: { data: PlanData }) {
   const repo = useRepository();
   const [editing, setEditing] = useState<string | null>(null);
+  const [splitting, setSplitting] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const types = [...data.positionTypes].sort(bySortOrder);
   const typeName = new Map(types.map((t) => [t.id, t.name]));
@@ -158,7 +160,8 @@ function Positions({ data }: { data: PlanData }) {
     <details className="rules">
       <summary>Positions ({positions.length})</summary>
       <p className="muted small">
-        Change which days a part position runs (anyone matched moves with it), or add and remove positions.
+        Change which days a position runs (anyone matched moves with it), split a position into parts (e.g. 1.0 into 0.4 +
+        0.4 + 0.2), or add and remove positions.
       </p>
       <table>
         <thead>
@@ -172,7 +175,18 @@ function Positions({ data }: { data: PlanData }) {
         </thead>
         <tbody>
           {positions.map((p) =>
-            editing === p.id ? (
+            splitting === p.id ? (
+              <tr key={p.id}>
+                <td colSpan={5}>
+                  <SplitPosition
+                    data={data}
+                    position={p}
+                    typeName={typeName.get(p.positionTypeId) ?? 'Position'}
+                    onDone={() => setSplitting(null)}
+                  />
+                </td>
+              </tr>
+            ) : editing === p.id ? (
               <tr key={p.id}>
                 <td colSpan={5}>
                   <RoleForm
@@ -197,6 +211,13 @@ function Positions({ data }: { data: PlanData }) {
                   <button className="secondary" onClick={() => setEditing(p.id)}>
                     Edit
                   </button>{' '}
+                  {dayIndices(p.days).length > 1 && (
+                    <>
+                      <button className="secondary" onClick={() => setSplitting(p.id)}>
+                        Split
+                      </button>{' '}
+                    </>
+                  )}
                   <button
                     className="danger"
                     onClick={() => {
