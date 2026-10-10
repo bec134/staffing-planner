@@ -232,7 +232,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           'Go to **Match staff**.',
           'Click **Create positions from entitlement**. If the entitlement grows later, click **Add missing positions**.',
-          'To change which days a part position runs, open **Positions** below the grid and click **Edit**. **Add position** adds one by hand.',
+          'To change which days a part position runs (for example a 0.2 position from Monday to Thursday), open **Positions** below the grid, click **Edit**, change the days and click **Save changes**. Anyone matched moves with it; if someone can\'t (for example they don\'t work the new day), you\'re told before anything changes. **Add position** adds one by hand.',
           'To change the order of the grid (for example Deputy Principal above Classroom Teacher), use the ↑ and ↓ beside a group heading. The same order is used on the Entitlement page and in Part 2.',
         ],
       },
@@ -452,6 +452,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           '**Under or over the entitlement**: matched FTE differs from the entitlement for a position type or in total. Match more staff, or check the entitlement. Under is only flagged from 0.1 FTE.',
           '**Not matched to the entitlement**: a permanent or TWT staff member has days not matched. Match them, or nominate them for transfer.',
           '**Temporary staff matched while permanent or TWT staff are unmatched**: match permanent and TWT staff first.',
+          "**Matched on a day the position doesn't run**: change the position's days back, or move the person on Match staff.",
         ],
       },
       {

@@ -10,6 +10,7 @@ import {
   MATCH_ORDER,
   isWholeYearLeave,
   matchStatus,
+  planPositionDaysChange,
   positionsToCreate,
   schoolYear,
   unmatchedDayCount,
@@ -143,12 +144,22 @@ function Positions({ data }: { data: PlanData }) {
   const types = [...data.positionTypes].sort(bySortOrder);
   const typeName = new Map(types.map((t) => [t.id, t.name]));
   const positions = [...data.positions].sort(bySortOrder);
-  const save = (p: (typeof positions)[number]) => repo.positions.put(p);
+  const save = async (p: (typeof positions)[number]) => {
+    // Matched people move with the position's days (e.g. Monday → Thursday).
+    const before = data.positions.find((x) => x.id === p.id);
+    const change = before ? planPositionDaysChange(before, p.days, data.matches, data.staff) : undefined;
+    if (change?.messages.length && !confirm(`Change the days ${p.name} runs?\n\n${change.messages.join('\n')}`)) return false;
+    await repo.positions.put(p);
+    if (change?.matchDelete.length) await repo.matches.deleteMany(change.matchDelete);
+    if (change?.matchPut.length) await repo.matches.putMany(change.matchPut);
+  };
 
   return (
     <details className="rules">
       <summary>Positions ({positions.length})</summary>
-      <p className="muted small">Change which days a part position runs, or add and remove positions.</p>
+      <p className="muted small">
+        Change which days a part position runs (anyone matched moves with it), or add and remove positions.
+      </p>
       <table>
         <thead>
           <tr>

@@ -11,8 +11,8 @@ interface Props {
   otherNames: string[];
   nextSortOrder: number;
   onDone(saved?: Role): void;
-  /** Where to save; defaults to Part 2 roles. Part 1 positions pass their own. */
-  save?(role: Role): Promise<void>;
+  /** Where to save; defaults to Part 2 roles. Part 1 positions pass their own. Return false to stay on the form. */
+  save?(role: Role): Promise<boolean | void>;
   /** "role" (Part 2) or "position" (Part 1). */
   noun?: string;
 }
@@ -48,8 +48,8 @@ export function RoleForm({ planningYearId, positionTypes, existing, otherNames, 
     };
     setSaving(true);
     try {
-      await (saveTo ? saveTo(role) : repo.roles.put(role));
-      onDone(role);
+      const saved = await (saveTo ? saveTo(role) : repo.roles.put(role));
+      if (saved !== false) onDone(role);
     } finally {
       setSaving(false);
     }
