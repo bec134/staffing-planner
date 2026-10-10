@@ -15,7 +15,7 @@
  */
 import { dayIndices, describeDayIndices, FORTNIGHT_DAYS, repeatsWeekly, WEEKDAYS, subtract, union, type DayPattern } from './dayPattern';
 import { yearRange } from './dates';
-import { milliFteOf, type MilliFte } from './fte';
+import { formatFte, milliFteOf, type MilliFte } from './fte';
 import type {
   Allocation,
   DateRange,
@@ -238,4 +238,96 @@ export function matchesOutsidePosition(positions: EntitlementPosition[], matches
     const off = position ? dayIndices(subtract(m.days, position.days)) : [];
     return position && off.length ? [{ match: m, position, days: off }] : [];
   });
+}
+
+export interface PositionSplit {
+  /** The original position (now part 1's days) and the new positions. */
+  positionPut: EntitlementPosition[];
+  matchPut: EntitlementMatch[];
+  matchDelete: Id[];
+  messages: string[];
+}
+
+/**
+ * Split a position into parts (Bec: e.g. a 1.0 position into 0.4 + 0.4 +
+ * 0.2). Each part has its own days, which may overlap (two 0.4 parts both
+ * on Wed–Thu), as long as the parts add up to the position's FTE. Part 1
+ * stays as the original position; the others become new positions of the
+ * same type, named after the type. Matched people follow their days: each
+ * day goes to the first part that has it and is still free that day, and a
+ * day no part has (or with no room left) comes off their match, with a
+ * message. Returns an error message if the parts don't add up.
+ */
+export function planSplitPosition(
+  position: EntitlementPosition,
+  parts: DayPattern[],
+  positions: EntitlementPosition[],
+  matches: EntitlementMatch[],
+  staff: Staff[],
+  typeName: string,
+  newId: () => Id,
+): PositionSplit | string {
+  if (parts.length < 2 || parts.some((p) => dayIndices(p).length === 0)) return 'Give each part at least one day';
+  const total = parts.reduce((sum, p) => sum + milliFteOf(p), 0);
+  const whole = milliFteOf(position.days);
+  if (total !== whole) return `The parts add up to ${formatFte(total)} FTE, but ${position.name} is ${formatFte(whole)} FTE`;
+
+  const sameType = positions.filter((p) => p.positionTypeId === position.positionTypeId);
+  const taken = new Set(positions.map((p) => p.name.trim().toLowerCase()));
+  let number = sameType.length;
+  const nextName = () => {
+    let candidate: string;
+    do candidate = `${typeName} ${++number}`;
+    while (taken.has(candidate.toLowerCase()));
+    taken.add(candidate.toLowerCase());
+    return candidate;
+  };
+  let order = Math.max(...positions.map((p) => p.sortOrder));
+  const created = parts.slice(1).map((days) => ({
+    ...position,
+    id: newId(),
+    name: nextName(),
+    days: withMode([...days.days]),
+    sortOrder: ++order,
+  }));
+  const targets = [position, ...created];
+  const out: PositionSplit = {
+    positionPut: [{ ...position, days: withMode([...parts[0]!.days]) }, ...created],
+    matchPut: [],
+    matchDelete: [],
+    messages: [],
+  };
+  const name = (id: Id) => staff.find((s) => s.id === id)?.name ?? 'A deleted staff member';
+  // Who already has each part's day: holders and backfills separately, as a
+  // backfill shares a day with the holder on leave.
+  const used = new Set<string>();
+  const key = (part: number, day: number, backfill: boolean) => `${part}:${day}:${backfill}`;
+
+  for (const m of matches.filter((x) => x.roleId === position.id)) {
+    const backfill = !!m.coveringLeaveId;
+    const perPart = parts.map(() => Array<boolean>(FORTNIGHT_DAYS).fill(false));
+    const lost: number[] = [];
+    for (const d of dayIndices(m.days)) {
+      const part = parts.findIndex((p, i) => p.days[d] && !used.has(key(i, d, backfill)));
+      if (part < 0) {
+        lost.push(d);
+        continue;
+      }
+      used.add(key(part, d, backfill));
+      perPart[part]![d] = true;
+    }
+    perPart.forEach((days, i) => {
+      if (i === 0) {
+        if (!days.some(Boolean)) out.matchDelete.push(m.id);
+        else if (days.some((d, n) => d !== m.days.days[n])) out.matchPut.push({ ...m, days: withMode(days) });
+      } else if (days.some(Boolean)) {
+        out.matchPut.push({ ...m, id: newId(), roleId: targets[i]!.id, days: withMode(days) });
+        out.messages.push(`${name(m.staffId)}: ${describeDayIndices(dayIndices(withMode(days)))} moves to ${targets[i]!.name}`);
+      }
+    });
+    if (lost.length) {
+      out.messages.push(`${name(m.staffId)} is taken off ${describeDayIndices(lost)}: no part has room for them then`);
+    }
+  }
+  return out;
 }

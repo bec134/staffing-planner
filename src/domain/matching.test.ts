@@ -8,6 +8,7 @@ import {
   matchStatus,
   patternForFortnightDays,
   planPositionDaysChange,
+  planSplitPosition,
   positionsToCreate,
   schoolYear,
   wholeYearPlacedMilli,
@@ -206,5 +207,45 @@ describe('changing the days a position runs', () => {
     expect(computeFlags(flagInputFrom(s)).map((f) => f.message)).toContain(
       "Oak Delaney is matched to EaLD Teacher 1 on Mon, but the position doesn't run then",
     );
+  });
+});
+
+describe('splitting a position', () => {
+  const s = sample();
+  const ct = s.positions.find((p) => p.name === 'Classroom Teacher 5')!; // Kit, Mon–Fri
+  const split = (parts: ReturnType<typeof weekdays>[]) =>
+    planSplitPosition(ct, parts, s.positions, s.matches, s.staff, 'Classroom Teacher', newId);
+
+  it('splits 1.0 into 0.4 + 0.4 + 0.2, and the person follows their days', () => {
+    const result = split([weekdays('Mon', 'Tue'), weekdays('Wed', 'Thu'), weekdays('Fri')]);
+    if (typeof result === 'string') throw new Error(result);
+    expect(result.positionPut.map((p) => [p.name, describePattern(p.days)])).toEqual([
+      ['Classroom Teacher 5', 'Mon, Tue'],
+      ['Classroom Teacher 7', 'Wed, Thu'],
+      ['Classroom Teacher 8', 'Fri'],
+    ]);
+    const kit = s.staff.find((x) => x.name === 'Kit Ashdown')!.id;
+    expect(result.matchPut.filter((m) => m.staffId === kit).map((m) => describePattern(m.days))).toEqual(['Mon, Tue', 'Wed, Thu', 'Fri']);
+    expect(result.messages).toEqual(['Kit Ashdown: Wed, Thu moves to Classroom Teacher 7', 'Kit Ashdown: Fri moves to Classroom Teacher 8']);
+  });
+
+  it('allows parts to overlap, e.g. 1.0 into 0.4 (Wed–Thu) + 0.4 (Wed–Thu) + 0.2 (Fri)', () => {
+    const result = split([weekdays('Wed', 'Thu'), weekdays('Wed', 'Thu'), weekdays('Fri')]);
+    if (typeof result === 'string') throw new Error(result);
+    expect(result.positionPut.map((p) => [p.name, describePattern(p.days)])).toEqual([
+      ['Classroom Teacher 5', 'Wed, Thu'],
+      ['Classroom Teacher 7', 'Wed, Thu'],
+      ['Classroom Teacher 8', 'Fri'],
+    ]);
+    // Kit keeps Wed–Thu in part 1, Fri goes to part 3, and Mon–Tue are in no part.
+    expect(result.messages).toEqual([
+      'Kit Ashdown: Fri moves to Classroom Teacher 8',
+      'Kit Ashdown is taken off Mon, Tue: no part has room for them then',
+    ]);
+  });
+
+  it('needs each part to have a day, and the parts to add up to the position', () => {
+    expect(split([weekdays('Mon', 'Tue'), weekdays('Wed')])).toBe('The parts add up to 0.6 FTE, but Classroom Teacher 5 is 1.0 FTE');
+    expect(split([weekdays('Mon', 'Tue', 'Wed', 'Thu', 'Fri')])).toBe('Give each part at least one day');
   });
 });

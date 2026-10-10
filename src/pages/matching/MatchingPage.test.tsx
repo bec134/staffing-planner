@@ -192,3 +192,33 @@ describe('Changing the days a position runs', () => {
     expect(await within(cell('Executive Release Teacher 1', 'Thu')).findByText('Pat Example')).toBeInTheDocument();
   });
 });
+
+describe('Splitting a position', () => {
+  it('splits a 1.0 position into 0.4 + 0.4 + 0.2, with the matched person following their days', async () => {
+    const repo = await setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(screen.getByText(/^Positions \(/));
+    const row = screen.getByText('Classroom Teacher 5', { selector: 'td' }).closest('tr')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Split' }));
+    const form = screen.getByRole('group', { name: 'Split Classroom Teacher 5' });
+    fireEvent.click(within(form).getByRole('button', { name: 'Add a part' }));
+    const part = (n: number) => within(form).getByRole('group', { name: `Part ${n}` });
+    // Part 1 keeps Mon, Tue; part 2 gets Wed, Thu; part 3 gets Fri.
+    for (const day of ['Wed', 'Thu', 'Fri']) fireEvent.click(within(part(1)).getByLabelText(day));
+    for (const day of ['Wed', 'Thu']) fireEvent.click(within(part(2)).getByLabelText(day));
+    fireEvent.click(within(part(3)).getByLabelText('Fri'));
+    expect(within(form).getByRole('status', { name: 'Split check' })).toHaveTextContent('Parts add up to 1.0 of 1.0 FTE.');
+    fireEvent.click(within(form).getByRole('button', { name: 'Split position' }));
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Kit Ashdown: Fri moves to Classroom Teacher 8')));
+    await waitFor(async () => {
+      const positions = (await repo.positions.listByYear(Y)).filter((p) => /^Classroom Teacher [578]$/.test(p.name));
+      expect(positions.map((p) => [p.name, describePattern(p.days)]).sort()).toEqual([
+        ['Classroom Teacher 5', 'Mon, Tue'],
+        ['Classroom Teacher 7', 'Wed, Thu'],
+        ['Classroom Teacher 8', 'Fri'],
+      ]);
+    });
+    expect(await within(await screen.findByTestId('match-cell-Classroom Teacher 8-Fri')).findByText('Kit Ashdown')).toBeInTheDocument();
+  });
+});
