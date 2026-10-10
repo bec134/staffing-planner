@@ -78,4 +78,23 @@ describe('Entitlement page', () => {
     expect(screen.getByText('A position type with this name already exists')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
   });
+
+  it('includes Part-time Teacher and School Counsellor, and adds them to older plans', async () => {
+    const repo = await setup();
+    expect(screen.getByLabelText('Part-time Teacher')).toBeInTheDocument();
+    expect(screen.getByLabelText('School Counsellor')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add standard position types' })).toBeNull();
+
+    // A plan made before they were standard.
+    const year = (await repo.planningYears.list())[0]!;
+    const older = (await repo.positionTypes.listByYear(year.id)).filter((p) => ['Part-time Teacher', 'School Counsellor'].includes(p.name));
+    await repo.positionTypes.deleteMany(older.map((p) => p.id));
+    fireEvent.click(screen.getByRole('link', { name: 'Overview' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Entitlement' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add standard position types' }));
+    expect(await screen.findByLabelText('School Counsellor')).toBeInTheDocument();
+    expect((await repo.positionTypes.listByYear(year.id)).find((p) => p.name === 'Part-time Teacher')).toMatchObject({
+      category: 'other_teaching',
+    });
+  });
 });

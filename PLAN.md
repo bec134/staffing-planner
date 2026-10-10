@@ -196,7 +196,7 @@ Each phase ends with unit tests for its logic and a short manual test checklist.
 These details weren't assumed; Claude Code should ask for them, or use placeholders, until they're supplied.
 
 - [x] Confirm that storing staff names in the browser and in exported files is permitted. *Bec: fine as long as no data is stored on a server beyond the session.*
-- [x] List of position types used in the entitlement breakdown. *Supplied: Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher. Categories: class teacher (Classroom Teacher), executive (APs, DP), other teaching (the rest).*
+- [x] List of position types used in the entitlement breakdown. *Supplied: Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher; Part-time Teacher; School Counsellor (the last two added later, as other teaching). Categories: class teacher (Classroom Teacher), executive (APs, DP), other teaching (the rest).*
 - [x] List of other teaching roles to allocate (release, support, etc.). *Same list as the position types.*
 - [x] Class structure rules: max class size per grade, permitted composite combinations, how classroom/teacher limits apply. *Supplied: see module 4 (guides K 20, Y1 22, Y2 24, Y3–6 30; 1–2 over allowed; composites 1/2, 3/4, 5/6; 1/2 composite guide 22; user sets total classes).*
 - [x] Fields captured for staff intentions. *Supplied (see module 5); CSV upload or manual entry instead of a form.*
