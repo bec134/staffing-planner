@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App } from '../../App';
-import { FULL_TIME } from '../../domain/dayPattern';
+import { FULL_TIME, describePattern, weekdays } from '../../domain/dayPattern';
 import { createDexieRepository } from '../../data/dexieRepository';
 import { RepositoryProvider } from '../../data/RepositoryContext';
 
@@ -147,5 +147,48 @@ describe('Part 1: Match staff', () => {
     expect(screen.getByRole('button', { name: 'Move Principal up' })).toBeDisabled();
     const types = (await repo.positionTypes.listByYear(Y)).sort((a, b) => a.sortOrder - b.sortOrder);
     expect(types.slice(0, 3).map((t) => t.name)).toEqual(['Principal', 'Deputy Principal', 'Classroom Teacher']);
+  });
+});
+
+describe('Changing the days a position runs', () => {
+  it('moves the matched person with it, after asking', async () => {
+    window.location.hash = '';
+    const repo = createDexieRepository(`matching-days-${n++}`);
+    render(
+      <RepositoryProvider repository={repo}>
+        <App />
+      </RepositoryProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /load fictional sample plan/i }));
+    await screen.findByText('Morgan Pike');
+    // Pat works Mon, Thu and Fri, and is matched to Executive Release Teacher 1 on Monday.
+    const exec = (await repo.positions.listByYear(Y)).find((p) => p.name === 'Executive Release Teacher 1')!;
+    await act(async () => {
+      await repo.staff.put({
+        id: 'pat',
+        planningYearId: Y,
+        name: 'Pat Example',
+        workPattern: weekdays('Mon', 'Thu', 'Fri'),
+        currentRole: 'Teacher',
+        employmentType: 'permanent',
+        preferences: '',
+      });
+      await repo.matches.put({ id: 'pat-m', planningYearId: Y, staffId: 'pat', roleId: exec.id, days: weekdays('Mon') });
+    });
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(screen.getByRole('link', { name: 'Match staff' }));
+    await screen.findByTestId('match-cell-Executive Release Teacher 1-Mon');
+
+    fireEvent.click(screen.getByText(/^Positions \(/));
+    const row = screen.getByText('Executive Release Teacher 1', { selector: 'td' }).closest('tr')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Edit' }));
+    const form = screen.getByRole('form', { name: 'Edit Executive Release Teacher 1' });
+    fireEvent.click(within(form).getByLabelText('Mon'));
+    fireEvent.click(within(form).getByLabelText('Thu'));
+    fireEvent.click(within(form).getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Pat Example moves from Mon to Thu')));
+    await waitFor(async () => expect(describePattern((await repo.matches.get('pat-m'))!.days)).toBe('Thu'));
+    expect(await within(cell('Executive Release Teacher 1', 'Thu')).findByText('Pat Example')).toBeInTheDocument();
   });
 });

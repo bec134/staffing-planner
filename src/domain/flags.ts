@@ -14,7 +14,7 @@ import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement
 import { formatFte } from './fte';
 import { checkIntention, describeGrades, gradePreferenceMismatches, planApplyIntention } from './intentions';
 import { coverGaps } from './leave';
-import { MATCH_ORDER, matchStatus, schoolYear, unmatchedDayCount, wholeYearPlacedMilli } from './matching';
+import { MATCH_ORDER, matchesOutsidePosition, matchStatus, schoolYear, unmatchedDayCount, wholeYearPlacedMilli } from './matching';
 import {
   EMPLOYMENT_TYPE_LABELS,
   LEAVE_TYPE_LABELS,
@@ -43,6 +43,7 @@ export type FlagKind =
   | 'leave_gap'
   | 'unmatched_staff'
   | 'temporary_before_permanent'
+  | 'outside_position_days'
   | 'placement_mismatch'
   | 'intention_not_applied'
   | 'intention_check'
@@ -243,6 +244,15 @@ function matchingFlags(input: FlagInput): Flag[] {
       key: `unmatched:${st.staff.id}`,
       kind: 'unmatched_staff',
       message: `${st.staff.name} (${EMPLOYMENT_TYPE_LABELS[st.staff.employmentType]}) has ${formatFte(left)} FTE not matched to the entitlement (${describeDayIndices(dayIndices(st.unmatched))}): match them or nominate for transfer`,
+      link: MATCHING_LINK,
+    });
+  }
+  for (const { match, position, days } of matchesOutsidePosition(input.positions, input.matches)) {
+    const who = input.staff.find((x) => x.id === match.staffId)?.name ?? 'A deleted staff member';
+    flags.push({
+      key: `outside-position:${match.id}`,
+      kind: 'outside_position_days',
+      message: `${who} is matched to ${position.name} on ${describeDayIndices(days)}, but the position doesn't run then`,
       link: MATCHING_LINK,
     });
   }

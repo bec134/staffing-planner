@@ -13,7 +13,7 @@
  * by each person's total FTE, so someone matched to RFF can still be placed
  * on a class.
  */
-import { dayIndices, FORTNIGHT_DAYS, WEEKDAYS, subtract, union, type DayPattern } from './dayPattern';
+import { dayIndices, describeDayIndices, FORTNIGHT_DAYS, repeatsWeekly, WEEKDAYS, subtract, union, type DayPattern } from './dayPattern';
 import { yearRange } from './dates';
 import { milliFteOf, type MilliFte } from './fte';
 import type {
@@ -139,3 +139,103 @@ export const isMatched = (staff: Staff, matches: EntitlementMatch[]) =>
   !staff.nominatedForTransfer && matches.some((m) => m.staffId === staff.id);
 
 export const unmatchedDayCount = (s: MatchStatus) => dayIndices(s.unmatched).length;
+
+export interface PositionDaysChange {
+  matchPut: EntitlementMatch[];
+  matchDelete: Id[];
+  /** What happens to each person's matched days, for confirming first. */
+  messages: string[];
+}
+
+const withMode = (days: boolean[]): DayPattern => {
+  const p: DayPattern = { mode: 'weekly', days };
+  return { mode: repeatsWeekly(p) ? 'weekly' : 'fortnightly', days };
+};
+
+/**
+ * Changing the days a position runs (Bec: e.g. a 0.2 position from Monday
+ * to Thursday). People matched on a day the position no longer runs move
+ * with it to a newly added day, pairing removed and added days in order
+ * (so Mon → Thu in both weeks). A day is only moved if the person works
+ * it, isn't matched elsewhere then, and no one else holds the position
+ * then; otherwise it's taken off their match, with a message saying why.
+ * Backfills follow the leave they cover, so they aren't moved.
+ */
+export function planPositionDaysChange(
+  position: EntitlementPosition,
+  newDays: DayPattern,
+  matches: EntitlementMatch[],
+  staff: Staff[],
+): PositionDaysChange {
+  const removed = dayIndices(subtract(position.days, newDays));
+  const added = dayIndices(subtract(newDays, position.days));
+  const out: PositionDaysChange = { matchPut: [], matchDelete: [], messages: [] };
+  if (!removed.length) return out;
+  const target = new Map(removed.map((d, n) => [d, added[n]]));
+  const name = (id: Id) => staff.find((s) => s.id === id)?.name ?? 'A deleted staff member';
+  const here = matches.filter((m) => m.roleId === position.id);
+  // Days of the position already taken, as moves are planned.
+  const taken = new Set(here.filter((m) => !m.coveringLeaveId).flatMap((m) => dayIndices(m.days).filter((d) => !removed.includes(d))));
+
+  for (const m of here) {
+    const off = removed.filter((d) => m.days.days[d]);
+    if (!off.length) continue;
+    const days = [...m.days.days];
+    const moved: number[] = [];
+    // Days that can't move, grouped by reason so Week A and B read as one.
+    type Reason = 'backfill' | 'none' | 'notWorking' | 'busy' | 'taken';
+    const dropped = new Map<Reason, { days: number[]; to: number[] }>();
+    const drop = (reason: Reason, day: number, to?: number) => {
+      const entry = dropped.get(reason) ?? { days: [], to: [] };
+      entry.days.push(day);
+      if (to !== undefined) entry.to.push(to);
+      dropped.set(reason, entry);
+    };
+    const person = staff.find((s) => s.id === m.staffId);
+    const busy = union(matches.filter((x) => x.staffId === m.staffId && x.id !== m.id).map((x) => x.days));
+    for (const d of off) {
+      days[d] = false;
+      const to = target.get(d);
+      if (m.coveringLeaveId) drop('backfill', d);
+      else if (to === undefined) drop('none', d);
+      else if (!person?.workPattern.days[to]) drop('notWorking', d, to);
+      else if (busy.days[to]) drop('busy', d, to);
+      else if (taken.has(to)) drop('taken', d, to);
+      else {
+        days[to] = true;
+        taken.add(to);
+        moved.push(to);
+      }
+    }
+    const droppedDays = [...dropped.values()].flatMap((x) => x.days);
+    if (moved.length) {
+      out.messages.push(
+        `${name(m.staffId)} moves from ${describeDayIndices(off.filter((d) => !droppedDays.includes(d)))} to ${describeDayIndices(moved.sort((a, b) => a - b))}`,
+      );
+    }
+    for (const [reason, { days: from, to }] of dropped) {
+      const on = describeDayIndices(to.sort((a, b) => a - b));
+      const why = {
+        backfill: 'backfills stay with the leave they cover',
+        none: 'the position has no new day to move to',
+        notWorking: `they don't work ${on}`,
+        busy: `they're matched elsewhere on ${on}`,
+        taken: `someone else holds it on ${on}`,
+      }[reason];
+      out.messages.push(`${name(m.staffId)} is taken off ${describeDayIndices(from.sort((a, b) => a - b))}: ${why}`);
+    }
+    if (days.some(Boolean)) out.matchPut.push({ ...m, days: withMode(days) });
+    else out.matchDelete.push(m.id);
+  }
+  return out;
+}
+
+/** Matches on days their position doesn't run (shouldn't happen, but older plans may have them). */
+export function matchesOutsidePosition(positions: EntitlementPosition[], matches: EntitlementMatch[]) {
+  const byId = new Map(positions.map((p) => [p.id, p]));
+  return matches.flatMap((m) => {
+    const position = byId.get(m.roleId);
+    const off = position ? dayIndices(subtract(m.days, position.days)) : [];
+    return position && off.length ? [{ match: m, position, days: off }] : [];
+  });
+}

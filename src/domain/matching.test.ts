@@ -4,13 +4,15 @@ import { computeFlags, flagInputFrom } from './flags';
 import {
   isMatched,
   isWholeYearLeave,
+  matchesOutsidePosition,
   matchStatus,
   patternForFortnightDays,
+  planPositionDaysChange,
   positionsToCreate,
   schoolYear,
   wholeYearPlacedMilli,
 } from './matching';
-import type { Staff } from './types';
+import type { EntitlementMatch, EntitlementPosition, Staff } from './types';
 
 const sample = () => buildSampleData('2026-01-01T00:00:00Z');
 const Y = 'sample-2027';
@@ -147,5 +149,62 @@ describe('Part 1 flags', () => {
       s.allocations = [];
     });
     expect(flags.some((f) => f.message.startsWith('Classroom Teacher:'))).toBe(false);
+  });
+});
+
+describe('changing the days a position runs', () => {
+  const position: EntitlementPosition = { id: 'pos', planningYearId: Y, name: 'EaLD Teacher 1', positionTypeId: 'pt', days: weekdays('Mon'), sortOrder: 0 };
+  const person = (id: string, ...days: Parameters<typeof weekdays>): Staff => ({
+    id,
+    planningYearId: Y,
+    name: id,
+    workPattern: weekdays(...days),
+    currentRole: 'Teacher',
+    employmentType: 'permanent',
+    preferences: '',
+  });
+  const match = (id: string, staffId: string, days = weekdays('Mon'), roleId = 'pos'): EntitlementMatch => ({ id, planningYearId: Y, staffId, roleId, days });
+
+  it('moves the person with the position, Monday to Thursday in both weeks', () => {
+    const staff = [person('Pat', 'Mon', 'Thu')];
+    const change = planPositionDaysChange(position, weekdays('Thu'), [match('m1', 'Pat')], staff);
+    expect(change.messages).toEqual(['Pat moves from Mon to Thu']);
+    expect(change.matchPut.map((m) => describePattern(m.days))).toEqual(['Thu']);
+    expect(change.matchDelete).toEqual([]);
+  });
+
+  it("takes the day off when they can't move, and says why", () => {
+    const staff = [person('Oak', 'Mon'), person('Lee', 'Mon', 'Thu')];
+    // Oak doesn't work Thursday.
+    const notWorking = planPositionDaysChange(position, weekdays('Thu'), [match('m1', 'Oak')], staff);
+    expect(notWorking.messages).toEqual(["Oak is taken off Mon: they don't work Thu"]);
+    expect(notWorking.matchDelete).toEqual(['m1']);
+    // Lee is matched elsewhere on Thursday.
+    const busy = planPositionDaysChange(position, weekdays('Thu'), [match('m1', 'Lee'), match('m2', 'Lee', weekdays('Thu'), 'other')], staff);
+    expect(busy.messages).toEqual(["Lee is taken off Mon: they're matched elsewhere on Thu"]);
+    // Only removing a day: nowhere to move.
+    const two = { ...position, days: weekdays('Mon', 'Tue') };
+    const shrink = planPositionDaysChange(two, weekdays('Tue'), [match('m1', 'Lee', weekdays('Mon', 'Tue'))], staff);
+    expect(shrink.messages).toEqual(['Lee is taken off Mon: the position has no new day to move to']);
+    expect(shrink.matchPut.map((m) => describePattern(m.days))).toEqual(['Tue']);
+  });
+
+  it('leaves backfills with their leave, and changes nothing when no day is removed', () => {
+    const staff = [person('Pat', 'Mon', 'Thu')];
+    const backfill = { ...match('m1', 'Pat'), coveringLeaveId: 'leave' };
+    expect(planPositionDaysChange(position, weekdays('Thu'), [backfill], staff).messages).toEqual([
+      'Pat is taken off Mon: backfills stay with the leave they cover',
+    ]);
+    expect(planPositionDaysChange(position, weekdays('Mon', 'Thu'), [match('m1', 'Pat')], staff)).toEqual({ matchPut: [], matchDelete: [], messages: [] });
+  });
+
+  it('flags matches left on days their position no longer runs', () => {
+    const s = sample();
+    const eald = s.positions.find((p) => p.name === 'EaLD Teacher 1')!;
+    s.positions = s.positions.map((p) => (p.id === eald.id ? { ...p, days: weekdays('Thu') } : p));
+    expect(matchesOutsidePosition(s.positions, s.matches).map((x) => x.position.name)).toEqual(['EaLD Teacher 1']);
+    expect(computeFlags(flagInputFrom(s)).map((f) => f.message)).toContain(
+      "Oak Delaney is matched to EaLD Teacher 1 on Mon, but the position doesn't run then",
+    );
   });
 });

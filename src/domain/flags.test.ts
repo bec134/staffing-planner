@@ -144,8 +144,9 @@ describe('staff flags', () => {
     const flags = noEntitlement([alloc('s1', 'r1', weekdays('Mon', 'Fri'))], {
       roles: [role('c1', CT), role('r1', RFF, weekdays('Mon'))],
     });
-    expect(flags).toHaveLength(1);
-    expect(flags[0]).toMatchObject({ kind: 'outside_role_days', link: '/allocation/roles/r1' });
+    // The same days are also a Part 1 match here, so both parts flag it.
+    expect(flags.map((f) => f.kind).sort()).toEqual(['outside_position_days', 'outside_role_days']);
+    expect(flags.find((f) => f.kind === 'outside_role_days')).toMatchObject({ link: '/allocation/roles/r1' });
   });
 
   it('produces stable, unique keys', () => {
