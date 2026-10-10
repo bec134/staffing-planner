@@ -22,7 +22,7 @@ describe('App shell', () => {
     expect(screen.getByText('A: Mon, Tue, Wed · B: Mon, Tue')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Export & reports' }));
-    expect(await screen.findByText(/built in Phase 7/)).toBeInTheDocument();
+    expect(await screen.findByRole('article', { name: 'Staffing summary' })).toBeInTheDocument();
     repo.close();
   });
 });

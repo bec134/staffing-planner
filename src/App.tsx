@@ -9,6 +9,7 @@ import { LeavePage } from './pages/leave/LeavePage';
 import { MatchingPage } from './pages/matching/MatchingPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { ReportsPage } from './pages/reports/ReportsPage';
 
 /** Modules in build-priority order (PLAN.md "Scope and build priority"). */
 export const MODULES = [
@@ -66,9 +67,7 @@ export function App() {
               <Route path="/classes" element={<ClassStructuresPage />} />
               <Route path="/matching" element={<MatchingPage />} />
               <Route path="/intentions" element={<IntentionsPage />} />
-              {MODULES.filter((m) => !['/entitlement', '/allocation', '/leave', '/classes', '/matching', '/intentions'].includes(m.path)).map((m) => (
-                <Route key={m.path} path={m.path} element={<PlaceholderPage title={m.label} phase={m.phase} />} />
-              ))}
+              <Route path="/reports" element={<ReportsPage />} />
               <Route path="*" element={<PlaceholderPage title="Not found" />} />
             </Routes>
           </main>
