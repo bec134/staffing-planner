@@ -8,6 +8,7 @@ import {
 } from '../domain/types';
 import { useRepository } from '../data/RepositoryContext';
 import { buildSampleData, SAMPLE_PLANNING_YEAR_ID } from '../data/sampleData';
+import { BackupPanel, RestorePanel } from '../components/BackupPanels';
 import { NewPlanningYearForm } from '../components/NewPlanningYearForm';
 import { usePlanningYear } from '../components/PlanningYearContext';
 
@@ -69,8 +70,8 @@ export function OverviewPage() {
 
       {years.length === 0 ? (
         <p>
-          No plans are stored in this browser yet. Create a planning year below, or load the fictional sample plan to
-          explore the app.
+          No plans are stored in this browser yet. Restore a previous session from a backup file, create a planning year
+          below, or load the fictional sample plan to explore the app.
         </p>
       ) : (
         <label className="field">
@@ -84,6 +85,9 @@ export function OverviewPage() {
           </select>
         </label>
       )}
+
+      <RestorePanel />
+      {current && <BackupPanel planningYearId={current.id} />}
 
       <h2>New planning year</h2>
       <p className="muted small">Starts with the standard position types and a blank entitlement.</p>

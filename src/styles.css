@@ -266,3 +266,42 @@ th.role-name.over { outline: 2px dashed var(--accent); outline-offset: -3px; }
 .check-warning { color: var(--warn); }
 table.intentions ul { margin: 4px 0 0; padding-left: 18px; }
 table.intentions td.actions { white-space: nowrap; }
+
+/* Reports (Phase 7): the same tones as the grids and the Excel export. */
+.report { margin: 24px 0; }
+.report-header h2 { margin-bottom: 0; }
+.report-section h3 { margin: 16px 0 4px; }
+.report-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+.report-table th, .report-table td { border: 1px solid var(--border); padding: 4px 6px; vertical-align: top; text-align: left; }
+.report-table thead th { background: #1f3a5f; color: #fff; }
+.report-table tr.group th { background: #edf2f7; }
+.report-table.grid-report td { min-width: 90px; }
+.tone-permanent { background: #dbe9fb; }
+.tone-twt { background: #e7dcf7; }
+.tone-temporary { background: #fdeccc; }
+.tone-leave { background: #e3e5e8; color: #5f6b7a; }
+.tone-cover { background: #cfe9d8; }
+.tone-gap { background: #fbe4e4; }
+.tone-off { background: #f3f4f6; color: var(--muted); }
+.tone-ok { background: #e3f3e8; }
+.tone-warn { background: #fff4e0; }
+.tone-total { background: #edf2f7; font-weight: 600; }
+.report-choice { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.panel.restore { border-color: var(--accent); }
+
+@page { size: A4 portrait; margin: 12mm; }
+@page wide { size: A4 landscape; margin: 10mm; }
+@media print {
+  .sidenav, .warnings-panel, .no-print { display: none !important; }
+  .shell { display: block; }
+  .content { padding: 0; max-width: none; }
+  :root, body { background: #fff; }
+  .report:last-child { break-after: auto; }
+  .report-header h2 { margin-top: 0; }
+  .report { margin: 0; break-after: page; }
+  .report.landscape { page: wide; }
+  .report-table { font-size: 8pt; }
+  .report-table tr { break-inside: avoid; }
+  .report-table thead { display: table-header-group; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
