@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { clashDays } from './allocation';
 import { FULL_TIME, dayIndices, weekdays } from './dayPattern';
 import { coverGaps } from './leave';
-import { planHigherDuties, seniority, tidyHigherDuties, type HigherDutiesInput } from './higherDuties';
+import { actsUp, planHigherDuties, seniority, substantiveRank, tidyHigherDuties, type HigherDutiesInput } from './higherDuties';
 import { cellView, planAssign, type GridData } from './roleGrid';
 import type { Allocation, EntitlementPosition, Leave, PositionType, Staff } from './types';
 
@@ -59,6 +59,23 @@ const WED = [2, 7];
 describe('seniority', () => {
   it('ranks principal above deputy above assistant principals above everyone else', () => {
     expect(types.map(seniority)).toEqual([1, 2, 2, 3, 4]);
+  });
+});
+
+describe('actsUp', () => {
+  const as = (currentRole: string) => ({ currentRole });
+  it('is true when someone is placed above their substantive role', () => {
+    expect(actsUp(as('Teacher'), types[1])).toBe(true);
+    expect(actsUp(as('Assistant Principal'), types[3])).toBe(true);
+    expect(actsUp(as('Deputy Principal'), types[4])).toBe(true);
+  });
+  it('is false in their own or a lower role, or when the role is not recorded', () => {
+    expect(actsUp(as('Assistant Principal'), types[2])).toBe(false);
+    expect(actsUp(as('Assistant Principal - Curriculum & Instruction'), types[2])).toBe(false);
+    expect(actsUp(as('Principal'), types[3])).toBe(false);
+    expect(actsUp(as('Teacher'), types[0])).toBe(false);
+    expect(actsUp(as(''), types[1])).toBe(false);
+    expect(substantiveRank(as('Classroom Teacher'))).toBe(1);
   });
 });
 

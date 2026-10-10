@@ -286,4 +286,23 @@ describe('Splitting a position', () => {
     expect(tileOf(cell('Classroom Teacher 1', 'Thu'), 'Eli Brookfield')).toHaveClass('holder');
     confirmSpy.mockRestore();
   });
+
+  it('labels a temporary teacher matched to an unfilled AP position as higher duties', async () => {
+    await setup();
+    const apci = 'Assistant Principal - Curriculum & Instruction 1';
+    fireEvent.click(screen.getByRole('button', { name: `Remove Dana Thistle from ${apci} on Fri` }));
+    await waitFor(() => expect(within(cell(apci, 'Fri')).queryByText('Dana Thistle')).not.toBeInTheDocument());
+    // Dana is an AP C&I in her own position: no label.
+    expect(tileOf(cell(apci, 'Mon'), 'Dana Thistle')).not.toHaveTextContent('higher duties');
+
+    // Morgan (temporary, substantive Teacher) isn't matched on Fridays, so this is a plain match, labelled.
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true); // add Fri to her days
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Morgan Pike', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell(apci, 'Fri'), { dataTransfer: dt });
+    const tile = await waitFor(() => tileOf(cell(apci, 'Fri'), 'Morgan Pike'));
+    expect(tile).toHaveClass('holder', 'emp-temporary');
+    expect(tile).toHaveTextContent('higher duties');
+    confirmSpy.mockRestore();
+  });
 });

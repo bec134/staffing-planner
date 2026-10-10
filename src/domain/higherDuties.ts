@@ -15,13 +15,38 @@
 import { dayIndices, describeDayIndices, intersect, repeatsWeekly, subtract, union, type DayPattern } from './dayPattern';
 import type { Allocation, DateRange, EntitlementMatch, EntitlementPosition, Id, Leave, PositionType, Staff } from './types';
 
+/** Rank of an executive role by name: Principal 4, Deputy 3, Assistant Principals 2. */
+function executiveRank(name: string): number {
+  const n = name.trim().toLowerCase();
+  if (n === 'principal') return 4;
+  if (n.startsWith('deputy') || n === 'dp') return 3;
+  return 2;
+}
+
 /** How senior a position type is: higher-duties moves must go up. */
 export function seniority(type: PositionType | undefined): number {
   if (!type || type.category !== 'executive') return 1;
-  const name = type.name.trim().toLowerCase();
-  if (name === 'principal') return 4;
-  if (name.startsWith('deputy')) return 3;
-  return 2;
+  return executiveRank(type.name);
+}
+
+/** How senior someone's substantive role is; undefined when it isn't recorded. */
+export function substantiveRank(staff: Pick<Staff, 'currentRole'>): number | undefined {
+  const n = staff.currentRole.trim().toLowerCase();
+  if (!n) return undefined;
+  if (n === 'principal' || n.startsWith('deputy') || n === 'dp' || n.startsWith('assistant principal') || /^ap\b/.test(n)) {
+    return executiveRank(n);
+  }
+  return 1;
+}
+
+/**
+ * Whether someone in this position (or role) is acting above their
+ * substantive role (Bec: e.g. a temporary teacher matched to an unfilled AP
+ * position), so their tile says "higher duties".
+ */
+export function actsUp(staff: Pick<Staff, 'currentRole'> | undefined, type: PositionType | undefined): boolean {
+  const rank = staff && substantiveRank(staff);
+  return rank !== undefined && seniority(type) > rank;
 }
 
 export const isHigherDuties = (l: Leave) => l.leaveType === 'higher_duties';
