@@ -20,6 +20,7 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
 - **Position types:** Principal; Classroom Teacher; Assistant Principal; Assistant Principal - Curriculum & Instruction; Deputy Principal; Teacher Librarian; RFF Teacher; Executive Release Teacher; QTSS Teacher; Learning & Support Teacher; EaLD Teacher; Part-time Teacher; School Counsellor.
   - The same list is used both for the entitlement breakdown and as the roles staff are allocated to.
 - **Position categories:** `class_teacher` (Classroom Teacher), `executive` (Principal, both AP roles and DP) and `other_teaching` (the rest).
+- **Order of position types** is shared by the entitlement, Part 1 and Part 2 grids; Match staff has ↑/↓ on each group heading (`moveGroup`, which skips types with no positions).
 - **Plans made before a standard type existed** get it from **Add standard position types** on the Entitlement page (`missingDefaultPositionTypes`).
 - **Entitlement is exact decimal FTE**, entered as the department supplies it (up to 3 decimals, e.g. 2.316) and stored as integer milli-FTE (`totalMilliFte`, `milliFte`; 1000 = 1.0 FTE). Use `parseFte`/`formatFte`/`milliFteOf` in `src/domain/fte.ts`; never do FTE arithmetic in floating point.
 - **Roles:** staff are allocated to named `Role` records (position type + days), not directly to position types. A role day is held by one person (leave cover aside); a person never holds two roles on the same day and is only allocated on days they work. Rules live in `src/domain/allocation.ts`.

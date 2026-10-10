@@ -132,4 +132,20 @@ describe('Part 1: Match staff', () => {
     expect(screen.getByTestId('match-cell-RFF Teacher 1-Tue')).toBeInTheDocument();
     expect(screen.getByTestId('match-cell-RFF Teacher 1-Wed')).toHaveClass('off');
   });
+
+  it('moves a group of positions up or down, e.g. Deputy Principal above Classroom Teacher', async () => {
+    const repo = await setup();
+    const headings = () =>
+      [...document.querySelectorAll('.role-grid tr.group-row th')].map((th) => th.childNodes[0]!.textContent);
+    expect(headings().slice(0, 3)).toEqual(['Principal', 'Classroom Teacher', 'Assistant Principal']);
+    // Assistant Principal, then AP C&I, sit between them; three moves up.
+    for (const position of [3, 2, 1]) {
+      fireEvent.click(screen.getByRole('button', { name: 'Move Deputy Principal up' }));
+      await waitFor(() => expect(headings().indexOf('Deputy Principal')).toBe(position));
+    }
+    expect(headings().slice(0, 3)).toEqual(['Principal', 'Deputy Principal', 'Classroom Teacher']);
+    expect(screen.getByRole('button', { name: 'Move Principal up' })).toBeDisabled();
+    const types = (await repo.positionTypes.listByYear(Y)).sort((a, b) => a.sortOrder - b.sortOrder);
+    expect(types.slice(0, 3).map((t) => t.name)).toEqual(['Principal', 'Deputy Principal', 'Classroom Teacher']);
+  });
 });

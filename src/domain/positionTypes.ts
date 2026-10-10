@@ -62,6 +62,27 @@ export function movePositionType(types: PositionType[], id: Id, direction: -1 | 
   return ordered.map((p, i) => ({ ...p, sortOrder: i }));
 }
 
+/**
+ * Move a position type's group past the next group that is shown (Bec:
+ * reorder the Match staff grid, e.g. Deputy Principal above Classroom
+ * Teacher). Types with nothing to show are skipped over, so every click
+ * visibly moves the group. Renumbers sortOrder 0..n-1.
+ */
+export function moveGroup(types: PositionType[], shownIds: Id[], id: Id, direction: -1 | 1): PositionType[] {
+  const ordered = [...types].sort((a, b) => a.sortOrder - b.sortOrder);
+  const shown = ordered.filter((p) => shownIds.includes(p.id));
+  const at = shown.findIndex((p) => p.id === id);
+  const neighbour = shown[at + direction];
+  if (at < 0 || !neighbour) return ordered;
+  const moving = ordered.splice(
+    ordered.findIndex((p) => p.id === id),
+    1,
+  )[0]!;
+  const n = ordered.findIndex((p) => p.id === neighbour.id);
+  ordered.splice(direction < 0 ? n : n + 1, 0, moving);
+  return ordered.map((p, i) => ({ ...p, sortOrder: i }));
+}
+
 /** Returns an error message, or null if the name is acceptable. */
 export function validatePositionTypeName(name: string, others: PositionType[]): string | null {
   const trimmed = name.trim();

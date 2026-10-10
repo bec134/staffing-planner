@@ -233,6 +233,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Go to **Match staff**.',
           'Click **Create positions from entitlement**. If the entitlement grows later, click **Add missing positions**.',
           'To change which days a part position runs, open **Positions** below the grid and click **Edit**. **Add position** adds one by hand.',
+          'To change the order of the grid (for example Deputy Principal above Classroom Teacher), use the ↑ and ↓ beside a group heading. The same order is used on the Entitlement page and in Part 2.',
         ],
       },
       {
