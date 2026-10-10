@@ -52,19 +52,17 @@ describe('Entitlement page', () => {
     const [ent] = await repo.entitlements.listByYear((await repo.planningYears.list())[0]!.id);
     expect(ent!.totalMilliFte).toBe(3316);
     expect(ent!.lines).toHaveLength(2);
-    repo.close();
   });
 
   it('blocks saving invalid figures', async () => {
-    const repo = await setup();
+    await setup();
     type('Total entitlement', '1.2345');
     expect(screen.getByText('Use at most 3 decimal places')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save entitlement' })).toBeDisabled();
-    repo.close();
   });
 
   it('adds a position type without losing unsaved entitlement edits', async () => {
-    const repo = await setup();
+    await setup();
     type('Total entitlement', '5');
     fireEvent.change(screen.getByLabelText(/New position type/), { target: { value: 'Instructional Leader' } });
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'executive' } });
@@ -72,14 +70,12 @@ describe('Entitlement page', () => {
 
     expect(await screen.findByLabelText('Instructional Leader')).toBeInTheDocument();
     expect(screen.getByLabelText('Total entitlement')).toHaveValue('5');
-    repo.close();
   });
 
   it('rejects a duplicate position type name', async () => {
-    const repo = await setup();
+    await setup();
     fireEvent.change(screen.getByLabelText(/New position type/), { target: { value: 'rff teacher' } });
     expect(screen.getByText('A position type with this name already exists')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
-    repo.close();
   });
 });

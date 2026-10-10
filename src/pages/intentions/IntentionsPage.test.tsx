@@ -51,7 +51,6 @@ describe('Staff intentions', () => {
       '2027-01-28',
       '2027-12-17',
     ]);
-    repo.close();
   });
 
   it('adds intentions by hand, warning when days and permanent FTE disagree', async () => {
@@ -75,7 +74,6 @@ describe('Staff intentions', () => {
       expect((await repo.staff.listByYear(Y)).find((s) => s.name === 'Quinn Example')).toMatchObject({ employmentType: 'twt' }),
     );
     await waitFor(() => expect(within(row('Quinn Example')).getByText('Up to date')).toBeInTheDocument());
-    repo.close();
   });
 
   it('imports a CSV, replacing existing intentions by name', async () => {
