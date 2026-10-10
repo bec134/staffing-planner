@@ -202,9 +202,12 @@ describe('Splitting a position', () => {
     fireEvent.click(within(row).getByRole('button', { name: 'Split' }));
     const form = screen.getByRole('group', { name: 'Split Classroom Teacher 5' });
     fireEvent.click(within(form).getByRole('button', { name: 'Add a part' }));
-    for (const [day, part] of [['Wed', 2], ['Thu', 2], ['Fri', 3]] as const) {
-      fireEvent.click(within(form).getByLabelText(`${day} in part ${part}`));
-    }
+    const part = (n: number) => within(form).getByRole('group', { name: `Part ${n}` });
+    // Part 1 keeps Mon, Tue; part 2 gets Wed, Thu; part 3 gets Fri.
+    for (const day of ['Wed', 'Thu', 'Fri']) fireEvent.click(within(part(1)).getByLabelText(day));
+    for (const day of ['Wed', 'Thu']) fireEvent.click(within(part(2)).getByLabelText(day));
+    fireEvent.click(within(part(3)).getByLabelText('Fri'));
+    expect(within(form).getByRole('status', { name: 'Split check' })).toHaveTextContent('Parts add up to 1.0 of 1.0 FTE.');
     fireEvent.click(within(form).getByRole('button', { name: 'Split position' }));
 
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Kit Ashdown: Fri moves to Classroom Teacher 8')));

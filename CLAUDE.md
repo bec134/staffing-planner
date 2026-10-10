@@ -21,7 +21,7 @@ NSW Primary Staffing Planner: a browser-only tool that helps a NSW primary schoo
   - The same list is used both for the entitlement breakdown and as the roles staff are allocated to.
 - **Position categories:** `class_teacher` (Classroom Teacher), `executive` (Principal, both AP roles and DP) and `other_teaching` (the rest).
 - **Changing a position's days** moves its matches with it (`planPositionDaysChange`, confirmed first); matches left outside a position's days are flagged (`outside_position_days`).
-- **Splitting a position** (`planSplitPosition`, `SplitPosition.tsx`): each day goes to one part; part 1 keeps the original, the rest become new positions of the same type; matches follow their days.
+- **Splitting a position** (`planSplitPosition`, `SplitPosition.tsx`): parts may share days but must add up to the position's FTE; part 1 keeps the original, the rest become new positions of the same type; each matched day goes to the first part with that day free, else comes off (confirmed first).
 - **Order of position types** is shared by the entitlement, Part 1 and Part 2 grids; Match staff has ↑/↓ on each group heading (`moveGroup`, which skips types with no positions).
 - **Plans made before a standard type existed** get it from **Add standard position types** on the Entitlement page (`missingDefaultPositionTypes`).
 - **Entitlement is exact decimal FTE**, entered as the department supplies it (up to 3 decimals, e.g. 2.316) and stored as integer milli-FTE (`totalMilliFte`, `milliFte`; 1000 = 1.0 FTE). Use `parseFte`/`formatFte`/`milliFteOf` in `src/domain/fte.ts`; never do FTE arithmetic in floating point.

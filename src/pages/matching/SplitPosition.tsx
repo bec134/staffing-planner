@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FORTNIGHT_DAYS, WEEKDAYS, dayIndices, describeDayIndices, repeatsWeekly, type DayPattern } from '../../domain/dayPattern';
+import { DayPatternEditor } from '../../components/DayPatternEditor';
+import { dayIndices, describeDayIndices, emptyPattern, type DayPattern } from '../../domain/dayPattern';
 import { formatFte, milliFteOf } from '../../domain/fte';
 import { planSplitPosition } from '../../domain/matching';
 import type { EntitlementPosition } from '../../domain/types';
@@ -7,9 +8,10 @@ import { useRepository } from '../../data/RepositoryContext';
 import type { PlanData } from '../allocation/shared';
 
 /**
- * Split a position into parts (Bec: e.g. 1.0 into 0.4 + 0.4 + 0.2). Each of
- * its days is given to a part; part 1 stays as this position and the rest
- * become new positions. Anyone matched follows their days.
+ * Split a position into parts (Bec: e.g. 1.0 into 0.4 + 0.4 + 0.2). Each
+ * part has its own days, which may overlap (two parts on Wed–Thu), as long
+ * as they add up to the position's FTE. Part 1 stays as this position and
+ * the rest become new positions; anyone matched follows their days.
  */
 export function SplitPosition({ data, position, typeName, onDone }: {
   data: PlanData;
@@ -18,20 +20,10 @@ export function SplitPosition({ data, position, typeName, onDone }: {
   onDone(): void;
 }) {
   const repo = useRepository();
-  // Weekly positions split by weekday (both weeks together); others by fortnight day.
-  const weekly = repeatsWeekly(position.days);
-  const slots = (weekly ? dayIndices(position.days).filter((d) => d < WEEKDAYS.length) : dayIndices(position.days)).map((d) =>
-    weekly ? [d, d + WEEKDAYS.length] : [d],
-  );
-  const [partCount, setPartCount] = useState(2);
-  const [partOf, setPartOf] = useState<number[]>(() => slots.map(() => 0));
+  const [parts, setParts] = useState<DayPattern[]>(() => [position.days, emptyPattern(position.days.mode)]);
   const [error, setError] = useState<string | null>(null);
-
-  const parts: DayPattern[] = [...Array(partCount).keys()].map((p) => {
-    const days = Array<boolean>(FORTNIGHT_DAYS).fill(false);
-    slots.forEach((slot, i) => partOf[i] === p && slot.forEach((d) => (days[d] = true)));
-    return { mode: 'fortnightly', days };
-  });
+  const whole = milliFteOf(position.days);
+  const total = parts.reduce((sum, p) => sum + milliFteOf(p), 0);
 
   const split = async () => {
     const plan = planSplitPosition(position, parts, data.positions, data.matches, data.staff, typeName, () => crypto.randomUUID());
@@ -39,6 +31,7 @@ export function SplitPosition({ data, position, typeName, onDone }: {
     const summary = plan.positionPut.map((p) => `${p.name}: ${describeDayIndices(dayIndices(p.days))} (${formatFte(milliFteOf(p.days))})`);
     if (!confirm(`Split ${position.name}?\n\n${[...summary, ...plan.messages].join('\n')}`)) return;
     await repo.positions.putMany(plan.positionPut);
+    if (plan.matchDelete.length) await repo.matches.deleteMany(plan.matchDelete);
     if (plan.matchPut.length) await repo.matches.putMany(plan.matchPut);
     onDone();
   };
@@ -46,63 +39,31 @@ export function SplitPosition({ data, position, typeName, onDone }: {
   return (
     <div className="panel" role="group" aria-label={`Split ${position.name}`}>
       <p>
-        <strong>Split {position.name}</strong> ({formatFte(milliFteOf(position.days))} FTE). Choose which part each day goes to.
-        Part 1 stays as {position.name}; the others become new {typeName} positions. Anyone matched moves with their days.
+        <strong>Split {position.name}</strong> ({formatFte(whole)} FTE, {describeDayIndices(dayIndices(position.days))}). Tick
+        the days for each part. Parts can share days (for example two 0.4 parts both on Wed–Thu), as long as they add up
+        to {formatFte(whole)} FTE. Part 1 stays as {position.name}; the others become new {typeName} positions. Anyone
+        matched moves with their days.
       </p>
-      <table className="split-table">
-        <thead>
-          <tr>
-            <th>Day</th>
-            {[...Array(partCount).keys()].map((p) => (
-              <th key={p}>Part {p + 1}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {slots.map((slot, i) => {
-            const label = describeDayIndices(slot);
-            return (
-              <tr key={label}>
-                <th scope="row">{label}</th>
-                {[...Array(partCount).keys()].map((p) => (
-                  <td key={p}>
-                    <input
-                      type="radio"
-                      name={`split-${position.id}-${i}`}
-                      aria-label={`${label} in part ${p + 1}`}
-                      checked={partOf[i] === p}
-                      onChange={() => setPartOf((cur) => cur.map((x, j) => (j === i ? p : x)))}
-                    />
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-          <tr>
-            <th scope="row">FTE</th>
-            {parts.map((part, p) => (
-              <td key={p}>{formatFte(milliFteOf(part))}</td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
+      {parts.map((part, i) => (
+        <DayPatternEditor
+          key={i}
+          legend={`Part ${i + 1}`}
+          value={part}
+          onChange={(value) => setParts((cur) => cur.map((p, j) => (j === i ? value : p)))}
+        />
+      ))}
+      <p className={total === whole ? 'ok' : 'warning'} role="status" aria-label="Split check">
+        Parts add up to {formatFte(total)} of {formatFte(whole)} FTE.
+      </p>
       {error && <p className="field-error">{error}</p>}
       <div className="actions">
-        <button type="button" className="secondary" onClick={() => setPartCount((c) => c + 1)} disabled={partCount >= slots.length}>
+        <button type="button" className="secondary" onClick={() => setParts((cur) => [...cur, emptyPattern(position.days.mode)])}>
           Add a part
         </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => {
-            setPartCount((c) => c - 1);
-            setPartOf((cur) => cur.map((x) => (x >= partCount - 1 ? 0 : x)));
-          }}
-          disabled={partCount <= 2}
-        >
+        <button type="button" className="secondary" onClick={() => setParts((cur) => cur.slice(0, -1))} disabled={parts.length <= 2}>
           Remove a part
         </button>
-        <button type="button" onClick={() => void split()}>
+        <button type="button" onClick={() => void split()} disabled={total !== whole}>
           Split position
         </button>
         <button type="button" className="secondary" onClick={onDone}>
