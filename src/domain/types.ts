@@ -70,10 +70,23 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   temporary: 'Temporary',
 };
 
+/** Substantive roles a staff member can hold (Bec). */
+export const SUBSTANTIVE_ROLES = [
+  'Principal',
+  'Deputy Principal',
+  'Assistant Principal',
+  'Assistant Principal - Curriculum & Instruction',
+  'Teacher',
+  'Teacher Librarian',
+  'School Counsellor',
+] as const;
+export type SubstantiveRole = (typeof SUBSTANTIVE_ROLES)[number];
+
 export interface Staff extends Scoped {
   name: string;
   /** Days worked; FTE is derived from this, never stored separately. */
   workPattern: DayPattern;
+  /** Substantive role: one of SUBSTANTIVE_ROLES (older plans may hold free text). */
   currentRole: string;
   employmentType: EmploymentType;
   /** Free-text notes. Structured plans for next year are a StaffIntention. */

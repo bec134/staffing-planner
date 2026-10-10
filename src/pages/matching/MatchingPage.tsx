@@ -14,6 +14,7 @@ import {
   schoolYear,
   unmatchedDayCount,
 } from '../../domain/matching';
+import { moveGroup } from '../../domain/positionTypes';
 import { EMPLOYMENT_TYPE_LABELS, type Staff } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 import { usePlanData } from '../../data/usePlanData';
@@ -65,7 +66,6 @@ function Matching({ data }: { data: PlanData }) {
       <p className="panel small">
         {data.staff.length === 0 ? <strong>No staff yet. </strong> : 'Someone missing? '}
         <Link to="/staff">Add staff</Link> on the Staff page, or <Link to="/staff/import">import them from a CSV file</Link>.
-        New people in <Link to="/intentions">Staff intentions</Link> are added when their intentions are applied.
       </p>
 
       {!entitlement || entitlement.totalMilliFte === 0 ? (
@@ -95,6 +95,11 @@ function Matching({ data }: { data: PlanData }) {
                 staff={data.staff}
                 offered={data.staff.filter((s) => !s.nominatedForTransfer)}
                 positionTypes={data.positionTypes}
+                onMoveGroup={(id, direction) =>
+                  void repo.positionTypes.putMany(
+                    moveGroup(data.positionTypes, [...new Set(data.positions.map((p) => p.positionTypeId))], id, direction),
+                  )
+                }
                 planningYear={data.planningYear}
                 write={async (puts, deletes) => {
                   if (deletes.length) await repo.matches.deleteMany(deletes);
@@ -113,7 +118,8 @@ function Matching({ data }: { data: PlanData }) {
                     <>
                       Drag a name onto a position and day, or use <strong>+</strong>. A full-time teacher fills the whole
                       week; dropping a name on a position's name fills every day they're free. × removes a day. Greyed
-                      tiles are on whole-year leave: drop another teacher there to backfill.
+                      tiles are on whole-year leave: drop another teacher there to backfill. Use ↑ and ↓ beside a
+                      heading to move that group of positions.
                     </>
                   ),
                 }}

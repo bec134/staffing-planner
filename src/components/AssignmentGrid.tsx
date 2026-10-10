@@ -58,6 +58,8 @@ export interface AssignmentGridProps {
   /** Words that differ between the two parts. */
   words: { row: string; cover: string; result: string; testPrefix: string; full: string; help: ReactNode };
   controls?: ReactNode;
+  /** Show ↑/↓ on each group heading to reorder the position types (Part 1). */
+  onMoveGroup?(positionTypeId: string, direction: -1 | 1): void;
   /** A short note on each staff-list tile, e.g. grade preferences. */
   tileNote?(staff: Staff): string | undefined;
 }
@@ -287,7 +289,31 @@ export function AssignmentGrid(props: AssignmentGridProps) {
             return [
               prevType !== role.positionTypeId && (
                 <tr key={`h-${role.positionTypeId}`} className="group-row">
-                  <th colSpan={columns.length + 1}>{type?.name ?? 'Deleted position type'}</th>
+                  <th colSpan={columns.length + 1}>
+                    {type?.name ?? 'Deleted position type'}
+                    {props.onMoveGroup && type && (
+                      <span className="group-move">
+                        <button
+                          type="button"
+                          className="icon"
+                          aria-label={`Move ${type.name} up`}
+                          disabled={i === 0}
+                          onClick={() => props.onMoveGroup!(type.id, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="icon"
+                          aria-label={`Move ${type.name} down`}
+                          disabled={roles[roles.length - 1]!.positionTypeId === role.positionTypeId}
+                          onClick={() => props.onMoveGroup!(type.id, 1)}
+                        >
+                          ↓
+                        </button>
+                      </span>
+                    )}
+                  </th>
                 </tr>
               ),
               <tr key={role.id}>

@@ -91,28 +91,28 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     person(2, 'Bodhi Marsh', 'Assistant Principal'),
     person(3, 'Casey Wren', 'Assistant Principal'),
     person(4, 'Dana Thistle', 'Assistant Principal - Curriculum & Instruction'),
-    person(5, 'Eli Brookfield', 'Classroom Teacher'),
-    person(6, 'Frankie Lowe', 'Classroom Teacher', weekdays('Mon', 'Tue', 'Wed'), 'permanent'),
-    person(7, 'Gus Penrose', 'Classroom Teacher', weekdays('Wed', 'Thu', 'Fri'), 'permanent'),
-    person(8, 'Harper Vale', 'Classroom Teacher', FULL_TIME, 'temporary'),
-    person(9, 'Indi Calloway', 'Classroom Teacher'),
-    person(10, 'Jules Fernhill', 'Classroom Teacher', FULL_TIME, 'temporary'),
-    person(11, 'Kit Ashdown', 'Classroom Teacher'),
+    person(5, 'Eli Brookfield', 'Teacher'),
+    person(6, 'Frankie Lowe', 'Teacher', weekdays('Mon', 'Tue', 'Wed'), 'permanent'),
+    person(7, 'Gus Penrose', 'Teacher', weekdays('Wed', 'Thu', 'Fri'), 'permanent'),
+    person(8, 'Harper Vale', 'Teacher', FULL_TIME, 'temporary'),
+    person(9, 'Indi Calloway', 'Teacher'),
+    person(10, 'Jules Fernhill', 'Teacher', FULL_TIME, 'temporary'),
+    person(11, 'Kit Ashdown', 'Teacher'),
     person(12, 'Lou Merriweather', 'Teacher Librarian', weekdays('Mon', 'Tue', 'Wed', 'Thu')),
     // 0.5 FTE = 5 days per fortnight, so this needs a fortnightly pattern.
     person(
       13,
       'Morgan Pike',
-      'RFF Teacher',
+      'Teacher',
       fortnightlyPattern([true, true, true, false, false], [true, true, false, false, false]),
       'temporary',
     ),
-    person(14, 'Noor Haddon', 'Learning & Support Teacher', weekdays('Thu', 'Fri')),
-    person(15, 'Oak Delaney', 'EaLD Teacher', weekdays('Mon'), 'twt'),
+    person(14, 'Noor Haddon', 'Teacher', weekdays('Thu', 'Fri')),
+    person(15, 'Oak Delaney', 'Teacher', weekdays('Mon'), 'twt'),
     // Temporary teacher employed to cover leave.
-    person(16, 'Sam Ridley', 'Classroom Teacher', FULL_TIME, 'temporary'),
+    person(16, 'Sam Ridley', 'Teacher', FULL_TIME, 'temporary'),
     // Part-time temporary teacher backfilling a whole-year leave without pay.
-    person(17, 'Tara Quinlan', 'Classroom Teacher', weekdays('Thu', 'Fri'), 'twt'),
+    person(17, 'Tara Quinlan', 'Teacher', weekdays('Thu', 'Fri'), 'twt'),
     person(18, 'Rowan Hale', 'Principal'),
   ];
 
@@ -307,9 +307,8 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     },
   ];
 
-  // Staff intentions for next year. All are already applied to the plan
-  // except Kit's (going part time with LWOP Thu–Fri), to show applying one.
-  // Jules prefers K–2 but is placed on 3/4 Red, to show the grade flag.
+  // Each person's details for next year, all applied to the plan. Jules
+  // prefers K–2 but is placed on 3/4 Red, to show the grade flag.
   const intend = (
     name: string,
     opts: {
@@ -349,7 +348,7 @@ export function buildSampleData(now = new Date().toISOString()): PlanningYearSna
     intend('Harper Vale', { grades: ['K'] }),
     intend('Indi Calloway', { preferred: weekdays('Mon', 'Tue', 'Wed'), leave: weekdays('Thu', 'Fri'), grades: ['1', '2'] }),
     intend('Jules Fernhill', { grades: ['K', '1', '2'] }),
-    intend('Kit Ashdown', { preferred: weekdays('Mon', 'Tue', 'Wed'), leave: weekdays('Thu', 'Fri'), grades: ['5', '6'] }),
+    intend('Kit Ashdown', { grades: ['5', '6'] }),
     intend('Lou Merriweather', { fte: 800 }),
     intend('Morgan Pike'),
     intend('Noor Haddon', { fte: 400 }),

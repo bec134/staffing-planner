@@ -415,7 +415,7 @@ function staffReport(d: PlanningYearSnapshot): Report {
   const year = schoolYear(d.planningYear);
   const ctx = { planningYearId: d.planningYear.id, year, staff: d.staff, leave: d.leave, allocations: d.allocations, matches: d.matches };
   const intentionCells = (s: Staff | undefined, i: (typeof d.intentions)[number] | undefined): ReportCell[] => {
-    if (!i) return [c(''), c(''), c(''), c(''), c(''), c('No intentions entered', s ? 'warn' : undefined)];
+    if (!i) return [c(''), c(''), c(''), c(''), c(''), c('No details for next year', s ? 'warn' : undefined)];
     const check = checkIntention(i);
     const plan = check.errors.length ? undefined : planApplyIntention(i, ctx, () => 'report');
     const status = check.errors.length
@@ -441,14 +441,14 @@ function staffReport(d: PlanningYearSnapshot): Report {
     c(s.nominatedForTransfer ? `Nominated${s.transferNotes ? `: ${s.transferNotes}` : ''}` : ''),
     ...intentionCells(s, intentionForStaff(s, d.intentions)),
   ]);
-  // Intentions for people not in the plan yet.
+  // Details saved for people not in the plan yet (not yet applied).
   for (const i of [...d.intentions].sort(byName).filter((i) => !staffForIntention(i, d.staff))) {
     rows.push([c(i.name), c(EMPLOYMENT_TYPE_LABELS[i.employmentType], i.employmentType), c('Not in the plan yet', 'warn'), c(''), c(''), c(''), ...intentionCells(undefined, i)]);
   }
   return {
     id: 'staff',
-    title: 'Staff and intentions',
-    sheet: 'Staff & intentions',
+    title: 'Staff',
+    sheet: 'Staff',
     landscape: true,
     tables: [
       {
@@ -458,14 +458,14 @@ function staffReport(d: PlanningYearSnapshot): Report {
           'Employment',
           'Days worked',
           'FTE',
-          'Current role',
+          'Substantive role',
           'Transfer',
           'Permanent FTE',
           'Work preference',
           'Preferred days',
           'Whole year leave',
           'Grade preferences',
-          'Intentions',
+          'Details applied',
         ],
         rows,
         empty: 'No staff yet.',

@@ -1,4 +1,4 @@
-import { defaultPositionTypes, missingDefaultPositionTypes, movePositionType, validatePositionTypeName } from './positionTypes';
+import { defaultPositionTypes, missingDefaultPositionTypes, moveGroup, movePositionType, validatePositionTypeName } from './positionTypes';
 
 const types = defaultPositionTypes('y');
 
@@ -45,5 +45,19 @@ describe('position types', () => {
     expect(missingDefaultPositionTypes('y', [...older, { ...types[0]!, id: 'x', name: 'school counsellor' }]).map((t) => t.name)).toEqual([
       'Part-time Teacher',
     ]);
+  });
+
+  it('moves a group past the next shown group, skipping types with nothing shown', () => {
+    const id = (name: string) => types.find((t) => t.name === name)!.id;
+    const names = (list: typeof types) => list.map((t) => t.name);
+    // Only these have positions; the APs in between have none.
+    const shown = ['Principal', 'Classroom Teacher', 'Deputy Principal', 'RFF Teacher'].map(id);
+    const up = moveGroup(types, shown, id('Deputy Principal'), -1);
+    expect(names(up).slice(0, 3)).toEqual(['Principal', 'Deputy Principal', 'Classroom Teacher']);
+    expect(up.map((t) => t.sortOrder)).toEqual([...Array(types.length).keys()]);
+    const down = moveGroup(types, shown, id('Classroom Teacher'), 1);
+    expect(names(down).indexOf('Classroom Teacher')).toBe(names(down).indexOf('Deputy Principal') + 1);
+    // Already first: no change.
+    expect(names(moveGroup(types, shown, id('Principal'), -1))).toEqual(names(types));
   });
 });

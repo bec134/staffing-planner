@@ -5,7 +5,9 @@ import { subtract } from '../../domain/dayPattern';
 import type { Flag } from '../../domain/flags';
 import { staffLink } from '../../domain/flags';
 import { formatFte, milliFteOf } from '../../domain/fte';
+import { describeGrades, intentionForStaff } from '../../domain/intentions';
 import { EMPLOYMENT_TYPE_LABELS } from '../../domain/types';
+import { PendingDetails } from './PendingDetails';
 import { StaffForm } from './StaffForm';
 import { byName, daysLabel, lookups, type PlanData } from '../allocation/shared';
 
@@ -16,6 +18,7 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
 
   return (
     <section>
+      <PendingDetails data={data} />
       <div className="actions">
         {!adding && <button onClick={() => setAdding(true)}>Add staff member</button>}
         <Link to="/staff/import" className="button-link secondary">
@@ -23,11 +26,7 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
         </Link>
       </div>
       {adding && (
-        <StaffForm
-          planningYearId={data.planningYear.id}
-          otherNames={data.staff.map((s) => s.name)}
-          onDone={() => setAdding(false)}
-        />
+        <StaffForm data={data} onDone={() => setAdding(false)} />
       )}
       {staff.length === 0 ? (
         <p className="muted">No staff yet. Add them one at a time or import a CSV.</p>
@@ -37,8 +36,10 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
             <tr>
               <th>Name</th>
               <th>Employment</th>
+              <th>Substantive role</th>
               <th>Days worked</th>
               <th className="num">FTE</th>
+              <th>Grades</th>
               <th>Allocated to</th>
               <th>Unallocated days</th>
             </tr>
@@ -64,8 +65,10 @@ export function StaffList({ data, flags }: { data: PlanData; flags: Flag[] }) {
                     )}
                   </td>
                   <td>{EMPLOYMENT_TYPE_LABELS[s.employmentType]}</td>
+                  <td>{s.currentRole || <span className="muted">—</span>}</td>
                   <td>{daysLabel(s.workPattern)}</td>
                   <td className="num">{formatFte(milliFteOf(s.workPattern))}</td>
+                  <td>{describeGrades(intentionForStaff(s, data.intentions)?.gradePreferences ?? []) || <span className="muted">—</span>}</td>
                   <td>
                     {allocations.length === 0 ? (
                       <span className="muted">—</span>

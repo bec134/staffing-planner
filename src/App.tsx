@@ -1,10 +1,9 @@
-import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { PlanningYearProvider } from './components/PlanningYearContext';
 import { WarningsPanel } from './components/WarningsPanel';
 import { AllocationPage } from './pages/allocation/AllocationPage';
 import { ClassStructuresPage } from './pages/classes/ClassStructuresPage';
 import { EntitlementPage } from './pages/entitlement/EntitlementPage';
-import { IntentionsPage } from './pages/intentions/IntentionsPage';
 import { LeavePage } from './pages/leave/LeavePage';
 import { MatchingPage } from './pages/matching/MatchingPage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -17,7 +16,6 @@ import { StaffPage } from './pages/staff/StaffPage';
 export const MODULES = [
   { path: '/entitlement', label: 'Entitlement', phase: 2, part: 1 },
   { path: '/staff', label: 'Staff', phase: 3, part: 1 },
-  { path: '/intentions', label: 'Staff intentions', phase: 6, part: 1 },
   { path: '/matching', label: 'Match staff', phase: 2, part: 1 },
   { path: '/classes', label: 'Class structures', phase: 5, part: 2 },
   { path: '/allocation', label: 'Roles & placement', phase: 3, part: 2 },
@@ -73,7 +71,8 @@ export function App() {
               <Route path="/leave/*" element={<LeavePage />} />
               <Route path="/classes" element={<ClassStructuresPage />} />
               <Route path="/matching" element={<MatchingPage />} />
-              <Route path="/intentions" element={<IntentionsPage />} />
+              {/* Staff intentions are now part of the staff form (Bec). */}
+              <Route path="/intentions" element={<Navigate to="/staff" replace />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/help/*" element={<HelpPage />} />
               <Route path="*" element={<PlaceholderPage title="Not found" />} />

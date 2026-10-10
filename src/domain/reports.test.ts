@@ -86,12 +86,11 @@ describe('reports', () => {
     expect(texts(rowNamed('classes', 'Enrolments', 'Kindergarten'))).toEqual(['Kindergarten', '40', '40']);
   });
 
-  it('lists staff with their intentions and whether they are applied', () => {
+  it('lists staff with their substantive role and details for next year', () => {
     const kit = rowNamed('staff', 'Staff', 'Kit Ashdown');
-    expect(kit.at(-1)).toEqual({
-      text: 'Not applied: Add whole-year Leave without pay (Thu, Fri) for the school year',
-      tone: 'warn',
-    });
+    expect(kit.at(-1)).toEqual({ text: 'Up to date', tone: 'ok' });
+    expect(table('staff', 'Staff').columns[4]).toBe('Substantive role');
+    expect(rowNamed('staff', 'Staff', 'Lou Merriweather')[4]!.text).toBe('Teacher Librarian');
     expect(texts(rowNamed('staff', 'Staff', 'Eli Brookfield')).slice(6)).toEqual([
       '1.0',
       'Part time',

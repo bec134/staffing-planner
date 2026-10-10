@@ -105,7 +105,8 @@ export const staffLink = (id: Id) => `/staff/${id}`;
 export const roleLink = (id: Id) => `/allocation/roles/${id}`;
 export const leaveLink = (id: Id) => `/leave/${id}`;
 export const MATCHING_LINK = '/matching';
-export const INTENTIONS_LINK = '/intentions';
+/** Details for next year are edited on the Staff page. */
+export const INTENTIONS_LINK = '/staff';
 
 function entitlementFlags(input: FlagInput): Flag[] {
   // Part 1 matching is what counts against the entitlement (Bec).
@@ -311,7 +312,7 @@ function intentionFlags(input: FlagInput): Flag[] {
       flags.push({
         key: `intention-pending:${i.id}`,
         kind: 'intention_not_applied',
-        message: `${i.name}'s intentions aren't applied to the plan yet: ${plan.changes.join('; ')}`,
+        message: `${i.name}'s details for next year aren't applied yet (see the Staff page): ${plan.changes.join('; ')}`,
         link: INTENTIONS_LINK,
       });
     }

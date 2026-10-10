@@ -42,7 +42,7 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
     const parts = [
       doomed.length ? `${doomed.length} allocation(s)` : '',
       leave.length ? `${leave.length} leave record(s)` : '',
-      intention ? 'intentions' : '',
+      intention ? 'details for next year' : '',
     ].filter(Boolean);
     const extra = parts.length ? ` Their ${parts.join(' and ')} will also be removed.` : '';
     if (!confirm(`Delete ${staff.name}?${extra}`)) return;
@@ -73,39 +73,38 @@ export function StaffDetail({ data, flags }: { data: PlanData; flags: Flag[] }) 
         </ul>
       )}
       {editing ? (
-        <StaffForm
-          planningYearId={data.planningYear.id}
-          existing={staff}
-          otherNames={data.staff.filter((s) => s.id !== staff.id).map((s) => s.name)}
-          onDone={() => setEditing(false)}
-        />
+        <StaffForm data={data} existing={staff} onDone={() => setEditing(false)} />
       ) : (
         <>
           <dl className="facts">
-            <dt>Employment</dt>
+            <dt>Employment status</dt>
             <dd>{EMPLOYMENT_TYPE_LABELS[staff.employmentType]}</dd>
-            <dt>Current role</dt>
+            {intention?.permanentMilliFte !== undefined && (
+              <>
+                <dt>Permanent FTE</dt>
+                <dd>{formatFte(intention.permanentMilliFte)}</dd>
+              </>
+            )}
+            <dt>Substantive role</dt>
             <dd>{staff.currentRole || '—'}</dd>
+            {intention && (
+              <>
+                <dt>Work preference</dt>
+                <dd>{WORK_PREFERENCE_LABELS[intention.workPreference]}</dd>
+                <dt>Preferred days</dt>
+                <dd>{daysLabel(intention.preferredDays)}</dd>
+              </>
+            )}
             <dt>Days worked</dt>
             <dd>
               {daysLabel(staff.workPattern)} ({formatFte(milliFteOf(staff.workPattern))} FTE)
             </dd>
+            <dt>Grade preferences</dt>
+            <dd>{describeGrades(intention?.gradePreferences ?? []) || '—'}</dd>
             <dt>Allocated</dt>
             <dd>{formatFte(allocatedMilli)} FTE</dd>
             <dt>Unallocated days</dt>
             <dd>{daysLabel(unallocated) === 'none' ? '—' : daysLabel(unallocated)}</dd>
-            <dt>Intentions</dt>
-            <dd>
-              {intention ? (
-                <>
-                  {WORK_PREFERENCE_LABELS[intention.workPreference]}, prefers {daysLabel(intention.preferredDays)}
-                  {intention.gradePreferences.length > 0 && `; grades ${describeGrades(intention.gradePreferences)}`}.{' '}
-                </>
-              ) : (
-                'None entered. '
-              )}
-              <Link to="/intentions">Staff intentions</Link>
-            </dd>
           </dl>
           <div className="actions">
             <button className="secondary" onClick={() => setEditing(true)}>

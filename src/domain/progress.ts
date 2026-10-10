@@ -5,7 +5,7 @@
 import { unfilledDays } from './allocation';
 import { dayIndices } from './dayPattern';
 import { formatFte } from './fte';
-import { checkIntention, intentionForStaff, planApplyIntention } from './intentions';
+import { checkIntention, planApplyIntention } from './intentions';
 import { coverGaps } from './leave';
 import { matchStatus, schoolYear } from './matching';
 import type { PlanningYearSnapshot } from '../data/repository';
@@ -27,7 +27,6 @@ export function planSteps(d: PlanningYearSnapshot): PlanStep[] {
   const year = schoolYear(d.planningYear);
   const entitlement = d.entitlements[0]?.totalMilliFte ?? 0;
 
-  const withIntentions = d.staff.filter((s) => intentionForStaff(s, d.intentions));
   const ctx = { planningYearId: d.planningYear.id, year, staff: d.staff, leave: d.leave, allocations: d.allocations, matches: d.matches };
   const pending = d.intentions.filter((i) => {
     if (checkIntention(i).errors.length) return true;
@@ -52,21 +51,13 @@ export function planSteps(d: PlanningYearSnapshot): PlanStep[] {
     },
     {
       id: 'staff',
-      title: 'Add staff',
-      detail: d.staff.length ? plural(d.staff.length, 'staff member') : 'No staff yet: add them by hand or import a CSV file',
-      done: d.staff.length > 0,
+      title: 'Add staff and their plans for next year',
+      detail: d.staff.length
+        ? `${plural(d.staff.length, 'staff member')}${pending ? `; ${pending} with details not yet applied` : ''}`
+        : 'No staff yet: add them by hand or import a CSV file',
+      done: d.staff.length > 0 && pending === 0,
       path: '/staff',
       action: 'Add staff',
-    },
-    {
-      id: 'intentions',
-      title: 'Enter and apply staff intentions',
-      detail: !d.staff.length
-        ? 'Add staff first'
-        : `${withIntentions.length} of ${d.staff.length} staff have intentions${pending ? `; ${pending} not applied` : ''}`,
-      done: d.staff.length > 0 && withIntentions.length === d.staff.length && pending === 0,
-      path: '/intentions',
-      action: 'Enter intentions',
     },
     {
       id: 'matching',

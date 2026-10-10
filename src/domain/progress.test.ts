@@ -27,7 +27,6 @@ describe('plan steps', () => {
     expect(steps.map((s) => [s.id, s.done])).toEqual([
       ['entitlement', false],
       ['staff', false],
-      ['intentions', false],
       ['matching', false],
       ['classes', false],
       ['placement', false],
@@ -42,7 +41,6 @@ describe('plan steps', () => {
     const steps = Object.fromEntries(planSteps(buildSampleData()).map((s) => [s.id, s]));
     expect(steps.entitlement).toMatchObject({ done: true, detail: '14.884 FTE entered' });
     expect(steps.staff).toMatchObject({ done: true, detail: '18 staff members' });
-    expect(steps.intentions).toMatchObject({ done: false, detail: '18 of 18 staff have intentions; 1 not applied' });
     // Sam is temporary, so only permanent and TWT staff count here.
     expect(steps.matching).toMatchObject({ done: true, detail: 'Permanent and TWT staff all matched' });
     expect(steps.classes).toMatchObject({ done: true, detail: '6 classes' });
