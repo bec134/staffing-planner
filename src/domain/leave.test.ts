@@ -1,5 +1,5 @@
 import { FULL_TIME, describePattern, fortnightlyPattern, weekdays, type DayPattern } from './dayPattern';
-import { affectedRoles, availableCoverDays, coverGaps, coverStatus, validateCover, validateLeave, wholeYearVacancies } from './leave';
+import { affectedRoles, availableCoverDays, coverGaps, coverStatus, validateCover, validateLeave, part1Backfill } from './leave';
 import { dayIndices as dayIdx } from './dayPattern';
 import type { Allocation, Leave, Role, Staff } from './types';
 
@@ -165,36 +165,29 @@ describe('validateLeave', () => {
   });
 });
 
-describe('coverStatus and whole-year leave (Bec)', () => {
+describe('coverStatus (Bec: whole-year leave is covered in Part 1)', () => {
   const yr = { start: '2027-01-28', end: '2027-12-17' };
   const thuFri = weekdays('Thu', 'Fri');
   const lwop: Leave = { id: 'l', planningYearId: 'y', staffId: 'jane', startDate: yr.start, endDate: yr.end, daysAffected: thuFri, leaveType: 'lwop' };
-  const cls: Role = { id: 'class', planningYearId: 'y', name: '3/4 Red', positionTypeId: 't', days: FULL_TIME, sortOrder: 0 };
   let n = 0;
-  const a = (staffId: string, days: DayPattern, extra: Partial<Allocation> = {}): Allocation => ({ id: `a${++n}`, planningYearId: 'y', staffId, roleId: 'class', days, ...extra });
-  const janePlaced = a('jane', weekdays('Mon', 'Tue', 'Wed'));
+  const a = (staffId: string, days: DayPattern, extra: Partial<Allocation> = {}): Allocation => ({ id: `a${++n}`, planningYearId: 'y', staffId, roleId: 'p', days, ...extra });
   const janeMatched = a('jane', FULL_TIME);
+  const backfill = (days: DayPattern) => a('amy', days, { coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
 
-  it('needs someone placed in her class on her leave days', () => {
-    expect(coverStatus(lwop, [janePlaced], [janeMatched], [cls], yr)).toBe('uncovered');
-    expect(coverStatus(lwop, [janePlaced, a('amy', weekdays('Thu'))], [janeMatched], [cls], yr)).toBe('partial');
-    expect(coverStatus(lwop, [janePlaced, a('amy', thuFri)], [janeMatched], [cls], yr)).toBe('covered');
-    expect(wholeYearVacancies(lwop, [janePlaced, a('amy', thuFri)], [cls])).toEqual([
-      { roleId: 'class', days: dayIdx(thuFri), filled: dayIdx(thuFri), filledBy: ['amy'] },
-    ]);
+  it('is covered once her position days are backfilled in Part 1, whatever Part 2 shows', () => {
+    expect(coverStatus(lwop, [], [janeMatched], yr)).toBe('uncovered');
+    expect(coverStatus(lwop, [], [janeMatched, backfill(weekdays('Thu'))], yr)).toBe('partial');
+    expect(coverStatus(lwop, [a('jane', weekdays('Mon', 'Tue', 'Wed'))], [janeMatched, backfill(thuFri)], yr)).toBe('covered');
+    expect(coverStatus(lwop, [], [], yr)).toBe('nothing');
+    expect(part1Backfill(lwop, [janeMatched, backfill(weekdays('Thu'))])).toEqual({ days: dayIdx(thuFri), backfilled: dayIdx(weekdays('Thu')) });
   });
 
-  it('before Part 2, shows whether Part 1 has a backfill', () => {
-    expect(coverStatus(lwop, [], [janeMatched], [cls], yr)).toBe('unplaced');
-    const backfill = a('amy', thuFri, { coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
-    expect(coverStatus(lwop, [], [janeMatched, backfill], [cls], yr)).toBe('backfilled');
-    expect(coverStatus(lwop, [], [], [cls], yr)).toBe('nothing');
-  });
-
-  it('still uses leave cover when she is placed on her leave days', () => {
+  it('uses Part 2 leave cover for leave during the year', () => {
+    const term: Leave = { ...lwop, endDate: '2027-04-09' };
     const held = a('jane', FULL_TIME);
-    expect(coverStatus(lwop, [held], [], [cls], yr)).toBe('uncovered');
-    const cover = a('amy', thuFri, { coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
-    expect(coverStatus(lwop, [held, cover], [], [cls], yr)).toBe('covered');
+    expect(coverStatus(term, [held], [janeMatched], yr)).toBe('uncovered');
+    const cover = a('amy', thuFri, { coveringLeaveId: 'l', startDate: term.startDate, endDate: term.endDate });
+    expect(coverStatus(term, [held, cover], [], yr)).toBe('covered');
+    expect(coverStatus(term, [], [janeMatched], yr)).toBe('nothing');
   });
 });

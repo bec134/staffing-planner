@@ -28,9 +28,9 @@ describe('plan steps', () => {
       ['entitlement', false],
       ['staff', false],
       ['matching', false],
+      ['leave', true],
       ['classes', false],
       ['placement', false],
-      ['leave', true],
       ['reports', undefined],
     ]);
     expect(steps[1]!.detail).toBe('No staff yet: add them by hand or import a CSV file');

@@ -17,9 +17,10 @@ export const MODULES = [
   { path: '/entitlement', label: 'Entitlement', phase: 2, part: 1 },
   { path: '/staff', label: 'Staff', phase: 3, part: 1 },
   { path: '/matching', label: 'Match staff', phase: 2, part: 1 },
+  // Whole-year leave is backfilled in Part 1 (Bec), so leave lives there.
+  { path: '/leave', label: 'Leave cover', phase: 4, part: 1 },
   { path: '/classes', label: 'Class structures', phase: 5, part: 2 },
   { path: '/allocation', label: 'Roles & placement', phase: 3, part: 2 },
-  { path: '/leave', label: 'Leave cover', phase: 4, part: 2 },
   { path: '/reports', label: 'Export & reports', phase: 7, part: 0 },
 ] as const;
 

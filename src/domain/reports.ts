@@ -355,8 +355,8 @@ function leaveReport(d: PlanningYearSnapshot): Report {
         gaps.length
           ? c(gaps.map((g) => `${roleName(g.roleId)}: ${describeDayIndices(g.days)}, ${formatRange(g.range)}`).join('\n'), 'gap')
           : (() => {
-              const status = coverStatus(l, d.allocations, d.matches, d.roles, year);
-              return c(COVER_STATUS_LABELS[status], status === 'covered' || status === 'backfilled' ? 'ok' : status === 'nothing' ? undefined : 'gap');
+              const status = coverStatus(l, d.allocations, d.matches, year);
+              return c(COVER_STATUS_LABELS[status], status === 'covered' ? 'ok' : status === 'nothing' ? undefined : 'gap');
             })(),
         c(backfills.map((m) => `${name(m.staffId)}: ${daysText(m.days)}`).join('\n')),
       ];

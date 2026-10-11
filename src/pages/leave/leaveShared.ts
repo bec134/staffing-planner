@@ -14,4 +14,4 @@ export { COVER_STATUS_LABELS } from '../../domain/leave';
 
 /** See `coverStatus` in domain/leave.ts. */
 export const coverStatus = (l: Leave, data: PlanData) =>
-  domainCoverStatus(l, data.allocations, data.matches, data.roles, schoolYear(data.planningYear));
+  domainCoverStatus(l, data.allocations, data.matches, schoolYear(data.planningYear));

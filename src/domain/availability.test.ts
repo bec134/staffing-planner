@@ -36,6 +36,20 @@ describe('part2Availability', () => {
     expect(days(b.free)).toEqual(days(weekdays('Wed')));
   });
 
+  it('uses the days they are matched in Part 1, less leave', () => {
+    const m = (days: ReturnType<typeof weekdays>, extra = {}) => ({ id: `m${Math.random()}`, planningYearId: y, staffId: 'olive', roleId: 'p', days, ...extra });
+    // Works Mon–Fri but only matched Mon–Wed, with LWOP Wed.
+    const a = part2Availability(olive, [], [leave('l1', 'olive', weekdays('Wed'))], [m(weekdays('Mon', 'Tue', 'Wed'))], year);
+    expect(days(a.working)).toEqual(days(weekdays('Mon', 'Tue')));
+    // A backfill they do elsewhere counts.
+    const b = part2Availability(olive, [], [], [m(weekdays('Mon')), m(weekdays('Fri'), { coveringLeaveId: 'x' })], year);
+    expect(days(b.working)).toEqual(days(weekdays('Mon', 'Fri')));
+    // Higher duties: own position on leave Wed, but the higher-duties match Wed is worked.
+    const hd = leave('hd', 'olive', weekdays('Wed'), 'higher_duties');
+    const c = part2Availability(olive, [], [hd], [m(weekdays('Mon', 'Tue', 'Wed')), m(weekdays('Wed'), { higherDutiesLeaveId: 'hd' })], year);
+    expect(days(c.working)).toEqual(days(weekdays('Mon', 'Tue', 'Wed')));
+  });
+
   it('ignores part-year leave', () => {
     const a = part2Availability(olive, [], [leave('l1', 'olive', FULL_TIME, 'lsl', '2027-04-09')], [], year);
     expect(days(a.working)).toEqual(days(FULL_TIME));
