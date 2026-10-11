@@ -15,7 +15,7 @@ import { formatFte, milliFteOf } from './fte';
 import { checkIntention, describeGrades, intentionForStaff, planApplyIntention, staffForIntention } from './intentions';
 import { allocationRange, coverGaps, coversFor, leaveRange } from './leave';
 import { MATCH_ORDER, isWholeYearLeave, matchStatus, schoolYear } from './matching';
-import { actsUp } from './higherDuties';
+import { actsUp, teachingExecutive } from './higherDuties';
 import { cellView, type GridData, type Tile } from './roleGrid';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -125,7 +125,8 @@ function gridTable(
   for (const pt of [...positionTypes].sort(bySort)) {
     const hdTag = (t: Tile) =>
       (t.allocation.higherDutiesLeaveId || t.allocation.aboveSubstantive || actsUp(staffById.get(t.staffId), pt) ? ' (higher duties)' : '') +
-      (t.allocation.secondJobLeaveId ? ' (second job)' : '');
+      (t.allocation.secondJobLeaveId ? ' (second job)' : '') +
+      (teachingExecutive(staffById.get(t.staffId), pt) ? ` (${teachingExecutive(staffById.get(t.staffId), pt)})` : '');
     const group = rows.filter((r) => r.positionTypeId === pt.id).sort(bySort);
     if (!group.length) continue;
     out.push(heading(pt.name));

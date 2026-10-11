@@ -210,4 +210,19 @@ describe('Role grid', () => {
     // Fern has no leave or roles yet.
     expect(screen.getByText('Fern Example', { selector: '.palette-tile' }).getAttribute('title')).toMatch(/works (Mon, Tue, Wed, Thu, Fri|Mon–Fri); free (Mon, Tue, Wed, Thu, Fri|Mon–Fri)/);
   });
+
+  it('shows AP on the tile of an Assistant Principal teaching a class', async () => {
+    await setup();
+    // Free Bodhi's Monday from his AP role, then put him in a class.
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Bodhi Marsh from AP Early Stage 1 & Stage 1 on Mon' }));
+    await waitFor(() => expect(within(cell('AP Early Stage 1 & Stage 1', 'Mon')).queryByText('Bodhi Marsh')).not.toBeInTheDocument());
+    const dt = dataTransfer();
+    fireEvent.dragStart(screen.getByText('Bodhi Marsh', { selector: '.palette-tile' }), { dataTransfer: dt });
+    fireEvent.drop(cell('K Green', 'Mon'), { dataTransfer: dt });
+    const tile = await waitFor(() => within(cell('K Green', 'Mon')).getByText('Bodhi Marsh').closest('.tile')!);
+    expect(within(tile as HTMLElement).getByText('AP')).toHaveClass('tag', 'exec');
+    // Not in his own AP role.
+    const own = within(cell('AP Early Stage 1 & Stage 1', 'Tue')).getByText('Bodhi Marsh').closest('.tile') as HTMLElement;
+    expect(within(own).queryByText('AP')).not.toBeInTheDocument();
+  });
 });

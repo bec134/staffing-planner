@@ -374,6 +374,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "A full-time teacher dropped on a class fills the whole week. Dropping a name on a role's name fills every day they are free.",
           'Click **×** to remove a day, or drag a tile to move it.',
           'Name tiles show the days each person works after Part 1: whole-year leave days are left out (for example LWOP Wed–Fri leaves Mon, Tue), and a second job adds its days back. They cannot be placed on their leave days.',
+          'An executive teaching a class (for example a teaching Assistant Principal) is placed in the class like anyone else; their tile shows "AP" (or "AP C&I", "DP", "Principal") so you can see it is a teaching executive.',
           'Someone on higher duties can be placed in an executive role on their higher-duties days; their own class shows grey on those days and needs cover.',
           'Name tiles show grade preferences (for example "Prefers K, 1, 2") from each person\'s staff details.',
         ],

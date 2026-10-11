@@ -15,7 +15,7 @@ import {
   type GridData,
   type Tile,
 } from '../domain/roleGrid';
-import { actsUp, type HigherDutiesPlan } from '../domain/higherDuties';
+import { actsUp, teachingExecutive, type HigherDutiesPlan } from '../domain/higherDuties';
 import { schoolYear } from '../domain/matching';
 import type { SecondJobPlan } from '../domain/secondJob';
 import type { Availability } from '../domain/availability';
@@ -533,6 +533,9 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                             <span className="tag">higher duties</span>
                           )}
                           {t.allocation.secondJobLeaveId && <span className="tag">second job</span>}
+                          {teachingExecutive(staffById.get(t.staffId), type) && (
+                            <span className="tag exec">{teachingExecutive(staffById.get(t.staffId), type)}</span>
+                          )}
                           {props.byEmployment && t.kind !== 'on-leave' && (t.allocation.employmentType || t.allocation.secondJobLeaveId) && (
                             <select
                               className="tile-select"
