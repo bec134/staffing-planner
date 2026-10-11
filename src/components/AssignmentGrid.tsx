@@ -18,6 +18,7 @@ import {
 import { actsUp, type HigherDutiesPlan } from '../domain/higherDuties';
 import { schoolYear } from '../domain/matching';
 import type { SecondJobPlan } from '../domain/secondJob';
+import type { Availability } from '../domain/availability';
 import {
   EMPLOYMENT_TYPE_LABELS,
   LEAVE_TYPE_SHORT,
@@ -77,6 +78,12 @@ export interface AssignmentGridProps {
   placesHigherDuties?: boolean;
   /** Part 1: days within / over someone's substantive FTE for a position (see substantive.ts). */
   splitBySubstantive?: GridData['splitBySubstantive'];
+  /**
+   * Part 2: the days someone works after their Part 1 matching (leave
+   * removed, second jobs added) and those still free. Default: days worked,
+   * less days held.
+   */
+  availability?(staff: Staff): Availability;
   /** Part 2: the leave freeing someone for a second job on a day (from their Part 1 match). */
   secondJobLeaveId?(staffId: string, day: number): string | undefined;
   /**
@@ -132,6 +139,12 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       : undefined,
     secondJobLeaveId: props.secondJobLeaveId,
     splitBySubstantive: props.splitBySubstantive,
+    offDays: props.availability
+      ? (staffId) => {
+          const s = staffById.get(staffId);
+          return s ? subtract(s.workPattern, props.availability!(s).working) : { mode: 'weekly', days: Array(FORTNIGHT_DAYS).fill(false) };
+        }
+      : undefined,
   };
 
   const anyFortnightly = [
@@ -379,7 +392,10 @@ export function AssignmentGrid(props: AssignmentGridProps) {
           <div key={group} className="palette-group">
             {group && <div className="palette-heading">{group}</div>}
             {people.map((s) => {
-              const freeDays = subtract(s.workPattern, staffBusyDays(s.id, allocations));
+              const { working, free: freeDays } = props.availability?.(s) ?? {
+                working: s.workPattern,
+                free: subtract(s.workPattern, staffBusyDays(s.id, allocations)),
+              };
               const label = daysLabel(freeDays);
               return (
                 <div
@@ -387,7 +403,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                   className={`tile palette-tile${empClass(s.id)} ${label === 'none' ? 'full' : ''}`}
                   draggable
                   onDragStart={(e) => startDrag(e, { staffId: s.id })}
-                  title={`${s.name} (${EMPLOYMENT_TYPE_LABELS[s.employmentType]}): works ${daysLabel(s.workPattern)}; free ${label}`}
+                  title={`${s.name} (${EMPLOYMENT_TYPE_LABELS[s.employmentType]}): works ${daysLabel(working)}; free ${label}`}
                 >
                   {s.name}
                   <span className="free">{label === 'none' ? words.full : `free ${label}`}</span>

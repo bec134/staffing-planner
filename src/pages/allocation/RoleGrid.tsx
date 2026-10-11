@@ -3,7 +3,9 @@ import { AssignmentGrid } from '../../components/AssignmentGrid';
 import { fteOf } from '../../domain/dayPattern';
 import { roleLink } from '../../domain/flags';
 import { describeGrades, intentionForStaff } from '../../domain/intentions';
-import { isMatched } from '../../domain/matching';
+import { part2Availability } from '../../domain/availability';
+import { isMatched, schoolYear } from '../../domain/matching';
+import type { Staff } from '../../domain/types';
 import { useRepository } from '../../data/RepositoryContext';
 import type { PlanData } from './shared';
 
@@ -17,6 +19,7 @@ export function RoleGrid({ data }: { data: PlanData }) {
   const matchingStarted = data.matches.length > 0;
   const offered = showAll || !matchingStarted ? data.staff : data.staff.filter((s) => isMatched(s, data.matches));
   const types = new Map(data.positionTypes.map((p) => [p.id, p]));
+  const availability = (s: Staff) => part2Availability(s, data.allocations, data.leave, data.matches, schoolYear(data.planningYear));
 
   return (
     <AssignmentGrid
@@ -33,7 +36,7 @@ export function RoleGrid({ data }: { data: PlanData }) {
       }}
       saveStaff={(s) => repo.staff.put(s)}
       // A full-time teacher placed on a class fills the whole week (Bec).
-      fillsWeek={(s, row) => types.get(row.positionTypeId)?.category === 'class_teacher' && fteOf(s.workPattern) === 1}
+      fillsWeek={(s, row) => types.get(row.positionTypeId)?.category === 'class_teacher' && fteOf(availability(s).working) === 1}
       rowLink={(row) => roleLink(row.id)}
       tileNote={(s) => {
         const grades = intentionForStaff(s, data.intentions)?.gradePreferences ?? [];
@@ -41,6 +44,7 @@ export function RoleGrid({ data }: { data: PlanData }) {
       }}
       showAsAt
       placesHigherDuties
+      availability={availability}
       secondJobLeaveId={(staffId, day) =>
         data.matches.find((m) => m.staffId === staffId && m.secondJobLeaveId && m.days.days[day])?.secondJobLeaveId
       }

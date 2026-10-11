@@ -201,4 +201,13 @@ describe('Role grid', () => {
     expect(within(palette()).queryByText('Sam Ridley')).not.toBeInTheDocument(); // part-year cover only, not matched
     expect(within(palette()).getByText('Tara Quinlan')).toBeInTheDocument(); // matched as a backfill
   });
+
+  it('shows the days people work after Part 1, leaving out whole-year leave', async () => {
+    await setup();
+    // Indi has whole-year LWOP Thu–Fri, so she works Mon–Wed, all placed.
+    const indi = screen.getByText('Indi Calloway', { selector: '.palette-tile' });
+    expect(indi.getAttribute('title')).toMatch(/works Mon, Tue, Wed; free none/);
+    // Fern has no leave or roles yet.
+    expect(screen.getByText('Fern Example', { selector: '.palette-tile' }).getAttribute('title')).toMatch(/works (Mon, Tue, Wed, Thu, Fri|Mon–Fri); free (Mon, Tue, Wed, Thu, Fri|Mon–Fri)/);
+  });
 });

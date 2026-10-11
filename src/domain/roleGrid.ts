@@ -12,6 +12,7 @@ import {
   FORTNIGHT_DAYS,
   dayIndices,
   describeDayIndices,
+  intersect,
   repeatsWeekly,
   subtract,
   union,
@@ -47,6 +48,11 @@ export interface GridData {
    * it (higher duties). See substantive.ts.
    */
   splitBySubstantive?(staffId: Id, roleId: Id, indices: number[]): { within: number[]; over: number[] } | undefined;
+  /**
+   * Part 2: days someone works but is away all year (whole-year leave not
+   * freed for a second job), so they can't be placed then. See availability.ts.
+   */
+  offDays?(staffId: Id): DayPattern;
 }
 
 /** A pattern holding exactly these fortnight-day indices. */
@@ -143,6 +149,9 @@ export function planAssign(data: GridData, staffId: Id, roleId: Id, indices: num
       missingWorkDays: missing,
     };
   }
+
+  const off = dayIndices(intersect(wanted, data.offDays?.(staff.id) ?? { mode: 'weekly', days: Array(FORTNIGHT_DAYS).fill(false) }));
+  if (off.length) return { ok: false, errors: [`${staff.name} is on whole-year leave on ${describeDayIndices(off)}`] };
 
   // Split the days into those left vacant by a holder's leave (→ cover) and
   // those with no holder (→ an ordinary allocation).
@@ -382,7 +391,7 @@ export function fillableDays(data: GridData, staffId: Id, roleId: Id): { indices
       if (holder.staffId !== staffId) heldByOthers.push(d);
       continue;
     }
-    if (staff.workPattern.days[d] && !busy.days[d]) indices.push(d);
+    if (staff.workPattern.days[d] && !busy.days[d] && !data.offDays?.(staffId).days[d]) indices.push(d);
   }
   return { indices, heldByOthers };
 }
