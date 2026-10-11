@@ -41,6 +41,12 @@ describe('Leave cover', () => {
     const row = (await screen.findByText('Thu, Fri')).closest('tr')!;
     expect(within(row).getByText('27 Apr – 2 Jul 2027')).toBeInTheDocument();
     expect(within(row).getByText('Jules Fernhill (Long Service Leave)')).toBeInTheDocument();
+    // Whole-year leave not backfilled in Part 1 is listed too, matching the leave list.
+    const eli = screen.getByText('Eli Brookfield (Leave without pay)').closest('tr')!;
+    expect(eli).toHaveTextContent('Whole yearMon, TueClassroom Teacher 1');
+    expect(within(eli).getByRole('link', { name: 'Backfill on Match staff' })).toHaveAttribute('href', '#/matching');
+    // Indi's is backfilled (by Tara), so it isn't.
+    expect(screen.queryByText('Indi Calloway (Leave without pay)')).not.toBeInTheDocument();
   });
 
   it('assigns cover for the remaining days and clears the gap', async () => {
@@ -171,7 +177,8 @@ describe('Weekly grid with leave', () => {
     expect(eWed).toHaveTextContent(/^K Blue$/);
     expect(
       within(panel()).getByText(
-        "K Blue: no cover for Eli Brookfield's Leave without pay on Mon, Tue, 28 Jan – 17 Dec 2027",
+        // Whole-year leave is covered by backfilling it in Part 1 (Bec).
+        "Classroom Teacher 1: Eli Brookfield's Leave without pay isn't backfilled on Mon, Tue",
       ),
     ).toBeInTheDocument();
   });

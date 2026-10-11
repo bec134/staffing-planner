@@ -347,7 +347,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Check nothing is missed',
         points: [
-          '**Uncovered** lists every position left without cover, with dates.',
+          '**Uncovered** lists whole-year leave not yet backfilled on Match staff (by position and day), and leave during the year without cover (by role, dates and day). It matches the **Cover** column on the Leave tab and the warnings.',
           '**Timeline** shows leave and cover across the year.',
         ],
       },

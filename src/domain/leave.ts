@@ -185,13 +185,30 @@ export function validateLeave(leave: Pick<Leave, 'startDate' | 'endDate' | 'days
 
 const isWholeYear = (l: Leave, year: DateRange) => l.startDate <= year.start && l.endDate >= year.end;
 
+/**
+ * Part 1: per position, the days this leave leaves vacant and those not
+ * yet backfilled (a backfill is a match in that position covering the leave).
+ */
+export function part1Gaps(leave: Leave, matches: Allocation[]): { positionId: Id; days: number[]; open: number[] }[] {
+  const own = matches.filter((m) => m.staffId === leave.staffId && !m.coveringLeaveId && !freedBy(m));
+  return [...new Set(own.map((m) => m.roleId))].flatMap((positionId) => {
+    const days = dayIndices(intersect(union(own.filter((m) => m.roleId === positionId).map((m) => m.days)), leave.daysAffected));
+    if (!days.length) return [];
+    const backfills = union(matches.filter((m) => m.coveringLeaveId === leave.id && m.roleId === positionId).map((m) => m.days));
+    return [{ positionId, days, open: days.filter((d) => !backfills.days[d]) }];
+  });
+}
+
 /** Part 1: the days this leave leaves vacant in their positions, and those backfilled. */
 export function part1Backfill(leave: Leave, matches: Allocation[]): { days: number[]; backfilled: number[] } {
-  const own = matches.filter((m) => m.staffId === leave.staffId && !m.coveringLeaveId && !freedBy(m));
-  const days = dayIndices(intersect(union(own.map((m) => m.days)), leave.daysAffected));
-  const backfills = union(matches.filter((m) => m.coveringLeaveId === leave.id).map((m) => m.days));
-  return { days, backfilled: days.filter((d) => backfills.days[d]) };
+  const gaps = part1Gaps(leave, matches);
+  const days = [...new Set(gaps.flatMap((g) => g.days))].sort((a, b) => a - b);
+  const open = new Set(gaps.flatMap((g) => g.open));
+  return { days, backfilled: days.filter((d) => !open.has(d)) };
 }
+
+/** Whole-year leave is covered in Part 1; other leave in Part 2 (Bec). */
+export const coveredInPart1 = (leave: Leave, year?: DateRange) => !!year && isWholeYear(leave, year);
 
 export type CoverStatus = 'covered' | 'partial' | 'uncovered' | 'nothing';
 
@@ -203,7 +220,7 @@ export type CoverStatus = 'covered' | 'partial' | 'uncovered' | 'nothing';
  * - Other leave is covered in Part 2: cover for the roles they hold then.
  */
 export function coverStatus(leave: Leave, allocations: Allocation[], matches: Allocation[], year?: DateRange): CoverStatus {
-  if (year && isWholeYear(leave, year)) {
+  if (coveredInPart1(leave, year)) {
     const p1 = part1Backfill(leave, matches);
     if (!p1.days.length) return 'nothing';
     return p1.backfilled.length === p1.days.length ? 'covered' : p1.backfilled.length ? 'partial' : 'uncovered';

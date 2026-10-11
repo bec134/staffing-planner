@@ -1,5 +1,5 @@
 import { FULL_TIME, describePattern, fortnightlyPattern, weekdays, type DayPattern } from './dayPattern';
-import { affectedRoles, availableCoverDays, coverGaps, coverStatus, validateCover, validateLeave, part1Backfill } from './leave';
+import { affectedRoles, availableCoverDays, coverGaps, coverStatus, validateCover, validateLeave, part1Backfill, part1Gaps } from './leave';
 import { dayIndices as dayIdx } from './dayPattern';
 import type { Allocation, Leave, Role, Staff } from './types';
 
@@ -180,6 +180,12 @@ describe('coverStatus (Bec: whole-year leave is covered in Part 1)', () => {
     expect(coverStatus(lwop, [a('jane', weekdays('Mon', 'Tue', 'Wed'))], [janeMatched, backfill(thuFri)], yr)).toBe('covered');
     expect(coverStatus(lwop, [], [], yr)).toBe('nothing');
     expect(part1Backfill(lwop, [janeMatched, backfill(weekdays('Thu'))])).toEqual({ days: dayIdx(thuFri), backfilled: dayIdx(weekdays('Thu')) });
+  });
+
+  it('checks the backfill is in the same position', () => {
+    const other = a('amy', thuFri, { roleId: 'q', coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
+    expect(part1Gaps(lwop, [janeMatched, other])).toEqual([{ positionId: 'p', days: dayIdx(thuFri), open: dayIdx(thuFri) }]);
+    expect(coverStatus(lwop, [], [janeMatched, other], yr)).toBe('uncovered');
   });
 
   it('uses Part 2 leave cover for leave during the year', () => {

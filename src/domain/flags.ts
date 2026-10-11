@@ -14,7 +14,7 @@ import { summariseEntitlement, UNDER_ENTITLEMENT_TOLERANCE } from './entitlement
 import { formatFte } from './fte';
 import { overSubstantive } from './substantive';
 import { checkIntention, describeGrades, gradePreferenceMismatches, planApplyIntention } from './intentions';
-import { coverGaps } from './leave';
+import { coverGaps, coveredInPart1, part1Gaps } from './leave';
 import { MATCH_ORDER, matchesOutsidePosition, matchStatus, schoolYear, unmatchedDayCount, wholeYearPlacedMilli } from './matching';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -217,6 +217,20 @@ function vacancyFlags(input: FlagInput): Flag[] {
   const roleById = new Map(input.roles.map((r) => [r.id, r]));
   for (const leave of input.leave) {
     const who = staffById.get(leave.staffId)?.name ?? 'A deleted staff member';
+    // Whole-year leave is covered by its Part 1 backfill (Bec).
+    if (coveredInPart1(leave, input.year)) {
+      for (const gap of part1Gaps(leave, input.matches)) {
+        if (!gap.open.length) continue;
+        const position = input.positions.find((p) => p.id === gap.positionId);
+        flags.push({
+          key: `backfill:${leave.id}:${gap.positionId}`,
+          kind: 'leave_gap',
+          message: `${position?.name ?? 'A deleted position'}: ${who}'s ${LEAVE_TYPE_LABELS[leave.leaveType]} isn't backfilled on ${describeDayIndices(gap.open)}`,
+          link: leaveLink(leave.id),
+        });
+      }
+      continue;
+    }
     for (const gap of coverGaps(leave, input.allocations)) {
       flags.push({
         key: `gap:${leave.id}:${gap.roleId}:${gap.days.join(',')}:${gap.range.start}`,
