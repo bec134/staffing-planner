@@ -182,3 +182,40 @@ export function validateLeave(leave: Pick<Leave, 'startDate' | 'endDate' | 'days
   if (off.length) errors.push(`${staff.name} doesn't work ${describeDayIndices(off)}`);
   return errors;
 }
+
+const isWholeYear = (l: Leave, year: DateRange) => l.startDate <= year.start && l.endDate >= year.end;
+
+/** Part 1: the days this leave leaves vacant in their positions, and those backfilled. */
+export function part1Backfill(leave: Leave, matches: Allocation[]): { days: number[]; backfilled: number[] } {
+  const own = matches.filter((m) => m.staffId === leave.staffId && !m.coveringLeaveId && !freedBy(m));
+  const days = dayIndices(intersect(union(own.map((m) => m.days)), leave.daysAffected));
+  const backfills = union(matches.filter((m) => m.coveringLeaveId === leave.id).map((m) => m.days));
+  return { days, backfilled: days.filter((d) => backfills.days[d]) };
+}
+
+export type CoverStatus = 'covered' | 'partial' | 'uncovered' | 'nothing';
+
+/**
+ * Whether this leave is covered (Bec).
+ * - Whole-year leave is covered in Part 1: the person's position days on
+ *   leave are backfilled (`part1Backfill`). In Part 2 they're simply not
+ *   available on those days, and whoever is placed in the class then is fine.
+ * - Other leave is covered in Part 2: cover for the roles they hold then.
+ */
+export function coverStatus(leave: Leave, allocations: Allocation[], matches: Allocation[], year?: DateRange): CoverStatus {
+  if (year && isWholeYear(leave, year)) {
+    const p1 = part1Backfill(leave, matches);
+    if (!p1.days.length) return 'nothing';
+    return p1.backfilled.length === p1.days.length ? 'covered' : p1.backfilled.length ? 'partial' : 'uncovered';
+  }
+  if (!affectedRoles(leave, allocations).length) return 'nothing';
+  if (coverGaps(leave, allocations).length === 0) return 'covered';
+  return allocations.some((a) => a.coveringLeaveId === leave.id) ? 'partial' : 'uncovered';
+}
+
+export const COVER_STATUS_LABELS: Record<CoverStatus, string> = {
+  covered: 'Fully covered',
+  partial: 'Partly covered',
+  uncovered: 'No cover',
+  nothing: 'No roles affected',
+};

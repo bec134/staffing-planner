@@ -1,6 +1,6 @@
 /**
- * Part 2 availability (Bec): the days someone actually works next year,
- * after their Part 1 matching. Whole-year leave days are off (e.g. LWOP
+ * Part 2 availability (Bec): the days someone is matched to a position in
+ * Part 1, less their leave. Whole-year leave days are off (e.g. LWOP
  * Wed–Fri leaves Mon–Tue), except days they work elsewhere as a second job
  * (e.g. an AP on LWOP all year, matched on Wed as a temporary teacher).
  * Higher duties isn't time off: those days are worked in the executive role.
@@ -27,7 +27,13 @@ export function part2Availability(
   const own = leave.filter((l) => l.staffId === staff.id && isWholeYear(l, year));
   const away = union(own.filter((l) => l.leaveType !== 'higher_duties').map((l) => l.daysAffected));
   const secondJobs = union(matches.filter((m) => m.staffId === staff.id && m.secondJobLeaveId).map((m) => m.days));
-  const working = union([subtract(staff.workPattern, away), secondJobs]);
+  // Bec: the days they're matched to a position in Part 1 (including
+  // backfills, second jobs and higher duties), less their leave days.
+  // Before they're matched, their days worked less leave.
+  const mine = matches.filter((m) => m.staffId === staff.id);
+  const working = mine.length
+    ? union(mine.map((m) => subtract(m.days, union(own.filter((l) => l.id !== freedBy(m)).map((l) => l.daysAffected)))))
+    : union([subtract(staff.workPattern, away), secondJobs]);
   // Placed days: a role they're on leave from isn't somewhere they work, but
   // a second job or higher duties is.
   const placed = union(

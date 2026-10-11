@@ -13,7 +13,7 @@ import { summariseEntitlement } from './entitlement';
 import { computeFlags, flagInputFrom } from './flags';
 import { formatFte, milliFteOf } from './fte';
 import { checkIntention, describeGrades, intentionForStaff, planApplyIntention, staffForIntention } from './intentions';
-import { allocationRange, coverGaps, coversFor, leaveRange } from './leave';
+import { allocationRange, COVER_STATUS_LABELS, coverGaps, coverStatus, coversFor, leaveRange } from './leave';
 import { MATCH_ORDER, isWholeYearLeave, matchStatus, schoolYear } from './matching';
 import { actsUp, teachingExecutive } from './higherDuties';
 import { cellView, type GridData, type Tile } from './roleGrid';
@@ -354,7 +354,10 @@ function leaveReport(d: PlanningYearSnapshot): Report {
           : c('None'),
         gaps.length
           ? c(gaps.map((g) => `${roleName(g.roleId)}: ${describeDayIndices(g.days)}, ${formatRange(g.range)}`).join('\n'), 'gap')
-          : c('Fully covered', 'ok'),
+          : (() => {
+              const status = coverStatus(l, d.allocations, d.matches, year);
+              return c(COVER_STATUS_LABELS[status], status === 'covered' ? 'ok' : status === 'nothing' ? undefined : 'gap');
+            })(),
         c(backfills.map((m) => `${name(m.staffId)}: ${daysText(m.days)}`).join('\n')),
       ];
     });

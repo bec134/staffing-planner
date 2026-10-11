@@ -307,6 +307,53 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
+    id: 'leave',
+    title: 'Part 1: Leave and cover',
+    summary: 'Record leave, backfill whole-year leave, and cover leave during the year.',
+    group: 'Part 1 · Entitlement',
+    page: { path: '/leave', label: 'Leave cover' },
+    sections: [
+      {
+        heading: 'Enter term dates first',
+        steps: [
+          'Go to **Leave cover** and open the **Term dates** tab.',
+          'Enter the start and end of each term and click **Save term dates**. These give quick picks when assigning cover, and Term 1 start to Term 4 end counts as "the whole year".',
+        ],
+      },
+      {
+        heading: 'Record leave',
+        steps: [
+          'On the **Leave** tab, click **Add leave**.',
+          'Choose the **Staff member** and **Leave type** (Long Service Leave, Leave without pay, Maternity Leave or Paternity Leave).',
+          'Enter the **First day** and **Last day**, and tick the days of the week they are on leave.',
+          'Click **Add leave**.',
+        ],
+        tip: 'The person on leave keeps their position. Whole-year leave for part of the week (for example LWOP on Thu and Fri) is easiest to enter in the staff form, under Whole year leave days.',
+      },
+      {
+        heading: 'Assign cover',
+        steps: [
+          'Click the leave to open it. **Roles left vacant (Part 2)** and **Not yet covered** show what needs cover.',
+          'Click **Add cover**.',
+          'Choose who it is **Covered by** and the **Role to cover**, then set the dates (use a term quick pick) and days.',
+          'Click **Assign cover**. Cover does not count against the entitlement.',
+        ],
+        text: [
+          'You can also assign cover on the Role grid by dropping a name on a grey (on leave) tile.',
+          'Whole-year leave is covered in Part 1: on Match staff, drop someone on the grey days of their position to backfill it. **Cover** shows "Fully covered" once every leave day is backfilled, and the leave page shows who backfills it. In Roles & placement the person is not available on those days, and anyone matched in Part 1 can be placed in their class then.',
+          'Leave for part of the year: the person stays placed in their role in Part 2, and you assign cover for the leave dates, as above.',
+        ],
+      },
+      {
+        heading: 'Check nothing is missed',
+        points: [
+          '**Uncovered** lists every position left without cover, with dates.',
+          '**Timeline** shows leave and cover across the year.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'classes',
     title: 'Part 2: Class structures',
     summary: 'Get suggested class structures, accept one, and create class roles.',
@@ -385,49 +432,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         points: [
           '**By role** lists every role with who holds it; click a role to edit it or its allocations.',
           '**Staff grid** shows each person by day, with leave and who covers it. Choose an **As at** date to see a single day.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'leave',
-    title: 'Part 2: Leave and cover',
-    summary: 'Record leave, see what it leaves vacant, and assign cover.',
-    group: 'Part 2 · Placement',
-    page: { path: '/leave', label: 'Leave cover' },
-    sections: [
-      {
-        heading: 'Enter term dates first',
-        steps: [
-          'Go to **Leave cover** and open the **Term dates** tab.',
-          'Enter the start and end of each term and click **Save term dates**. These give quick picks when assigning cover, and Term 1 start to Term 4 end counts as "the whole year".',
-        ],
-      },
-      {
-        heading: 'Record leave',
-        steps: [
-          'On the **Leave** tab, click **Add leave**.',
-          'Choose the **Staff member** and **Leave type** (Long Service Leave, Leave without pay, Maternity Leave or Paternity Leave).',
-          'Enter the **First day** and **Last day**, and tick the days of the week they are on leave.',
-          'Click **Add leave**.',
-        ],
-        tip: 'The person on leave keeps their position. Whole-year leave for part of the week (for example LWOP on Thu and Fri) is easiest to enter in the staff form, under Whole year leave days.',
-      },
-      {
-        heading: 'Assign cover',
-        steps: [
-          'Click the leave to open it. **Positions left vacant** and **Not yet covered** show what needs cover.',
-          'Click **Add cover**.',
-          'Choose who it is **Covered by** and the **Role to cover**, then set the dates (use a term quick pick) and days.',
-          'Click **Assign cover**. Cover does not count against the entitlement.',
-        ],
-        text: ['You can also assign cover on the Role grid by dropping a name on a grey (on leave) tile.'],
-      },
-      {
-        heading: 'Check nothing is missed',
-        points: [
-          '**Uncovered** lists every position left without cover, with dates.',
-          '**Timeline** shows leave and cover across the year.',
         ],
       },
     ],

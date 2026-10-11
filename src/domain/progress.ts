@@ -6,7 +6,7 @@ import { unfilledDays } from './allocation';
 import { dayIndices } from './dayPattern';
 import { formatFte } from './fte';
 import { checkIntention, planApplyIntention } from './intentions';
-import { coverGaps } from './leave';
+import { coverStatus } from './leave';
 import { matchStatus, schoolYear } from './matching';
 import type { PlanningYearSnapshot } from '../data/repository';
 
@@ -38,7 +38,7 @@ export function planSteps(d: PlanningYearSnapshot): PlanStep[] {
   ).length;
   const unlinkedClasses = d.classStructures.filter((c) => !c.roleId).length;
   const unfilledRoles = d.roles.filter((r) => dayIndices(unfilledDays(r, d.allocations)).length > 0).length;
-  const gaps = d.leave.filter((l) => coverGaps(l, d.allocations).length > 0).length;
+  const gaps = d.leave.filter((l) => ['partial', 'uncovered'].includes(coverStatus(l, d.allocations, d.matches, year))).length;
 
   return [
     {
@@ -72,6 +72,14 @@ export function planSteps(d: PlanningYearSnapshot): PlanStep[] {
       action: 'Match staff to positions',
     },
     {
+      id: 'leave',
+      title: 'Part 1: backfill leave',
+      detail: !d.leave.length ? 'No leave recorded' : gaps ? `${plural(gaps, 'leave record')} not fully covered` : 'All leave covered',
+      done: gaps === 0,
+      path: '/leave',
+      action: 'Assign cover',
+    },
+    {
       id: 'classes',
       title: 'Part 2: set the class structure',
       detail: !d.classStructures.length
@@ -90,14 +98,6 @@ export function planSteps(d: PlanningYearSnapshot): PlanStep[] {
       done: d.roles.length > 0 && unfilledRoles === 0,
       path: '/allocation',
       action: 'Place staff',
-    },
-    {
-      id: 'leave',
-      title: 'Cover leave',
-      detail: !d.leave.length ? 'No leave recorded' : gaps ? `${plural(gaps, 'leave record')} not fully covered` : 'All leave covered',
-      done: gaps === 0,
-      path: '/leave',
-      action: 'Assign cover',
     },
     {
       id: 'reports',

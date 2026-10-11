@@ -29,7 +29,7 @@ describe('Help', () => {
     const guide = await screen.findByRole('article', { name: 'Part 1: Match staff to the entitlement' });
     expect(guide).toHaveTextContent('Click Nominate for transfer, add Notes, and click Confirm nomination.');
     expect(screen.getByRole('link', { name: 'Go to Match staff →' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Part 2: Class structures →' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Part 1: Leave and cover →' })).toBeInTheDocument();
   });
 
   it('links from each page to its guide', async () => {
@@ -38,6 +38,6 @@ describe('Help', () => {
     await screen.findByText('Morgan Pike');
     fireEvent.click(screen.getByRole('link', { name: 'Leave cover' }));
     fireEvent.click(await screen.findByRole('link', { name: 'How to use this page' }));
-    expect(await screen.findByRole('article', { name: 'Part 2: Leave and cover' })).toBeInTheDocument();
+    expect(await screen.findByRole('article', { name: 'Part 1: Leave and cover' })).toBeInTheDocument();
   });
 });

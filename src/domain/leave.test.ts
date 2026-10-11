@@ -1,5 +1,6 @@
 import { FULL_TIME, describePattern, fortnightlyPattern, weekdays, type DayPattern } from './dayPattern';
-import { affectedRoles, availableCoverDays, coverGaps, validateCover, validateLeave } from './leave';
+import { affectedRoles, availableCoverDays, coverGaps, coverStatus, validateCover, validateLeave, part1Backfill } from './leave';
+import { dayIndices as dayIdx } from './dayPattern';
 import type { Allocation, Leave, Role, Staff } from './types';
 
 const person = (id: string, workPattern: DayPattern = FULL_TIME): Staff => ({
@@ -161,5 +162,32 @@ describe('validateLeave', () => {
       'Enter start and end dates',
       'Choose at least one day of leave',
     ]);
+  });
+});
+
+describe('coverStatus (Bec: whole-year leave is covered in Part 1)', () => {
+  const yr = { start: '2027-01-28', end: '2027-12-17' };
+  const thuFri = weekdays('Thu', 'Fri');
+  const lwop: Leave = { id: 'l', planningYearId: 'y', staffId: 'jane', startDate: yr.start, endDate: yr.end, daysAffected: thuFri, leaveType: 'lwop' };
+  let n = 0;
+  const a = (staffId: string, days: DayPattern, extra: Partial<Allocation> = {}): Allocation => ({ id: `a${++n}`, planningYearId: 'y', staffId, roleId: 'p', days, ...extra });
+  const janeMatched = a('jane', FULL_TIME);
+  const backfill = (days: DayPattern) => a('amy', days, { coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
+
+  it('is covered once her position days are backfilled in Part 1, whatever Part 2 shows', () => {
+    expect(coverStatus(lwop, [], [janeMatched], yr)).toBe('uncovered');
+    expect(coverStatus(lwop, [], [janeMatched, backfill(weekdays('Thu'))], yr)).toBe('partial');
+    expect(coverStatus(lwop, [a('jane', weekdays('Mon', 'Tue', 'Wed'))], [janeMatched, backfill(thuFri)], yr)).toBe('covered');
+    expect(coverStatus(lwop, [], [], yr)).toBe('nothing');
+    expect(part1Backfill(lwop, [janeMatched, backfill(weekdays('Thu'))])).toEqual({ days: dayIdx(thuFri), backfilled: dayIdx(weekdays('Thu')) });
+  });
+
+  it('uses Part 2 leave cover for leave during the year', () => {
+    const term: Leave = { ...lwop, endDate: '2027-04-09' };
+    const held = a('jane', FULL_TIME);
+    expect(coverStatus(term, [held], [janeMatched], yr)).toBe('uncovered');
+    const cover = a('amy', thuFri, { coveringLeaveId: 'l', startDate: term.startDate, endDate: term.endDate });
+    expect(coverStatus(term, [held, cover], [], yr)).toBe('covered');
+    expect(coverStatus(term, [], [janeMatched], yr)).toBe('nothing');
   });
 });
