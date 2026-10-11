@@ -113,9 +113,6 @@ export function AssignmentGrid(props: AssignmentGridProps) {
     const type = allocation?.employmentType ?? s?.employmentType;
     return props.byEmployment && type ? ` emp-${type}` : '';
   };
-  /** Part 1: people holding more than one position can have a different employment type in each. */
-  const holdsSeveral = (staffId: string) =>
-    new Set(allocations.filter((a) => a.staffId === staffId && (!a.coveringLeaveId || a.secondJobLeaveId)).map((a) => a.roleId)).size > 1;
   const setEmployment = async (allocation: Allocation, type: EmploymentType) => {
     const next: Allocation = { ...allocation };
     if (type === staffById.get(allocation.staffId)?.employmentType) delete next.employmentType;
@@ -353,7 +350,8 @@ export function AssignmentGrid(props: AssignmentGridProps) {
       {secondJob && (() => {
         const plan = props.secondJob?.plan(secondJob.staffId, secondJob.role.id, secondJob.indices, secondJob.type);
         return (
-          <div className="panel" role="dialog" aria-label="Second job">
+          <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setSecondJob(null)}>
+          <div className="panel modal" role="dialog" aria-modal="true" aria-label="Second job">
             <p>{plan?.ok ? plan.message : plan?.error}</p>
             <label>
               Employment in this position{' '}
@@ -371,6 +369,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
             <button type="button" className="secondary" onClick={() => setSecondJob(null)}>
               Cancel
             </button>
+          </div>
           </div>
         );
       })()}
@@ -518,7 +517,7 @@ export function AssignmentGrid(props: AssignmentGridProps) {
                             <span className="tag">higher duties</span>
                           )}
                           {t.allocation.secondJobLeaveId && <span className="tag">second job</span>}
-                          {props.byEmployment && t.kind !== 'on-leave' && (t.allocation.employmentType || holdsSeveral(t.staffId)) && (
+                          {props.byEmployment && t.kind !== 'on-leave' && (t.allocation.employmentType || t.allocation.secondJobLeaveId) && (
                             <select
                               className="tile-select"
                               aria-label={`Employment for ${name(t.staffId)} in ${role.name}`}

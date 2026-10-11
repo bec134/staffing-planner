@@ -272,7 +272,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Match them to their own position as normal; their leave days turn grey.',
           "Drag their name onto another position on a leave day (or click **+**: they are listed with \"(second job)\").",
           'Choose the **Employment in this position** (Temporary to start with) and click **Match as second job**. The tile is coloured by that employment type and marked "second job".',
-          "To change the employment type later, use the menu on the tile. It appears for anyone holding more than one position.",
+          "To change the employment type later, use the menu on the tile. It appears on second-job tiles only.",
           'In Part 2 they can be placed in a role on their second-job days; other leave days stay off limits.',
         ],
       },

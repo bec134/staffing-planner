@@ -327,9 +327,11 @@ describe('Splitting a position', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove Kit Ashdown from Classroom Teacher 5 on Thu' }));
     await waitFor(() => expect(within(cell('Classroom Teacher 5', 'Thu')).queryByText('Kit Ashdown')).not.toBeInTheDocument());
 
-    const dt = dataTransfer();
-    fireEvent.dragStart(screen.getByText('Casey Wren', { selector: '.palette-tile' }), { dataTransfer: dt });
-    fireEvent.drop(cell('Classroom Teacher 5', 'Thu'), { dataTransfer: dt });
+    // Choose her from the cell's list (the + button).
+    fireEvent.click(within(cell('Classroom Teacher 5', 'Thu')).getByRole('button', { name: /choose/i }));
+    const picker = within(cell('Classroom Teacher 5', 'Thu')).getByRole('combobox');
+    expect(within(picker).getByRole('option', { name: 'Casey Wren (second job)' })).toBeInTheDocument();
+    fireEvent.change(picker, { target: { value: casey.id } });
     const dialog = await screen.findByRole('dialog', { name: 'Second job' });
     expect(dialog).toHaveTextContent('Casey Wren is on leave from Assistant Principal 2 on Thu');
     expect(within(dialog).getByLabelText('Employment in this position')).toHaveValue('temporary');

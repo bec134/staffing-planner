@@ -333,3 +333,7 @@ table.intentions td.actions { white-space: nowrap; }
 .tile .tile-select { font-size: 0.75em; padding: 0 2px; margin-left: 4px; max-width: 8em; }
 .check-with-fte { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
 .check-with-fte .fte-input { width: 4em; }
+/* A small pop-up in the middle of the screen, so it's seen wherever the grid is scrolled to. */
+.modal-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.3); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal { max-width: 32rem; margin: 1rem; box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); }
+@media print { .modal-backdrop { display: none; } }
