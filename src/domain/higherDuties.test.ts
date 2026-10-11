@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { clashDays } from './allocation';
 import { FULL_TIME, dayIndices, weekdays } from './dayPattern';
 import { coverGaps } from './leave';
-import { actsUp, planHigherDuties, seniority, substantiveRank, tidyHigherDuties, type HigherDutiesInput } from './higherDuties';
+import { actsUp, teachingExecutive, planHigherDuties, seniority, substantiveRank, tidyHigherDuties, type HigherDutiesInput } from './higherDuties';
 import { cellView, planAssign, type GridData } from './roleGrid';
 import type { Allocation, EntitlementPosition, Leave, PositionType, Staff } from './types';
 
@@ -76,6 +76,21 @@ describe('actsUp', () => {
     expect(actsUp(as('Teacher'), types[0])).toBe(false);
     expect(actsUp(as(''), types[1])).toBe(false);
     expect(substantiveRank(as('Classroom Teacher'))).toBe(1);
+  });
+});
+
+describe('teachingExecutive', () => {
+  const as = (currentRole: string, otherRoles?: string[]) => ({ currentRole, otherRoles });
+  it('names the executive role of someone teaching a class', () => {
+    expect(teachingExecutive(as('Assistant Principal'), types[0])).toBe('AP');
+    expect(teachingExecutive(as('Assistant Principal - Curriculum & Instruction'), types[0])).toBe('AP C&I');
+    expect(teachingExecutive(as('Deputy Principal'), types[0])).toBe('DP');
+    expect(teachingExecutive(as('Teacher', ['Assistant Principal']), types[0])).toBe('AP');
+  });
+  it('is undefined in executive positions, or for teachers', () => {
+    expect(teachingExecutive(as('Assistant Principal'), types[2])).toBeUndefined();
+    expect(teachingExecutive(as('Teacher'), types[0])).toBeUndefined();
+    expect(teachingExecutive(undefined, types[0])).toBeUndefined();
   });
 });
 

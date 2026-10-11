@@ -54,6 +54,32 @@ export function actsUp(staff: Pick<Staff, 'currentRole' | 'otherRoles'> | undefi
   return rank !== undefined && seniority(type) > rank;
 }
 
+/** Short name of an executive role: "Principal", "DP", "AP" or "AP C&I". */
+function executiveShort(role: string): string | undefined {
+  const n = role.trim().toLowerCase();
+  if (roleRank(role) === undefined || roleRank(role)! < 2) return undefined;
+  if (n === 'principal') return 'Principal';
+  if (n.startsWith('deputy') || n === 'dp') return 'DP';
+  if (n.includes('curriculum') || n.includes('c&i')) return 'AP C&I';
+  return 'AP';
+}
+
+/**
+ * Bec: an executive teaching a class (e.g. a teaching AP) shows their
+ * executive role on the tile. Their most senior executive substantive
+ * role, when they're in a non-executive position or role; otherwise undefined.
+ */
+export function teachingExecutive(
+  staff: Pick<Staff, 'currentRole' | 'otherRoles'> | undefined,
+  type: PositionType | undefined,
+): string | undefined {
+  if (!staff || type?.category === 'executive') return undefined;
+  const roles = [staff.currentRole, ...(staff.otherRoles ?? [])].filter((r) => executiveShort(r));
+  if (!roles.length) return undefined;
+  const top = roles.reduce((a, b) => (roleRank(b)! > roleRank(a)! ? b : a));
+  return executiveShort(top);
+}
+
 export const isHigherDuties = (l: Leave) => l.leaveType === 'higher_duties';
 
 const withMode = (days: readonly boolean[]): DayPattern => {
