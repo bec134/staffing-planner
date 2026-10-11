@@ -1,5 +1,6 @@
 import { FULL_TIME, describePattern, fortnightlyPattern, weekdays, type DayPattern } from './dayPattern';
-import { affectedRoles, availableCoverDays, coverGaps, validateCover, validateLeave } from './leave';
+import { affectedRoles, availableCoverDays, coverGaps, coverStatus, validateCover, validateLeave, wholeYearVacancies } from './leave';
+import { dayIndices as dayIdx } from './dayPattern';
 import type { Allocation, Leave, Role, Staff } from './types';
 
 const person = (id: string, workPattern: DayPattern = FULL_TIME): Staff => ({
@@ -161,5 +162,39 @@ describe('validateLeave', () => {
       'Enter start and end dates',
       'Choose at least one day of leave',
     ]);
+  });
+});
+
+describe('coverStatus and whole-year leave (Bec)', () => {
+  const yr = { start: '2027-01-28', end: '2027-12-17' };
+  const thuFri = weekdays('Thu', 'Fri');
+  const lwop: Leave = { id: 'l', planningYearId: 'y', staffId: 'jane', startDate: yr.start, endDate: yr.end, daysAffected: thuFri, leaveType: 'lwop' };
+  const cls: Role = { id: 'class', planningYearId: 'y', name: '3/4 Red', positionTypeId: 't', days: FULL_TIME, sortOrder: 0 };
+  let n = 0;
+  const a = (staffId: string, days: DayPattern, extra: Partial<Allocation> = {}): Allocation => ({ id: `a${++n}`, planningYearId: 'y', staffId, roleId: 'class', days, ...extra });
+  const janePlaced = a('jane', weekdays('Mon', 'Tue', 'Wed'));
+  const janeMatched = a('jane', FULL_TIME);
+
+  it('needs someone placed in her class on her leave days', () => {
+    expect(coverStatus(lwop, [janePlaced], [janeMatched], [cls], yr)).toBe('uncovered');
+    expect(coverStatus(lwop, [janePlaced, a('amy', weekdays('Thu'))], [janeMatched], [cls], yr)).toBe('partial');
+    expect(coverStatus(lwop, [janePlaced, a('amy', thuFri)], [janeMatched], [cls], yr)).toBe('covered');
+    expect(wholeYearVacancies(lwop, [janePlaced, a('amy', thuFri)], [cls])).toEqual([
+      { roleId: 'class', days: dayIdx(thuFri), filled: dayIdx(thuFri), filledBy: ['amy'] },
+    ]);
+  });
+
+  it('before Part 2, shows whether Part 1 has a backfill', () => {
+    expect(coverStatus(lwop, [], [janeMatched], [cls], yr)).toBe('unplaced');
+    const backfill = a('amy', thuFri, { coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
+    expect(coverStatus(lwop, [], [janeMatched, backfill], [cls], yr)).toBe('backfilled');
+    expect(coverStatus(lwop, [], [], [cls], yr)).toBe('nothing');
+  });
+
+  it('still uses leave cover when she is placed on her leave days', () => {
+    const held = a('jane', FULL_TIME);
+    expect(coverStatus(lwop, [held], [], [cls], yr)).toBe('uncovered');
+    const cover = a('amy', thuFri, { coveringLeaveId: 'l', startDate: yr.start, endDate: yr.end });
+    expect(coverStatus(lwop, [held, cover], [], [cls], yr)).toBe('covered');
   });
 });

@@ -182,3 +182,80 @@ export function validateLeave(leave: Pick<Leave, 'startDate' | 'endDate' | 'days
   if (off.length) errors.push(`${staff.name} doesn't work ${describeDayIndices(off)}`);
   return errors;
 }
+
+const isWholeYear = (l: Leave, year: DateRange) => l.startDate <= year.start && l.endDate >= year.end;
+
+export interface Vacancy {
+  roleId: Id;
+  /** Role days left by the leave. */
+  days: number[];
+  /** Of those, the days someone else is placed in the role. */
+  filled: number[];
+  /** Who fills them. */
+  filledBy: Id[];
+}
+
+/**
+ * Whole-year leave in Part 2 (Bec): the person isn't placed on their leave
+ * days (see availability.ts), so the roles they hold on other days need
+ * someone else placed on the leave days (usually their Part 1 backfill).
+ * Also counts a role they're still placed in on a leave day.
+ */
+export function wholeYearVacancies(leave: Leave, allocations: Allocation[], roles: Role[]): Vacancy[] {
+  const own = allocations.filter((a) => a.staffId === leave.staffId && !a.coveringLeaveId && !freedBy(a));
+  const out: Vacancy[] = [];
+  for (const roleId of [...new Set(own.map((a) => a.roleId))]) {
+    const role = roles.find((r) => r.id === roleId);
+    if (!role) continue;
+    const days = dayIndices(intersect(role.days, leave.daysAffected));
+    if (!days.length) continue;
+    const others = allocations.filter((a) => a.roleId === roleId && a.staffId !== leave.staffId && (!a.startDate || a.coveringLeaveId === leave.id));
+    const filled = days.filter((d) => others.some((a) => a.days.days[d]));
+    const filledBy = [...new Set(others.filter((a) => days.some((d) => a.days.days[d])).map((a) => a.staffId))];
+    out.push({ roleId, days, filled, filledBy });
+  }
+  return out;
+}
+
+/** Part 1: the days this leave leaves vacant in their positions, and those backfilled. */
+export function part1Backfill(leave: Leave, matches: Allocation[]): { days: number[]; backfilled: number[] } {
+  const own = matches.filter((m) => m.staffId === leave.staffId && !m.coveringLeaveId && !freedBy(m));
+  const days = dayIndices(intersect(union(own.map((m) => m.days)), leave.daysAffected));
+  const backfills = union(matches.filter((m) => m.coveringLeaveId === leave.id).map((m) => m.days));
+  return { days, backfilled: days.filter((d) => backfills.days[d]) };
+}
+
+export type CoverStatus = 'covered' | 'partial' | 'uncovered' | 'backfilled' | 'unplaced' | 'nothing';
+
+/**
+ * Whether the role days this leave leaves vacant are covered (Bec).
+ * - Roles they're still placed in on their leave days: by cover for the leave.
+ * - Whole-year leave: by someone placed in their role on those days in Part 2;
+ *   before they're placed in Part 2, by their Part 1 backfill.
+ */
+export function coverStatus(leave: Leave, allocations: Allocation[], matches: Allocation[], roles: Role[], year?: DateRange): CoverStatus {
+  if (affectedRoles(leave, allocations).length) {
+    if (coverGaps(leave, allocations).length === 0) return 'covered';
+    return allocations.some((a) => a.coveringLeaveId === leave.id) ? 'partial' : 'uncovered';
+  }
+  if (year && isWholeYear(leave, year)) {
+    const vacancies = wholeYearVacancies(leave, allocations, roles);
+    const total = vacancies.reduce((n, v) => n + v.days.length, 0);
+    if (total) {
+      const filled = vacancies.reduce((n, v) => n + v.filled.length, 0);
+      return filled === total ? 'covered' : filled ? 'partial' : 'uncovered';
+    }
+  }
+  const p1 = part1Backfill(leave, matches);
+  if (!p1.days.length) return 'nothing';
+  return p1.backfilled.length === p1.days.length ? 'backfilled' : 'unplaced';
+}
+
+export const COVER_STATUS_LABELS: Record<CoverStatus, string> = {
+  covered: 'Fully covered',
+  partial: 'Partly covered',
+  uncovered: 'No cover',
+  backfilled: 'Backfilled in Part 1',
+  unplaced: 'Not covered yet',
+  nothing: 'No roles affected',
+};

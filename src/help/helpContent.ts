@@ -421,7 +421,11 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Choose who it is **Covered by** and the **Role to cover**, then set the dates (use a term quick pick) and days.',
           'Click **Assign cover**. Cover does not count against the entitlement.',
         ],
-        text: ['You can also assign cover on the Role grid by dropping a name on a grey (on leave) tile.'],
+        text: [
+          'You can also assign cover on the Role grid by dropping a name on a grey (on leave) tile.',
+          'Whole-year leave: in Roles & placement the person is not placed on their leave days, so their class (or other role) needs someone else placed on those days, usually their Part 1 backfill. **Cover** shows "Fully covered" once someone is placed on every one of those days. Before they are placed in Part 2, it shows "Backfilled in Part 1" or "Not covered yet".',
+          'Leave for part of the year: the person stays placed in their role and you assign cover for the leave dates, as above.',
+        ],
       },
       {
         heading: 'Check nothing is missed',

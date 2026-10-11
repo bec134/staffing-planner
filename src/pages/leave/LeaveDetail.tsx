@@ -4,7 +4,8 @@ import { formatRange } from '../../domain/dates';
 import { describeDayIndices } from '../../domain/dayPattern';
 import { roleLink, staffLink } from '../../domain/flags';
 import { formatFte, milliFteOf } from '../../domain/fte';
-import { affectedRoles, allocationRange, coverGaps, coversFor } from '../../domain/leave';
+import { affectedRoles, allocationRange, coverGaps, coversFor, part1Backfill, wholeYearVacancies } from '../../domain/leave';
+import { isWholeYearLeave, schoolYear } from '../../domain/matching';
 import { LEAVE_TYPE_LABELS } from '../../domain/types';
 import { tidyHigherDutiesIn } from '../../data/higherDutiesStore';
 import { useRepository } from '../../data/RepositoryContext';
@@ -34,6 +35,11 @@ export function LeaveDetail({ data }: { data: PlanData }) {
   const gaps = coverGaps(leave, data.allocations);
   const covers = coversFor(leave.id, data.allocations);
   const status = coverStatus(leave, data);
+  const vacancies = isWholeYearLeave(leave, schoolYear(data.planningYear)) ? wholeYearVacancies(leave, data.allocations, data.roles) : [];
+  const p1 = part1Backfill(leave, data.matches);
+  const backfillers = [
+    ...new Set(data.matches.filter((m) => m.coveringLeaveId === leave.id).map((m) => staffById.get(m.staffId)?.name ?? 'someone')),
+  ];
 
   const remove = async () => {
     const extra = [
@@ -102,10 +108,29 @@ export function LeaveDetail({ data }: { data: PlanData }) {
       )}
 
       <h3>Positions left vacant</h3>
-      {affected.length === 0 ? (
+      {affected.length === 0 && vacancies.length > 0 ? (
+        <>
+          <p className="muted small">
+            On whole-year leave, {staff?.name ?? 'they'} isn't placed on these days. Their roles need someone else placed
+            on them on <Link to="/allocation">Roles &amp; placement</Link>.
+          </p>
+          <ul aria-label="Roles to fill">
+            {vacancies.map((v) => {
+              const open = v.days.filter((d) => !v.filled.includes(d));
+              return (
+                <li key={v.roleId} className={open.length ? 'warning' : undefined}>
+                  <Link to={roleLink(v.roleId)}>{roleById.get(v.roleId)?.name ?? 'Deleted role'}</Link> on{' '}
+                  {describeDayIndices(v.days)}:{' '}
+                  {v.filledBy.length ? `${v.filledBy.map((id) => staffById.get(id)?.name ?? 'someone').join(', ')} placed` : ''}
+                  {open.length ? `${v.filledBy.length ? '; ' : ''}nobody placed on ${describeDayIndices(open)}` : ''}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : affected.length === 0 ? (
         <p className="muted">
-          {staff?.name} has no allocations on these days, so no cover is needed. Allocate them on the Staff &amp;
-          allocation page first if they hold a role.
+          {staff?.name} isn't placed in a role in Part 2 yet, so there is nothing to cover there.
         </p>
       ) : (
         <ul>
@@ -128,6 +153,20 @@ export function LeaveDetail({ data }: { data: PlanData }) {
               </li>
             ))}
           </ul>
+        </>
+      )}
+
+      {p1.days.length > 0 && (
+        <>
+          <h3>Part 1 backfill</h3>
+          <p className={p1.backfilled.length === p1.days.length ? undefined : 'warning'}>
+            {p1.backfilled.length
+              ? `${describeDayIndices(p1.backfilled)} backfilled by ${backfillers.join(', ')}`
+              : 'Not backfilled'}
+            {p1.backfilled.length > 0 && p1.backfilled.length < p1.days.length &&
+              `; not backfilled on ${describeDayIndices(p1.days.filter((d) => !p1.backfilled.includes(d)))}`}{' '}
+            (<Link to="/matching">Match staff</Link>)
+          </p>
         </>
       )}
 
