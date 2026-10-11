@@ -373,6 +373,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Drag a name onto a role and day, or click **+** and choose a name. Staff matched in Part 1 are offered; tick **Show all staff** to see everyone.',
           "A full-time teacher dropped on a class fills the whole week. Dropping a name on a role's name fills every day they are free.",
           'Click **×** to remove a day, or drag a tile to move it.',
+          'Name tiles show the days each person works after Part 1: whole-year leave days are left out (for example LWOP Wed–Fri leaves Mon, Tue), and a second job adds its days back. They cannot be placed on their leave days.',
           'Someone on higher duties can be placed in an executive role on their higher-duties days; their own class shows grey on those days and needs cover.',
           'Name tiles show grade preferences (for example "Prefers K, 1, 2") from each person\'s staff details.',
         ],
